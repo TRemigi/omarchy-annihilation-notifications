@@ -59,4 +59,4 @@ test installation.
 
 | Date | Omarchy | Fork | A | B | C | Notes |
 |------|---------|------|---|---|---|-------|
-|      |         |      |   |   |   |       |
+| 2026-10-30 | 4.0.4-1 | 0.1.0 (`omarchy plugin add` from the pushed repo) | pass | pass | pass | Reported by the user as all items passing; no per-item notes were given, so whether the disable-and-restore needed `omarchy restart shell` is not recorded. Add a row with details next time. |

@@ -13,10 +13,10 @@ whose `docs/notifications-fork.md` is the same plan plus the theme-side tasks, a
 describes the notification features it already has (arrival glow, sound, missed-notification marks) that read
 this daemon's state files.
 
-Phases (details in `docs/plan.md`): **P0** functional parity (done, awaiting the live checklist);
+Phases (details in `docs/plan.md`): **P0** functional parity (done and live-verified);
 **P1** tooling, runbooks, fallback (partly done); **P2** the actual experience, theme-gated; **P3** integration
-with the theme's plugin, automatic fallback, CI. **Do not start P2 until the live checklist has passed on a
-real session.** Parity first is the whole point: it proves install, update and fallback on a fork that
+with the theme's plugin, automatic fallback, CI. **The live checklist has passed on a real session (2026-10-30), so P2 may start**,
+but do P1's remaining safety items first (see Open items). Parity first is the whole point: it proves install, update and fallback on a fork that
 changes nothing.
 
 ## Rules
@@ -88,20 +88,21 @@ manifest); `tools/import-upstream` and `tools/check-upstream` and their tests; `
 `CONTRACT.md`; the update, fallback, release, troubleshooting and live-checklist runbooks.
 `omarchy plugin validate .` passes and `tools/check-upstream` exits 0.
 
-**Not verified, needs the user:** that the fork loads and behaves as stock inside a real shell; that
-disabling it really restores the stock plugin (and whether `omarchy restart shell` is needed); the D-Bus
-hand-over; DND and `omarchy-notification-send` through the clone. All in the live checklist.
+**Verified live by the user (2026-10-30, Omarchy 4.0.4-1):** installed with `omarchy plugin add` from the
+pushed repo, and every item of `docs/runbooks/live-checklist.md` passed: the takeover, behaviour against
+stock (DND, `omarchy-notification-send`, restore after a shell restart) and the disable-and-restore cycle.
+They gave no per-item notes, so it is not recorded whether the restore needed `omarchy restart shell`.
 
 Decisions already made with the user: a separate repo registered as a clone (not a patch); parity first;
 the fork behaves as stock off the annihilation theme (no theme-switch daemon swapping); track packaged
 Omarchy releases only, not the dev/edge channels; **automatic fallback on by default** (P3). Still open:
-whether the repo is public. The owner is **TRemigi**
-(`git@github.com:TRemigi/omarchy-annihilation-notifications.git`, the same SSH convention as the theme repo),
-and `origin` is configured locally, but **nothing has been pushed**: the agent's sandbox could not create
-the repo or push (`gh` token invalid, no DNS for SSH). The user pushes; see "First push" below.
+nothing in P0. The repo is **public** at `https://github.com/TRemigi/omarchy-annihilation-notifications`
+(owner TRemigi; `origin` is the SSH URL, as in the theme repo). The user created and pushed it; the agent's
+sandbox could not (`gh` token invalid). Commits use the GitHub noreply address
+(`63087524+TRemigi@users.noreply.github.com`) from the user's global git config; the history was rewritten once
+to remove an earlier work address, so do not reintroduce one. See "First push" below for how it was done.
 
-Open items, in order: the live checklist (user); `tools/contract-check`, `tools/status`, a `fallback`
-tool and CI (P1); then this repo's counterpart in the theme repo (`extras/install notifications ...`,
+Open items, in order: `tools/contract-check`, `tools/status`, a `fallback` tool and CI (P1); then this repo's counterpart in the theme repo (`extras/install notifications ...`,
 post-update and post-boot hooks, README section), which lives in **that** repo; then P2.
 
 ## First push (done by the user, from their own shell)
