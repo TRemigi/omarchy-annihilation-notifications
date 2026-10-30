@@ -1,0 +1,78 @@
+#!/bin/bash
+# Record the installed Omarchy as the new upstream baseline.
+#
+#   tools/import-upstream [--from DIR] [--version V]
+#
+# Snapshots the vendored and watched files (see lib.sh) from the installed Omarchy, or from DIR
+# (another Omarchy tree), and commits them, with a fresh UPSTREAM, to the `upstream` branch, which
+# holds nothing else. It makes the branch on first use. The commit is tagged upstream/<version>.
+# It works in a temporary git worktree, so your checkout and uncommitted work are not touched.
+#
+# Afterwards, merge it:   git checkout main && git merge upstream
+# (and, only the very first time, add --allow-unrelated-histories). See
+# docs/runbooks/update-from-upstream.md for resolving conflicts and what to run after.
+set -euo pipefail
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib.sh"
+
+while (( $# )); do
+  case $1 in
+    --from) [[ $# -ge 2 ]] || die "--from needs a directory"; OMARCHY_ROOT=$(readlink -f "$2"); shift 2 ;;
+    --version) [[ $# -ge 2 ]] || die "--version needs a value"; OMARCHY_VERSION=$2; shift 2 ;;
+    -h|--help) sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) die "unknown option: $1" ;;
+  esac
+done
+
+need git jq sha256sum find xargs cp
+git -C "$FORK_ROOT" rev-parse --git-dir >/dev/null 2>&1 || die "$FORK_ROOT is not a git repository"
+
+version=$(omarchy_version)
+[[ $version != unknown ]] || die "cannot tell the Omarchy version; pass --version"
+
+tmp=$(mktemp -d)
+wt=$tmp/worktree
+cleanup() { git -C "$FORK_ROOT" worktree remove --force "$wt" >/dev/null 2>&1 || true; rm -rf "$tmp"; }
+trap cleanup EXIT
+
+if git -C "$FORK_ROOT" rev-parse --verify -q upstream >/dev/null; then
+  git -C "$FORK_ROOT" worktree add -q "$wt" upstream
+  first=0
+else
+  git -C "$FORK_ROOT" worktree add -q --orphan -b upstream "$wt"
+  first=1
+fi
+
+# Replace everything on the branch with the new snapshot, so a file upstream deleted is deleted here too.
+find "$wt" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+snapshot "$wt"
+files=$(hash_tree "$wt" | hashes_json)
+jq -n --arg version "$version" --argjson files "$files" \
+  '{schema: 1, omarchyVersion: $version, files: $files}' >"$wt/UPSTREAM"
+
+git -C "$wt" add -A
+if git -C "$wt" diff --cached --quiet; then
+  echo "upstream already holds this baseline (Omarchy $version): nothing to commit"
+  exit 0
+fi
+
+summary=$(git -C "$wt" diff --cached --stat --stat-width=100 | tail -n +1)
+git -C "$wt" commit -q -F - <<EOF
+upstream: Omarchy $version
+
+Pristine copy of Omarchy's notifications plugin and the files this fork watches,
+imported from $OMARCHY_ROOT by tools/import-upstream.
+
+$summary
+EOF
+
+tag=upstream/$(tr -c 'A-Za-z0-9._\n-' '_' <<<"$version")
+n=1; candidate=$tag
+while git -C "$FORK_ROOT" rev-parse --verify -q "refs/tags/$candidate" >/dev/null; do n=$((n + 1)); candidate=$tag.$n; done
+git -C "$wt" tag "$candidate"
+
+echo "imported Omarchy $version onto branch upstream ($(git -C "$wt" rev-parse --short HEAD), tag $candidate)"
+if (( first )); then
+  echo "next: git merge --allow-unrelated-histories upstream     (first import only)"
+else
+  echo "next: git checkout main && git merge upstream"
+fi

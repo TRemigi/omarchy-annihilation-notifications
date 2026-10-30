@@ -1,0 +1,101 @@
+# omarchy-annihilation-notifications
+
+A themed notification daemon for [Omarchy](https://omarchy.org/), made to go with
+omarchy-annihilation-theme. It is a fork of Omarchy's own
+notifications plugin, installed as a *registered clone* of it, so the rest of Omarchy (the bar's
+Do Not Disturb button, the key bindings, `omarchy-notification-send`) keeps working unchanged, and
+**removing or disabling it brings the stock daemon straight back.**
+
+**Status: P0, functional parity.** The code is Omarchy 4.0.4's plugin, unchanged except for its
+manifest. There is nothing visual to see yet; this stage exists to prove that installing, updating and
+falling back work before any features are added. The plan is in [docs/plan.md](docs/plan.md).
+
+> ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
+> daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and
+> know the [fallback](#falling-back-to-stock) before you need it.
+
+## What it does and does not change
+
+- It replaces the stock notification daemon **on every theme**, because enabling a clone is not
+  per-theme. From P2 on it will look and behave exactly like stock unless the annihilation theme is
+  active.
+- It keeps the contract other code relies on (IPC target, DND members, state files, layer namespace):
+  [CONTRACT.md](CONTRACT.md).
+- The annihilation theme works the same without it. Nothing there requires this repo.
+
+## Install
+
+```bash
+omarchy plugin add https://github.com/<owner>/omarchy-annihilation-notifications.git --enable --yes
+omarchy restart shell
+```
+
+(`<owner>` is filled in when the repo is published. Until then, see
+[docs/runbooks/live-checklist.md](docs/runbooks/live-checklist.md) for installing from a local clone.)
+
+Check that it took over:
+
+```bash
+omarchy-shell notifications ping                   # ok
+busctl --user status org.freedesktop.Notifications # one owner: quickshell
+notify-send -a Signal "hello" "from the fork"
+```
+
+## Update
+
+```bash
+omarchy plugin update annihilation.notifications   # shows the diff before changing anything
+omarchy restart shell
+```
+
+Omarchy's own updates can make this fork stale; see [Keeping up with Omarchy](#keeping-up-with-omarchy).
+
+## Falling back to stock
+
+```bash
+omarchy plugin disable annihilation.notifications  # stock notifications return
+omarchy restart shell                              # if the toast layer does not come back at once
+```
+
+`omarchy plugin remove annihilation.notifications` removes the fork altogether. Either way Omarchy
+re-enables its own plugin.
+
+**If the shell is unusable**, edit `~/.config/omarchy/shell.json`: take `annihilation.notifications`
+out of `plugins[]`, take `omarchy.notifications` out of `disabledPlugins[]`, and take
+`annihilation.notifications` out of `cloneSourceRestores`, then `omarchy restart shell`.
+**Do not just delete the plugin folder**: the stock plugin would stay listed as disabled and nothing
+would run. More in [docs/runbooks/fallback.md](docs/runbooks/fallback.md).
+
+## Keeping up with Omarchy
+
+The fork contains copies of Omarchy's files, so an Omarchy update can leave it behind.
+
+```bash
+tools/check-upstream --diff   # has the installed Omarchy changed anything the fork depends on?
+tools/import-upstream         # record the installed Omarchy as the new upstream baseline
+git merge upstream            # then resolve, test, and release
+```
+
+Exit status of `check-upstream`: 0 nothing relevant changed; 1 a vendored file changed (merge needed);
+2 only a file the fork depends on changed (review); 3 only the version differs (safe). The full
+procedure is in [docs/runbooks/update-from-upstream.md](docs/runbooks/update-from-upstream.md).
+
+## Layout
+
+| Path | What |
+|------|------|
+| `manifest.json`, `Service.qml`, `NotificationLogic.js`, `components/` | the plugin, forked from Omarchy |
+| `UPSTREAM` | the Omarchy version and file hashes the fork was last merged against (generated) |
+| `reference/omarchy/` | snapshots of the files the fork depends on but does not copy (from `upstream`) |
+| `CONTRACT.md` | what must keep working |
+| `AGENTS.md` | for an agent or a contributor continuing the work |
+| `docs/plan.md`, `docs/runbooks/` | the plan, and procedures |
+| `tools/`, `test/` | upstream tracking, and its tests |
+
+Branches: `main` is the fork; `upstream` holds only pristine copies of Omarchy's files, one commit per
+Omarchy version, tagged `upstream/<version>`. `git diff upstream main -- Service.qml` is exactly what
+this fork changed.
+
+## Licence
+
+MIT, as Omarchy. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

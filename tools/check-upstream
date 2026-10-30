@@ -1,0 +1,80 @@
+#!/bin/bash
+# Has the installed Omarchy changed in a way that touches this fork?
+#
+#   tools/check-upstream [--diff] [--quiet]
+#
+# Snapshots the installed Omarchy the way import-upstream does and compares file hashes with
+# UPSTREAM. Exit status:
+#   0  nothing this fork depends on has changed
+#   1  a vendored file changed, was added or was removed: merge needed (docs/runbooks/update-from-upstream.md)
+#   2  only watched files changed: read the diff, then re-import the baseline if the fork is unaffected
+#   3  the Omarchy version differs but every hash is the same: safe, re-import to record the version
+#  64  could not run (no UPSTREAM, no Omarchy, missing tool)
+#
+# --diff shows what changed, against the pristine copy on the `upstream` branch; --quiet prints
+# nothing but the status. OMARCHY_ROOT points at another Omarchy tree (default /usr/share/omarchy).
+set -euo pipefail
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib.sh"
+
+show_diff=0 quiet=0
+for a in "$@"; do
+  case $a in
+    --diff) show_diff=1 ;;
+    --quiet) quiet=1 ;;
+    -h|--help) sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) die "unknown option: $a" ;;
+  esac
+done
+
+need jq sha256sum find xargs
+[[ -f $FORK_ROOT/UPSTREAM ]] || die "no UPSTREAM file: merge the upstream branch first"
+
+tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+snapshot "$tmp/snap"
+new=$(hash_tree "$tmp/snap" | hashes_json)
+old=$(jq '.files' "$FORK_ROOT/UPSTREAM")
+base_version=$(jq -r '.omarchyVersion' "$FORK_ROOT/UPSTREAM")
+now_version=$(omarchy_version)
+
+# "status<TAB>path" for every path whose hash differs, or that exists on one side only.
+changes=$(jq -rn --argjson a "$old" --argjson b "$new" '
+  ($a + $b | keys[]) as $k
+  | select($a[$k] != $b[$k])
+  | [(if $a[$k] == null then "added" elif $b[$k] == null then "removed" else "changed" end), $k] | @tsv')
+
+vendored=$(grep -v -P "\t$REFERENCE_DIR/" <<<"$changes" || true)
+watched=$(grep -P "\t$REFERENCE_DIR/" <<<"$changes" || true)
+
+status=0
+if [[ -n $vendored ]]; then status=1
+elif [[ -n $watched ]]; then status=2
+elif [[ $base_version != "$now_version" ]]; then status=3
+fi
+
+if (( ! quiet )); then
+  echo "installed Omarchy: $now_version    fork baseline: $base_version"
+  case $status in
+    0) echo "nothing this fork depends on has changed" ;;
+    3) echo "the version differs but every tracked file is identical: safe" ;;
+  esac
+  if [[ -n $vendored ]]; then echo; echo "vendored files (merge needed):"; sed 's/^/  /' <<<"$vendored" | tr '\t' ' '; fi
+  if [[ -n $watched ]]; then echo; echo "watched files (review):"; sed 's/^/  /' <<<"$watched" | tr '\t' ' '; fi
+
+  if (( show_diff )) && [[ -n $changes ]]; then
+    ref=$(upstream_ref || true)
+    echo
+    if [[ -z $ref ]]; then
+      echo "(no upstream branch here, so no diffs: git fetch origin upstream)"
+    else
+      while IFS=$'\t' read -r kind path; do
+        [[ -n $path ]] || continue
+        echo "=== $kind $path"
+        left=/dev/null right=/dev/null
+        [[ $kind != added ]] && { git -C "$FORK_ROOT" show "$ref:$path" >"$tmp/left" 2>/dev/null && left=$tmp/left; }
+        [[ $kind != removed ]] && right=$tmp/snap/$path
+        diff -u --label "baseline/$path" --label "installed/$path" "$left" "$right" || true
+      done <<<"$changes"
+    fi
+  fi
+fi
+exit $status

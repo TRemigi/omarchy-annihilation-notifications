@@ -1,0 +1,10 @@
+This repository is derived from the notifications plugin of Omarchy
+(https://github.com/basecamp/omarchy, MIT licence, Copyright (c) David Heinemeier Hansson).
+
+The files vendored from it are Service.qml, NotificationLogic.js, manifest.json and everything under
+components/ that originated there. The `upstream` branch holds pristine copies, one commit per Omarchy
+version, and UPSTREAM records which version and which file hashes the fork was last merged against.
+What this fork changed is exactly `git diff upstream main -- <those files>`.
+
+Changes made by this fork are released under the same MIT licence (see LICENSE). The licence text is
+Omarchy's, unaltered; add your own copyright line for your changes if you wish.
