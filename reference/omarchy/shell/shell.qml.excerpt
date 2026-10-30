@@ -1,0 +1,5 @@
+    var allowed = ["omarchy.idle", "omarchy.media", "omarchy.nightlight", "omarchy.notifications"]
+    // firstPartyServiceFor(). Creating a QObject while evaluating that binding
+      ? ["omarchy.idle", "omarchy.media", "omarchy.nightlight", "omarchy.notifications"]
+        ? ["omarchy.idle", "omarchy.nightlight", "omarchy.notifications"] : [])
+  function firstPartyServiceFor(pluginId) {

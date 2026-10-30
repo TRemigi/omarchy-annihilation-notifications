@@ -1,0 +1,5 @@
+o.bind("SUPER + comma", "Dismiss last notification", "omarchy-shell notifications dismissOne")
+o.bind("SUPER + SHIFT + comma", "Dismiss all notifications", "omarchy-shell notifications dismissAll")
+o.bind_toggle("SUPER + CTRL + comma", "Toggle silencing notifications", "notification-silencing")
+o.bind("SUPER + ALT + comma", "Invoke last notification", "omarchy-shell notifications invokeLast")
+o.bind("SUPER + SHIFT + ALT + comma", "Open notification history", "omarchy-shell notifications showHistory")
