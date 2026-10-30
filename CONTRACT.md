@@ -55,6 +55,11 @@ All return a string; keep the names and the argument lists.
   recorded. (The theme's missed-notification tracker and docs rely on this.)
 - Lifetimes: low 5 s, normal 8 s (or the sender's timeout if longer), at most 30 s, critical never
   expires. The theme's `MissedTracker.lifetimeFor` mirrors these numbers.
+- **With the annihilation theme active, a toast leaves the screen up to 240 ms later** than its lifetime or its
+  dismissal: it folds away first (`components/SlotMotion.qml`) and only then is its file moved to `history/`.
+  Left-click (which acts at once) and the IPC dismissals are not delayed. The theme's `MissedTracker` allows for
+  this (its 500 ms grace); the only visible effect is that a toast dismissed in the last ~0.7 s of its lifetime can
+  be counted as expired.
 - Click runs the toast's default action (`omarchy-exec-argv`, else the sender's `default` action) and
   dismisses; right click dismisses; hovering pauses the countdown.
 - Live toasts survive a shell restart (restored from the popup files).

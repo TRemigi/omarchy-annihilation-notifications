@@ -14,7 +14,7 @@ describes the notification features it already has (arrival glow, sound, missed-
 this daemon's state files.
 
 Phases (details in `docs/plan.md`): **P0** functional parity (done and live-verified);
-**P1** tooling, runbooks, fallback (partly done); **P2** the actual experience, theme-gated; **P3** integration
+**P1** tooling, runbooks, fallback (partly done); **P2** the actual experience, theme-gated (slice 1, the motion, is on the `p2/motion` branch awaiting the user's live check); **P3** integration
 with the theme's plugin, automatic fallback, CI. **The live checklist has passed on a real session (2026-10-30), so P2 may start**,
 but do P1's remaining safety items first (see Open items). Parity first is the whole point: it proves install, update and fallback on a fork that
 changes nothing.
@@ -63,14 +63,17 @@ changes nothing.
 ```bash
 bash test/tools-test.sh          # import-upstream and check-upstream, against a scratch Omarchy (47 checks)
 node test/logic-test.js          # NotificationLogic.js (35 checks)
+bash test/motion-test.sh         # components/SlotMotion.qml, offscreen with the real Qt Quick runtime (18 checks)
+bash test/motion-filmstrip.sh DIR   # renders a stand-in toast stack to DIR/sheet.png (needs ImageMagick): look at it
 omarchy plugin validate .
 tools/check-upstream             # exit 0 when the installed Omarchy matches the baseline
 T=$(mktemp -d); ln -s /usr/share/omarchy/shell "$T/qs"
 /usr/lib/qt6/bin/qmllint -I "$T" -I /usr/lib/qt6/qml Service.qml components/NotificationCard.qml
 ```
 
-qmllint baseline on Omarchy 4.0.4-1 (identical to stock, because the code is): `Service.qml` 15 warnings
-(unqualified access x10, `PanelWindow` not creatable, `QProcess::ExitStatus` not found x2, `sizeVertical` /
+qmllint baseline on Omarchy 4.0.4-1: `Service.qml` 16 warnings (15 in stock; P2 slice 1 added one more
+"unqualified access", `service.` used inside the delegate, the same class the file already has)
+(unqualified access x11, `PanelWindow` not creatable, `QProcess::ExitStatus` not found x2, `sizeVertical` /
 `sizeHorizontal` not found on `QObject`), `components/NotificationCard.qml` 12 (members not found on
 `QObject`: `text`, `title`, `icon`, `displayLarge`, `countdown`, `border`, `background`). New warnings that
 name `Style`, `Color`, `Border` or `Util` members mean the shared API moved.
@@ -118,6 +121,30 @@ git push origin upstream --tags                   # the upstream branch must be 
 
 `--public` is needed for `omarchy plugin add <https url>`, which runs without credential prompts; a private
 repo only works with the SSH URL. Public means the git history, including the author email, is visible.
+
+## P2: the experience (in slices, each judged live before the next)
+
+Slices: **1 Motion** (built, on branch `p2/motion`, awaiting the user's live check): toasts unfold into the stack
+and fold away (expiry and right-click; click and IPC dismissals stay instant). **2** a countdown that is part of the
+border, and hover. **3** the exit dissolving into a few spores. **4** an accent per app or urgency from the Shimmer
+palette, and a setting to turn the motion off. Do not build the next slice before the user has seen the last.
+
+How slice 1 works, so it is not re-derived:
+- `components/SlotMotion.qml` is a small non-visual item per delegate with `presence` (0 to 1) and `enter()` /
+  `leave(done)`. The slot binds `implicitHeight: card.implicitHeight * heightFactor`, `Layout.bottomMargin:
+  spacingTrim` (folds the column's 8 px gap away with the slot), `clip: clipping`, and the card's `opacity` and
+  `scale` (transform origin top right). Entry 340 ms on the theme's `tendril` curve, exit 240 ms on `exhale`.
+- Gated by `Service.themed` (a `FileView` on `~/.local/state/omarchy/current/theme.name`): with the theme off,
+  `enter()` does nothing, `leave(done)` calls `done` at once and every factor is 1, so it is stock. Switching theme
+  takes effect without a shell restart.
+- `leave` is used for expiry (the timer) and right-click; the service function is called when the fold ends, with
+  the index read then (it moves as other toasts come and go). `ticking` is false while leaving, so the countdown does
+  not run twice. Left-click (`invokePopupDefault`) and the IPC dismissals remove the row at once, as stock.
+- Layout trap found and solved in the filmstrip: a slot of height 0 still adds the column's spacing, so the gap would
+  pop open; the negative bottom margin folds it away. Clipping is only on while presence < 1.
+- Judged by `test/motion-filmstrip.sh` (rendered with software Qt offscreen, a plain-rectangle stand-in for the card)
+  and `test/motion-test.sh`; the real card (`BorderSurface`, the gradient border) under scaling is only checked live.
+  Likely live issues: a blurred or cut border during the scale, flicker with several toasts.
 
 ## Conventions
 

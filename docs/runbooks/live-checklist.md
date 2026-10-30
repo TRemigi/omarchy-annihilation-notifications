@@ -55,6 +55,37 @@ test installation.
 - [ ] `omarchy plugin enable annihilation.notifications` takes over again
 - [ ] (optional) `omarchy plugin remove annihilation.notifications`, check stock, then reinstall
 
+## D. Motion (P2, annihilation theme only)
+
+Needs the `p2/motion` branch until it is merged. Switch the installed checkout to it:
+
+```bash
+git -C ~/.config/omarchy/plugins/annihilation.notifications fetch origin p2/motion
+git -C ~/.config/omarchy/plugins/annihilation.notifications checkout p2/motion
+omarchy restart shell
+```
+
+(If the checkout complains about unrelated histories, the install predates the one-time history rewrite:
+`extras/install notifications remove` then `add` in the theme repo, then the commands above.)
+Go back with `git -C ... checkout main` and another restart. The theme must be `annihilation`.
+
+- [ ] a new toast **unfolds** into the top of the stack with a fade, and the toasts already there slide
+      down smoothly (no jump, no gap that pops open)
+- [ ] a toast that expires **folds away** and the ones under it slide up; nothing snaps
+- [ ] right-click dismissing a toast does the same; **clicking** one still acts at once
+- [ ] three or four toasts in quick succession (`for i in 1 2 3 4; do notify-send -a Signal "n$i" "body"; done`)
+      stack up without flicker or overlap, and leave one at a time without leaving gaps
+- [ ] hovering a toast still holds it; moving off lets it run out and fold
+- [ ] the gradient border stays crisp (not blurred or cut at the corners) while a card is scaling or folding
+- [ ] with DND on, a screenshot toast still appears and folds correctly
+- [ ] `omarchy restart shell` with a live toast: it comes back and unfolds without a glitch
+- [ ] **switch to another theme** (`omarchy theme set <another>`): toasts appear and vanish instantly again,
+      exactly as stock; switch back and the motion returns, without restarting the shell
+- [ ] the theme's own effects (arrival glow, sound, missed marks) still behave
+
+When reporting, say what feels wrong: too slow or too quick (entry is 340 ms, exit 240 ms), the wrong direction,
+too much scale, or anything that flickers. Those are single numbers in `components/SlotMotion.qml`.
+
 ## Results
 
 | Date | Omarchy | Fork | A | B | C | Notes |

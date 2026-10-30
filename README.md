@@ -6,9 +6,11 @@ notifications plugin, installed as a *registered clone* of it, so the rest of Om
 Do Not Disturb button, the key bindings, `omarchy-notification-send`) keeps working unchanged, and
 **removing or disabling it brings the stock daemon straight back.**
 
-**Status: P0, functional parity.** The code is Omarchy 4.0.4's plugin, unchanged except for its
-manifest. There is nothing visual to see yet; this stage exists to prove that installing, updating and
-falling back work before any features are added. The plan is in [docs/plan.md](docs/plan.md).
+**Status: P0 (functional parity) is released; P2 is in progress.** `main` is Omarchy 4.0.4's plugin, unchanged
+except for its manifest. The branch `p2/motion` adds the first visible change, **only while the annihilation theme
+is active**: toasts unfold into the stack and fold away instead of popping in and out. On any other theme it behaves
+exactly as stock. It is not on `main` until it has been seen working on a real session. The plan is in
+[docs/plan.md](docs/plan.md).
 
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and
