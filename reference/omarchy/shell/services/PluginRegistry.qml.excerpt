@@ -1,0 +1,27 @@
+      var clonedFrom = metadata ? String(metadata.clonedFrom || "") : ""
+      var source = clonedFrom ? firstParty[clonedFrom] : null
+  //     is therefore recorded the other way round, in `disabledPlugins[]`.
+    return Util.isPlainObject(config) && Array.isArray(config.disabledPlugins)
+      && config.disabledPlugins.indexOf(Util.canonicalWidgetId(String(id))) !== -1
+  function resolveEnabledId(id) {
+      if (metadata && String(metadata.clonedFrom || "") === key && isEnabled(candidate))
+  // its place, the way resolveEnabledId routes calls to it.
+  // built-in in disabledPlugins[].
+    if (!Array.isArray(config.disabledPlugins)) return
+    config.disabledPlugins = config.disabledPlugins.filter(function(entry) { return entry !== id })
+    if (config.disabledPlugins.length === 0) delete config.disabledPlugins
+    if (!Array.isArray(config.disabledPlugins)) config.disabledPlugins = []
+    config.disabledPlugins.push(id)
+    return Array.isArray(config.cloneSourceRestores) && config.cloneSourceRestores.indexOf(id) !== -1
+    var restores = Array.isArray(config.cloneSourceRestores) ? config.cloneSourceRestores : []
+    if (restores.length) config.cloneSourceRestores = restores
+    else delete config.cloneSourceRestores
+      if (!candidateMetadata || String(candidateMetadata.clonedFrom || "") !== sourceId) continue
+  function restoreCloneSource(config, cloneId, sourceId) {
+    var clonedFrom = metadata ? Util.canonicalWidgetId(String(metadata.clonedFrom || "")) : ""
+          restoreCloneSource(config, activeClone, key)
+          if (clonedFrom && clonedFrom !== "omarchy.bar") config.bar.id = clonedFrom
+          var sourceLocation = clonedFrom ? findEntryLocation(config, clonedFrom) : { found: false }
+        if (clonedFrom && hasNonWidgetKind && !isDisabled(config, clonedFrom)) {
+          addDisabled(config, clonedFrom)
+      if (clonedFrom) restoreCloneSource(config, key, clonedFrom)

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "omarchyVersion": "4.0.4-1",
+  "files": {
+    "NotificationLogic.js": "99e82df6524ee1ee1d52673b2a1496f62b14b220288f186c41fd8deed77a69bd",
+    "Service.qml": "11665542e70df80ccd3c785a6143dee2daefd2082e4f75c740adc2c9947cf7c2",
+    "components/NotificationCard.qml": "3f023446cfe26b9f70570d7088baab31e56ca374c4a206a7c098b09d36cdff3d",
+    "manifest.json": "82ed1a26f0040ddff78dd0ed1f12c5e4b49929ec5d0efc7ea62bedabbf48e910",
+    "reference/omarchy/bin/omarchy-notification-battery": "dfc65faf626d8a964cf845d315eb12ea446060a45cee114564d2bfb454e35805",
+    "reference/omarchy/bin/omarchy-notification-dismiss": "ca563bbaeaa9252a4369fb58efbdfe646bfb195c3c0a04cd90309671e18a6cc1",
+    "reference/omarchy/bin/omarchy-notification-send": "93f2e88fe86b03cc636a451cc0b1d766970ef85f32e98eb4fde2bd48a4ba1345",
+    "reference/omarchy/bin/omarchy-notification-time": "91628c65ea319fdd3fe4cfc4bdd725e7053550faffa5f817c5ad1786bd5ed249",
+    "reference/omarchy/bin/omarchy-notification-wait": "7bc22bf41e3568ecacacc88d6a442e2b3aa75a550f845e5ae8b79a5c7c82d424",
+    "reference/omarchy/bin/omarchy-notification-weather": "e9e75b64881a85cb82be18b4646fd5bd96df145fd5d759b3f8ae14e58cd75f72",
+    "reference/omarchy/bin/omarchy-toggle-notification-silencing": "e46a4d41d93590303323c1b33645ef58d1a1356ddf6b3b9460a5f31f23b83bbe",
+    "reference/omarchy/default/hypr/bindings/utilities.lua.excerpt": "468578aa548cc90d4f8679c578b7d7b92faf9b230b4bb7638aeae6e40468340e",
+    "reference/omarchy/migrations.list": "fb30078e29d1e25acb887ec60db92d0c6299a1deff49173b78228051d47cd955",
+    "reference/omarchy/shell/Commons/Border.qml": "b98c82530126fc10a287845e8df574ae26fa05b6064d93451d93d0ee9c3f7166",
+    "reference/omarchy/shell/Commons/BorderGeometry.js": "8b99fb8d32a2f4ccb72f09a1c6421771d7329555c59bff69d181f1218033c85d",
+    "reference/omarchy/shell/Commons/Color.qml": "cc9b62e2eaf8c307aa02206d9320c3d0ca349cf8feed452a6eddf387adaa5320",
+    "reference/omarchy/shell/Commons/Style.qml": "f5901092617ae62645597199270afd4dfb0644d596bdfff16e1834fca6ad7243",
+    "reference/omarchy/shell/Commons/Util.qml": "6894c63190973b5dbe50b13b3f7a99dd5770e143699f3aae1650fb65ca3ebe9b",
+    "reference/omarchy/shell/Commons/qmldir": "5593fa25d33b1e2d3ed8628ca2e0dce5074497608f2bad6652689e390727e5e8",
+    "reference/omarchy/shell/Ui/BorderSurface.qml": "e17d8150d0b0e60f431bd6df5e661f5d9fe1f5eec9c2e2420f6eff2179a45baf",
+    "reference/omarchy/shell/Ui/qmldir": "1c8f878acd5eafa6e3932325f76a205b1c0fc800f210ca071eee2409fee5d22b",
+    "reference/omarchy/shell/plugins/bar/indicators/Dnd.qml": "ef3dfda58d9a874d304d6c7742508535957d99e388d2140ca90d14f1b29050d1",
+    "reference/omarchy/shell/services/PluginFirstPartyServiceApi.qml": "bae758ce27a11a84d68b11f6f192d6270f3dd1a6663b408338a92402bd42f5a4",
+    "reference/omarchy/shell/services/PluginRegistry.qml.excerpt": "7e7851147d6569c6e831f74da6b118a5b9a6c51136708848ada48dc7aa91f7e1",
+    "reference/omarchy/shell/shell.qml.excerpt": "aff3cf1ff4932e6febd908b76fbddaa7c8030cdaf88ca10e3a4245d26f5d98f7"
+  }
+}
