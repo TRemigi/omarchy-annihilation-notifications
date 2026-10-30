@@ -109,7 +109,8 @@ post-update and post-boot hooks, README section), which lives in **that** repo; 
 ```bash
 gh auth login -h github.com                       # the stored token was invalid
 gh repo create TRemigi/omarchy-annihilation-notifications --public \
-  --description "Themed notification daemon for Omarchy: a registered clone of the built-in" --source . --remote origin
+  --description "Themed notification daemon for Omarchy: a registered clone of the built-in"
+# (origin is already set to git@github.com:TRemigi/omarchy-annihilation-notifications.git, so no --source/--remote)
 git push -u origin main                           # main first, so it becomes the default branch
 git push origin upstream --tags                   # the upstream branch must be pushed too
 ```
