@@ -19,6 +19,18 @@ Item {
 
   property string omarchyPath: Quickshell.env("OMARCHY_PATH")
   readonly property string home: Quickshell.env("HOME")
+
+  // annihilation: true only while the annihilation theme is active. Everything this fork adds is
+  // gated on it, so on any other theme the daemon behaves exactly as Omarchy's own.
+  property bool themed: false
+  FileView {
+    path: service.home + "/.local/state/omarchy/current/theme.name"
+    watchChanges: true
+    printErrors: false
+    onLoaded: service.themed = text().trim() === "annihilation"
+    onFileChanged: reload()
+    onLoadFailed: service.themed = false
+  }
   // History + DND live under XDG_STATE_HOME: they're persistent user state
   // (the notifications received, the last-set DND preference), not
   // regeneratable cache that a `rm -rf ~/.cache` should wipe.
@@ -1008,11 +1020,23 @@ Item {
             // tracks the card so the column auto-fits to whichever is widest.
             Layout.preferredWidth: card.implicitWidth
             Layout.alignment: Qt.AlignRight
-            implicitHeight: card.implicitHeight
+            // annihilation: the slot unfolds on arrival and folds on exit (SlotMotion); with the
+            // theme off the factor is 1, the trim 0 and clipping false, which is stock.
+            implicitHeight: card.implicitHeight * motion.heightFactor
+            Layout.bottomMargin: motion.spacingTrim
+            clip: motion.clipping
 
             readonly property real lifetime: service.durationFor(cardSlot.urgency, cardSlot.expireTimeout)
             property real remainingLifetime: 1.0
-            readonly property bool ticking: cardSlot.lifetime > 0 && !card.hovered
+            readonly property bool ticking: cardSlot.lifetime > 0 && !card.hovered && !motion.leaving // annihilation: not while leaving
+
+            // annihilation: see components/SlotMotion.qml.
+            SlotMotion {
+              id: motion
+              fx: service.themed
+              spacing: Style.space(8)
+            }
+            Component.onCompleted: motion.enter()
 
             // A client updating this notification in place rewrites the row
             // under the card (see refreshPopup). New text deserves a full look,
@@ -1033,7 +1057,8 @@ Item {
                 cardSlot.remainingLifetime -= 50.0 / cardSlot.lifetime
                 if (cardSlot.remainingLifetime <= 0) {
                   cardSlot.remainingLifetime = 0
-                  service.expirePopup(cardSlot.index)
+                  // annihilation: fold away first; the index is read when it finishes, as it may move.
+                  motion.leave(function() { service.expirePopup(cardSlot.index) })
                 }
               }
             }
@@ -1041,6 +1066,10 @@ Item {
             NotificationCard {
               id: card
               anchors.right: parent.right
+              // annihilation: the unfold; stock values when the theme is off.
+              opacity: motion.cardOpacity
+              scale: motion.cardScale
+              transformOrigin: Item.TopRight
               app: cardSlot.app
               appIcon: cardSlot.appIcon
               summary: cardSlot.summary
@@ -1052,7 +1081,7 @@ Item {
               fontFamily: service.shell && service.shell.bar ? service.shell.bar.fontFamily : ""
               glyph: cardSlot.glyph
 
-              onCloseRequested: service.dismissPopup(cardSlot.index)
+              onCloseRequested: motion.leave(function() { service.dismissPopup(cardSlot.index) }) // annihilation
               onCardClicked: service.invokePopupDefault(cardSlot.index)
             }
           }

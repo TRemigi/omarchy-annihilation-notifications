@@ -1,0 +1,80 @@
+// annihilation: how one toast slot moves, for the annihilation theme only.
+//
+// A toast unfolds into the stack when it arrives and folds away when it expires or is dismissed,
+// instead of appearing and vanishing. `presence` runs 0 to 1 on entry and 1 to 0 on exit, and the
+// slot binds its height, its card's opacity and scale, and a spacing trim to the values below, so
+// the stack makes room for a new toast and closes up behind a leaving one. The curves are the
+// theme's Hyprland ones (`tendril` in, `exhale` out), so toasts move like windows do.
+//
+// With `fx` false (any other theme) nothing animates: presence stays 1 and leave() calls back at
+// once, which is what stock Omarchy does.
+import QtQuick
+
+Item {
+  id: root
+
+  property bool fx: false
+  // The column's spacing, so the gap a slot adds can be folded away with the slot.
+  property real spacing: 8
+
+  property real presence: 1
+  property bool leaving: false
+
+  readonly property int enterMs: 340
+  readonly property int exitMs: 240
+
+  // What the slot binds to.
+  readonly property real heightFactor: presence
+  readonly property real cardOpacity: presence
+  readonly property real cardScale: 0.94 + 0.06 * presence
+  readonly property real spacingTrim: -spacing * (1 - presence)
+  readonly property bool clipping: presence < 1
+
+  property var pendingDone: null
+
+  function enter() {
+    if (!fx) return
+    enterAnim.stop()
+    presence = 0
+    enterAnim.start()
+  }
+
+  // Fold away, then call `done`. Calls `done` at once when nothing animates; a second call while
+  // leaving is ignored (the first one's `done` is still coming).
+  function leave(done) {
+    if (leaving) return
+    if (!fx) {
+      if (done) done()
+      return
+    }
+    leaving = true
+    pendingDone = done
+    enterAnim.stop()
+    exitAnim.restart()
+  }
+
+  NumberAnimation {
+    id: enterAnim
+    target: root
+    property: "presence"
+    to: 1
+    duration: root.enterMs
+    easing.type: Easing.BezierSpline
+    easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1]
+  }
+
+  NumberAnimation {
+    id: exitAnim
+    target: root
+    property: "presence"
+    to: 0
+    duration: root.exitMs
+    easing.type: Easing.BezierSpline
+    easing.bezierCurve: [0.5, 0, 0.75, 1, 1, 1]
+    onFinished: {
+      var done = root.pendingDone
+      root.pendingDone = null
+      if (done) done()
+    }
+  }
+}
