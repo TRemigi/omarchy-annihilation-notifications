@@ -44,8 +44,18 @@ The fork stays installed but disabled. To come back: update it (`omarchy plugin 
 annihilation.notifications`), then `omarchy plugin enable annihilation.notifications` and
 `omarchy restart shell`, and run the live checklist if Omarchy changed in between.
 
-## Not yet automated
+## Automatic fallback
 
-Planned (see `docs/plan.md`, P3): hooks that run `tools/check-upstream` after `omarchy-update` and at
-boot and fall back by themselves when a vendored or watched file changed, and a watchdog that falls
-back when nothing owns `org.freedesktop.Notifications` shortly after the shell starts.
+The annihilation theme repo installs the guard: `extras/install link` there adds a `post-update` hook (after
+`omarchy-update`) and a `post-boot` hook (at login, which also covers plain `pacman` updates). They run this
+repo's `tools/check-upstream --quiet`; if the fork is enabled and Omarchy has changed a file it depends on
+(exit 1 or 2), they run `omarchy plugin disable annihilation.notifications`, wait until shell.json shows stock
+back, write `~/.local/state/annihilation-theme/notifications-fork-held`, and notify. Not being able to run the
+check does nothing. `extras/install notifications auto off` there makes the hooks only tell you.
+`extras/install notifications update` brings the fork back once it has caught up; `fallback` there is the manual
+switch; `status` shows what is going on. Without the theme repo, none of this runs: the commands above are
+the way.
+
+Still planned (see `docs/plan.md`, P3): a watchdog in the theme's Quickshell plugin that falls back when nothing
+owns `org.freedesktop.Notifications` shortly after the shell starts, which would also cover a fork that fails to
+load for a reason the file hashes do not show.

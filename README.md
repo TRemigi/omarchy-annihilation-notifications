@@ -82,6 +82,11 @@ Exit status of `check-upstream`: 0 nothing relevant changed; 1 a vendored file c
 2 only a file the fork depends on changed (review); 3 only the version differs (safe). The full
 procedure is in [docs/runbooks/update-from-upstream.md](docs/runbooks/update-from-upstream.md).
 
+If you use the annihilation theme, its `extras/install link` installs hooks that run `check-upstream` after
+every `omarchy-update` and at login and switch to the stock daemon by themselves when this fork falls behind
+(see [docs/runbooks/fallback.md](docs/runbooks/fallback.md)), and `extras/install notifications
+add|update|status|fallback|remove` wraps the install and update.
+
 ## Layout
 
 | Path | What |
