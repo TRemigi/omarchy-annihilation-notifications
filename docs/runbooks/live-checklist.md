@@ -68,6 +68,19 @@ omarchy restart shell
 (If the checkout complains about unrelated histories, the install predates the one-time history rewrite:
 `extras/install notifications remove` then `add` in the theme repo, then the commands above.)
 Go back with `git -C ... checkout main` and another restart. The theme must be `annihilation`.
+To pick up later commits on the branch: `git -C ... pull origin p2/motion` and `omarchy restart shell`.
+
+**First, make it unmistakable that it is running.** The motion is designed to be subtle, and an earlier
+version was so quick (75% done in 80 ms) that it was easy to miss. Slow it down:
+
+```bash
+echo 'motion_slowdown=4' > ~/.config/omarchy/annihilation-notifications-fork.conf
+notify-send -a Signal "slow motion" "should unfold over about 2 seconds"
+```
+
+(The file is re-read when saved; no restart needed for it.) If a toast clearly unfolds and fades in over ~2 s,
+the code is live, and you can set it back to `1` or delete the file. If it still appears instantly, the branch
+is not what is running: check `git -C ... branch --show-current` and `log -1`, restart the shell, and tell me.
 
 - [ ] a new toast **unfolds** into the top of the stack with a fade, and the toasts already there slide
       down smoothly (no jump, no gap that pops open)
@@ -83,8 +96,9 @@ Go back with `git -C ... checkout main` and another restart. The theme must be `
       exactly as stock; switch back and the motion returns, without restarting the shell
 - [ ] the theme's own effects (arrival glow, sound, missed marks) still behave
 
-When reporting, say what feels wrong: too slow or too quick (entry is 340 ms, exit 240 ms), the wrong direction,
-too much scale, or anything that flickers. Those are single numbers in `components/SlotMotion.qml`.
+When reporting, say what feels wrong: too slow or too quick (entry is 480 ms, exit 300 ms at `motion_slowdown=1`),
+the wrong direction, too much scale, or anything that flickers. Those are single numbers in
+`components/SlotMotion.qml`, and `motion_slowdown` (0.25 to 8) lets you try other speeds without any code change.
 
 ## Results
 

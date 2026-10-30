@@ -12,6 +12,7 @@ Item {
 
   SlotMotion { id: stock; fx: false }
   SlotMotion { id: themed; fx: true }
+  SlotMotion { id: slow; fx: true; slowdown: 4 }
 
   Component.onCompleted: {
     // Stock: nothing animates, callbacks are immediate.
@@ -24,6 +25,9 @@ Item {
     say("stock values " + stock.heightFactor + " " + stock.cardOpacity + " " + stock.cardScale + " " + stock.spacingTrim + " " + stock.clipping)
 
     // Themed: enter starts at 0 straight away.
+    say("themed durations " + themed.enterMs + " " + themed.exitMs)
+    say("slow durations " + slow.enterMs + " " + slow.exitMs)
+    slow.enter()
     themed.enter()
     say("themed presence right after enter " + themed.presence)
     say("themed values at 0 " + themed.heightFactor + " " + themed.cardOpacity + " " + themed.cardScale + " " + themed.spacingTrim + " " + themed.clipping)
@@ -38,8 +42,10 @@ Item {
     onTriggered: {
       ticks++
       root.enterSamples.push(themed.presence)
+      if (ticks === 4) root.say("themed presence at ~80ms " + themed.presence)
       if (ticks === 8) root.say("themed presence at ~160ms " + themed.presence)
-      if (ticks >= 25) {           // ~500 ms: past the 340 ms entry
+      if (ticks === 24) root.say("slow presence at ~480ms " + slow.presence)
+      if (ticks >= 34) {           // ~680 ms: well past the 480 ms entry
         stop()
         var mono = true
         for (var i = 1; i < root.enterSamples.length; i++) if (root.enterSamples[i] < root.enterSamples[i - 1]) mono = false
@@ -64,7 +70,7 @@ Item {
       ticks++
       root.exitSamples.push(themed.presence)
       if (ticks === 6) root.say("themed presence at ~120ms of exit " + themed.presence)
-      if (ticks >= 20) {           // ~400 ms: past the 240 ms exit
+      if (ticks >= 28) {           // ~560 ms: well past the 300 ms exit
         stop()
         var mono = true
         for (var i = 1; i < root.exitSamples.length; i++) if (root.exitSamples[i] > root.exitSamples[i - 1]) mono = false

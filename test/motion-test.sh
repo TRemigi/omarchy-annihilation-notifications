@@ -27,7 +27,11 @@ check "stock: values are the settled ones" "1 1 1 0 false" "$(get 'stock values'
 
 check "themed: presence is 0 right after enter" 0 "$(get 'themed presence right after enter')"
 check "themed: at 0 the card is invisible, small, and the slot trims its gap" "0 0 0.94 -8 true" "$(get 'themed values at 0')"
-near "themed: partway through the entry" "$(get 'themed presence at ~160ms')" 0.3 1
+check "themed: the designed durations (ms)" "480 300" "$(get 'themed durations')"
+check "slowdown multiplies them" "1920 1200" "$(get 'slow durations')"
+near "themed: not front-loaded: at ~80 ms the entry is well short of done" "$(get 'themed presence at ~80ms')" 0.15 0.65
+near "themed: partway through the entry" "$(get 'themed presence at ~160ms')" 0.4 0.95
+near "slowed 4x: at 480 ms (a quarter of its 1920 ms) the entry is still far from done" "$(get 'slow presence at ~480ms')" 0.3 0.85
 check "themed: the entry only ever rises" true "$(get 'themed enter monotonic')"
 check "themed: it ends at 1" 1 "$(get 'themed presence after entry')"
 check "themed: settled values" "1 1 1 0 false" "$(get 'themed values settled')"

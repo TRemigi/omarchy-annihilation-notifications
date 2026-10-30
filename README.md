@@ -9,7 +9,8 @@ Do Not Disturb button, the key bindings, `omarchy-notification-send`) keeps work
 **Status: P0 (functional parity) is released; P2 is in progress.** `main` is Omarchy 4.0.4's plugin, unchanged
 except for its manifest. The branch `p2/motion` adds the first visible change, **only while the annihilation theme
 is active**: toasts unfold into the stack and fold away instead of popping in and out. On any other theme it behaves
-exactly as stock. It is not on `main` until it has been seen working on a real session. The plan is in
+exactly as stock. It is not on `main` until it has been seen working on a real session. The motion is subtle by
+design; to exaggerate it, put `motion_slowdown=4` (0.25 to 8) in `~/.config/omarchy/annihilation-notifications-fork.conf`. The plan is in
 [docs/plan.md](docs/plan.md).
 
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification

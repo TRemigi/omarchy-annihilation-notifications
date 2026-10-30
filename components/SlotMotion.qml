@@ -3,8 +3,13 @@
 // A toast unfolds into the stack when it arrives and folds away when it expires or is dismissed,
 // instead of appearing and vanishing. `presence` runs 0 to 1 on entry and 1 to 0 on exit, and the
 // slot binds its height, its card's opacity and scale, and a spacing trim to the values below, so
-// the stack makes room for a new toast and closes up behind a leaving one. The curves are the
-// theme's Hyprland ones (`tendril` in, `exhale` out), so toasts move like windows do.
+// the stack makes room for a new toast and closes up behind a leaving one.
+//
+// Timing: entry 480 ms on an ease-out cubic, exit 300 ms on the theme's `exhale` curve; both are
+// multiplied by `slowdown` (the user's `motion_slowdown` in annihilation-notifications-fork.conf),
+// which is also how to check that the motion is running at all: set it to 4 and it is unmistakable.
+// The first version used the theme's `tendril` curve over 340 ms; measured in a real Quickshell it was
+// 75% done after five frames (80 ms) and read as a pop, not an unfold, so it is slower and gentler now.
 //
 // With `fx` false (any other theme) nothing animates: presence stays 1 and leave() calls back at
 // once, which is what stock Omarchy does.
@@ -16,12 +21,14 @@ Item {
   property bool fx: false
   // The column's spacing, so the gap a slot adds can be folded away with the slot.
   property real spacing: 8
+  // Multiplies both durations; 1 is the designed speed.
+  property real slowdown: 1
 
   property real presence: 1
   property bool leaving: false
 
-  readonly property int enterMs: 340
-  readonly property int exitMs: 240
+  readonly property int enterMs: Math.round(480 * slowdown)
+  readonly property int exitMs: Math.round(300 * slowdown)
 
   // What the slot binds to.
   readonly property real heightFactor: presence
@@ -60,7 +67,7 @@ Item {
     to: 1
     duration: root.enterMs
     easing.type: Easing.BezierSpline
-    easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1]
+    easing.bezierCurve: [0.33, 1, 0.68, 1, 1, 1]
   }
 
   NumberAnimation {

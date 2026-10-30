@@ -31,6 +31,24 @@ Item {
     onFileChanged: reload()
     onLoadFailed: service.themed = false
   }
+
+  // annihilation: the fork's own settings, ~/.config/omarchy/annihilation-notifications-fork.conf, one
+  // `key=value` per line, re-read when saved. Only motion_slowdown so far: 0.25 to 8 times the designed
+  // duration of the toast motion (1 by default); a large value makes it obvious that it is running.
+  property real motionSlowdown: 1
+  function parseSlowdown(raw) {
+    var m = String(raw || "").match(/^\s*motion_slowdown\s*=\s*([0-9]*\.?[0-9]+)\s*$/m)
+    var v = m ? Number(m[1]) : 1
+    return isFinite(v) && v >= 0.25 && v <= 8 ? v : 1
+  }
+  FileView {
+    path: service.home + "/.config/omarchy/annihilation-notifications-fork.conf"
+    watchChanges: true
+    printErrors: false
+    onLoaded: service.motionSlowdown = service.parseSlowdown(text())
+    onFileChanged: reload()
+    onLoadFailed: service.motionSlowdown = 1
+  }
   // History + DND live under XDG_STATE_HOME: they're persistent user state
   // (the notifications received, the last-set DND preference), not
   // regeneratable cache that a `rm -rf ~/.cache` should wipe.
@@ -1034,6 +1052,7 @@ Item {
             SlotMotion {
               id: motion
               fx: service.themed
+              slowdown: service.motionSlowdown
               spacing: Style.space(8)
             }
             Component.onCompleted: motion.enter()

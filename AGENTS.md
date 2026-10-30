@@ -63,7 +63,10 @@ changes nothing.
 ```bash
 bash test/tools-test.sh          # import-upstream and check-upstream, against a scratch Omarchy (47 checks)
 node test/logic-test.js          # NotificationLogic.js (35 checks)
-bash test/motion-test.sh         # components/SlotMotion.qml, offscreen with the real Qt Quick runtime (18 checks)
+bash test/motion-test.sh         # components/SlotMotion.qml, offscreen with the real Qt Quick runtime (22 checks)
+bash test/service-probe.sh       # the REAL Service.qml in an offscreen Quickshell (26 checks, ~30 s): the theme gate on,
+                                 # off and switched live, motion_slowdown, the setting parser. Only the layer-shell
+                                 # window type is swapped for a plain one in a copy; everything else is as shipped.
 bash test/motion-filmstrip.sh DIR   # renders a stand-in toast stack to DIR/sheet.png (needs ImageMagick): look at it
 omarchy plugin validate .
 tools/check-upstream             # exit 0 when the installed Omarchy matches the baseline
@@ -71,9 +74,9 @@ T=$(mktemp -d); ln -s /usr/share/omarchy/shell "$T/qs"
 /usr/lib/qt6/bin/qmllint -I "$T" -I /usr/lib/qt6/qml Service.qml components/NotificationCard.qml
 ```
 
-qmllint baseline on Omarchy 4.0.4-1: `Service.qml` 16 warnings (15 in stock; P2 slice 1 added one more
-"unqualified access", `service.` used inside the delegate, the same class the file already has)
-(unqualified access x11, `PanelWindow` not creatable, `QProcess::ExitStatus` not found x2, `sizeVertical` /
+qmllint baseline on Omarchy 4.0.4-1: `Service.qml` 17 warnings (15 in stock; P2 slice 1 added two more
+"unqualified access", `service.` used inside the delegate and the settings `FileView`, the same class the file already has)
+(unqualified access x12, `PanelWindow` not creatable, `QProcess::ExitStatus` not found x2, `sizeVertical` /
 `sizeHorizontal` not found on `QObject`), `components/NotificationCard.qml` 12 (members not found on
 `QObject`: `text`, `title`, `icon`, `displayLarge`, `countdown`, `border`, `background`). New warnings that
 name `Style`, `Color`, `Border` or `Util` members mean the shared API moved.
@@ -133,7 +136,11 @@ How slice 1 works, so it is not re-derived:
 - `components/SlotMotion.qml` is a small non-visual item per delegate with `presence` (0 to 1) and `enter()` /
   `leave(done)`. The slot binds `implicitHeight: card.implicitHeight * heightFactor`, `Layout.bottomMargin:
   spacingTrim` (folds the column's 8 px gap away with the slot), `clip: clipping`, and the card's `opacity` and
-  `scale` (transform origin top right). Entry 340 ms on the theme's `tendril` curve, exit 240 ms on `exhale`.
+  `scale` (transform origin top right). Entry 480 ms on an ease-out cubic, exit 300 ms on the theme's `exhale`
+  curve, each multiplied by `motion_slowdown`. **The first version (340 ms on `tendril`) was too quick**: measured in a
+  real Quickshell it was 75% done after five frames (80 ms), and the user, on the branch, said notifications "look the
+  same". It was working (verified by `test/service-probe.sh`); it just read as a pop. Lesson: judge a curve by its
+  samples (`test/motion-test.sh` now asserts the entry is not front-loaded), and give the user a way to exaggerate it.
 - Gated by `Service.themed` (a `FileView` on `~/.local/state/omarchy/current/theme.name`): with the theme off,
   `enter()` does nothing, `leave(done)` calls `done` at once and every factor is 1, so it is stock. Switching theme
   takes effect without a shell restart.
@@ -142,6 +149,9 @@ How slice 1 works, so it is not re-derived:
   not run twice. Left-click (`invokePopupDefault`) and the IPC dismissals remove the row at once, as stock.
 - Layout trap found and solved in the filmstrip: a slot of height 0 still adds the column's spacing, so the gap would
   pop open; the negative bottom margin folds it away. Clipping is only on while presence < 1.
+- `~/.config/omarchy/annihilation-notifications-fork.conf` is the fork's own settings file (not the theme repo's
+  `annihilation-notifications.conf`, which holds the guard's `auto_fallback`): `key=value` lines, watched live. Only
+  `motion_slowdown` (0.25 to 8) so far. Keep the two files separate; the theme's `auto` command rewrites its whole file.
 - Judged by `test/motion-filmstrip.sh` (rendered with software Qt offscreen, a plain-rectangle stand-in for the card)
   and `test/motion-test.sh`; the real card (`BorderSurface`, the gradient border) under scaling is only checked live.
   Likely live issues: a blurred or cut border during the scale, flicker with several toasts.
