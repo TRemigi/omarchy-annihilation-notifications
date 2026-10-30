@@ -4,20 +4,24 @@ Run this on a real Omarchy session; the agent that wrote the code cannot (no com
 gate for P0, and the regression check for every merge from upstream or feature change after.
 Record results in the table at the end and commit it.
 
-## Install from a local clone (until the repo is published)
+## Install, the Omarchy way
 
 ```bash
-git clone ~/dev/omarchy-annihilation-notifications ~/.config/omarchy/plugins/annihilation.notifications
-omarchy-shell shell rescanPlugins
-omarchy plugin list | grep annihilation.notifications     # known, disabled
-omarchy plugin enable annihilation.notifications
+omarchy plugin add https://github.com/TRemigi/omarchy-annihilation-notifications.git --enable --yes
 omarchy restart shell
+omarchy plugin list | grep annihilation.notifications     # known and enabled
 ```
 
-For day-to-day development use a symlink instead
-(`ln -s ~/dev/omarchy-annihilation-notifications ~/.config/omarchy/plugins/annihilation.notifications`)
-and `omarchy restart shell` after every edit: `keepLoaded: true` blocks hot reload.
-`omarchy plugin validate` refuses a symlinked folder; validate the real path.
+`plugin add` clones into `~/.config/omarchy/plugins/annihilation.notifications`, validates the manifest,
+and enables it through the shell. Note anything it prints, and whether the restart was needed.
+Later, `omarchy plugin update annihilation.notifications` should show the diff and pull a new release:
+try it once a second commit exists on `main`.
+
+For development on the fork itself, work in `~/dev/omarchy-annihilation-notifications` and, only then,
+link it in (`ln -s ~/dev/omarchy-annihilation-notifications ~/.config/omarchy/plugins/annihilation.notifications`);
+`omarchy restart shell` after every edit, because `keepLoaded: true` blocks hot reload, and note that
+`omarchy plugin validate` refuses a symlinked folder, so validate the real path. Do not use the link to
+test installation.
 
 ## A. The takeover
 

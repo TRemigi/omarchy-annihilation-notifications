@@ -26,12 +26,14 @@ falling back work before any features are added. The plan is in [docs/plan.md](d
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/<owner>/omarchy-annihilation-notifications.git --enable --yes
+omarchy plugin add https://github.com/TRemigi/omarchy-annihilation-notifications.git --enable --yes
 omarchy restart shell
 ```
 
-(`<owner>` is filled in when the repo is published. Until then, see
-[docs/runbooks/live-checklist.md](docs/runbooks/live-checklist.md) for installing from a local clone.)
+`omarchy plugin add` clones the repo into `~/.config/omarchy/plugins/annihilation.notifications`,
+validates it and enables it. It runs without prompts for credentials, so the repo has to be public (or use
+the SSH URL `git@github.com:TRemigi/omarchy-annihilation-notifications.git` with a key that needs no
+passphrase prompt). Then run [docs/runbooks/live-checklist.md](docs/runbooks/live-checklist.md).
 
 Check that it took over:
 

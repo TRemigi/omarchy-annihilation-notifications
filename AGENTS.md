@@ -95,11 +95,27 @@ hand-over; DND and `omarchy-notification-send` through the clone. All in the liv
 Decisions already made with the user: a separate repo registered as a clone (not a patch); parity first;
 the fork behaves as stock off the annihilation theme (no theme-switch daemon swapping); track packaged
 Omarchy releases only, not the dev/edge channels; **automatic fallback on by default** (P3). Still open:
-the GitHub owner and whether the repo is public (nothing has been pushed; `README.md` has `<owner>`).
+whether the repo is public. The owner is **TRemigi**
+(`git@github.com:TRemigi/omarchy-annihilation-notifications.git`, the same SSH convention as the theme repo),
+and `origin` is configured locally, but **nothing has been pushed**: the agent's sandbox could not create
+the repo or push (`gh` token invalid, no DNS for SSH). The user pushes; see "First push" below.
 
 Open items, in order: the live checklist (user); `tools/contract-check`, `tools/status`, a `fallback`
 tool and CI (P1); then this repo's counterpart in the theme repo (`extras/install notifications ...`,
 post-update and post-boot hooks, README section), which lives in **that** repo; then P2.
+
+## First push (done by the user, from their own shell)
+
+```bash
+gh auth login -h github.com                       # the stored token was invalid
+gh repo create TRemigi/omarchy-annihilation-notifications --public \
+  --description "Themed notification daemon for Omarchy: a registered clone of the built-in" --source . --remote origin
+git push -u origin main                           # main first, so it becomes the default branch
+git push origin upstream --tags                   # the upstream branch must be pushed too
+```
+
+`--public` is needed for `omarchy plugin add <https url>`, which runs without credential prompts; a private
+repo only works with the SSH URL. Public means the git history, including the author email, is visible.
 
 ## Conventions
 
