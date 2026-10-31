@@ -126,17 +126,30 @@ vec3 walkTo(vec2 org, float ang, float stepLen, int k, float seed) {
     return vec3(p, a);
 }
 
+// The shape of a root's growth: a cubic Bezier ease (the CSS kind) with control points (0.09, 0.10) and (0.20, 0.96). It eases in a
+// little (about 6% grown a thirtieth of the way through), is fastest early on, slows decisively but smoothly from about a third of
+// the way, and ends creeping rather than stopping dead. On an 8 s toast: 32% grown after a second, 57% after two, 74% after three,
+// 85% after four, 97% after six. x(s) = t is solved by Newton's method from s = t.
+float easeGrowth(float t) {
+    const vec4 c = vec4(0.09, 0.10, 0.20, 0.96);
+    float s = t;
+    for (int i = 0; i < 6; i++) {
+        float m = 1.0 - s;
+        float x = 3.0 * m * m * s * c.x + 3.0 * m * s * s * c.z + s * s * s - t;
+        float dx = 3.0 * m * m * c.x + 6.0 * m * s * (c.z - c.x) + 3.0 * s * s * (1.0 - c.z);
+        s = clamp(s - x / max(dx, 1e-3), 0.0, 1.0);
+    }
+    float m = 1.0 - s;
+    return 3.0 * m * m * s * c.y + 3.0 * m * s * s * c.w + s * s * s;
+}
+
 // How far a root has grown, from `g`, how far through the toast's life it is. Each root starts at its own moment in the first 8% of
-// the life, and finishes at its own between 94% and 99% of it, so the last is done just before the countdown ends. Half of its
-// length is an ease-out (power 3) over the first 30 to 40% of the life and half is an even creep over all of it, so it is fast at
-// first without snapping into place (about half grown after a second of an 8 s toast, two thirds after two, four fifths after
-// four), and is still visibly growing until close to the end.
-float rootReach(float g, float h1, float h2, float h3) {
+// the life and finishes at its own between 94% and 99% of it, so the last is done just before the countdown ends; between, it
+// follows easeGrowth.
+float rootReach(float g, float h1, float h3) {
     float start = 0.08 * h1;
     float end = 0.94 + 0.05 * h3;
-    float burst = 1.0 - pow(1.0 - clamp((g - start) / (0.30 + 0.10 * h2), 0.0, 1.0), 3.0);
-    float creep = clamp((g - start) / (end - start), 0.0, 1.0);
-    return 0.5 * burst + 0.5 * creep;
+    return easeGrowth(clamp((g - start) / (end - start), 0.0, 1.0));
 }
 
 // A vein (a root) with two side branches. `scale` (about 1 to 2) makes it shorter or longer. Nothing is drawn far from it.
@@ -221,7 +234,7 @@ void main() {
         vec2 org = vec2(ubuf.card.x, ubuf.card.y + 1.0 + u * (ubuf.card.w - 2.0));
         if (px.x > org.x + 1.0 || org.x - px.x > 112.0 || abs(px.y - org.y) > 92.0) continue;
         float ang = 3.14159 + (h2 - 0.5) * 0.9 - (0.5 - u) * 0.9;
-        float reach = rootReach(g, h1, h2, h3);
+        float reach = rootReach(g, h1, h3);
         outer = max(outer, vein(px, org, ang, seed + fi * 13.0, reach, 1.4 + 0.6 * h3) * (1.0 + 0.5 * (1.0 - reach)));
     }
     // The same along the bottom edge (about one per 20 px of its width): down and leaning left, shorter, since the gap to the
@@ -238,13 +251,13 @@ void main() {
             vec2 org = vec2(ubuf.card.x + u * ubuf.card.z, belowEdge - 1.0);
             if (abs(px.x - org.x) > 100.0) continue;
             float ang = 1.5708 + 0.35 + (h2 - 0.5) * 0.9;
-            float reach = rootReach(g, h1, h2, h3);
+            float reach = rootReach(g, h1, h3);
             under = max(under, vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 1.1 + 0.6 * h3) * (1.0 + 0.5 * (1.0 - reach)));
         }
     }
     outer = max(outer, 0.85 * under);
     // And, fainter, across the card from its right corners.
-    float inner = vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.5, 0.9), 1.0) + vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.2, 0.5), 1.0);
+    float inner = vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0) + vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0);
     vec3 vcol = desaturate(palette(0.55, ubuf.urgency));
     rgb += vcol * (outer * 0.7 + inner * 0.36 * (0.5 + 0.5 * inside));
 

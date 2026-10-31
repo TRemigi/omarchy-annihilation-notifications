@@ -274,9 +274,12 @@ fix before releasing.
 committed **without running the tests** at the user's request: `test/growth-test.sh` treats `growth` as an arrival animation (growth 0.5 = half
 grown) and the vein regions assume the old lengths and the 30 px left margin of its overlay; expect to revisit it.
 
-**Roots, round 4 (then corrected):** the first attempt, a burst of 74% in ~1 s, "snapped into place" and finished at 80 to 94% of the life ("well before
-the countdown reaches the end"). Now: half the length is an ease-out (power 3) over 30 to 40% of the life, half an even creep to a finish at 94 to 99%
-of it, starts within 8%. Lesson: judge a growth curve by samples at 1, 2, 4 and 6 s of an 8 s toast, and make the tail visibly move. The lengths: the roots are 1.4 to 2.0 times the old length on the left and 1.1 to 1.7 on the bottom, with 16 steps per trunk. Cost
+**Roots, rounds 4 and 5:** the growth curve was judged wrong four times live (see `docs/design/README.md` for the list), the last two for a
+pop at the start and for looking linear. It is now a cubic Bezier ease, `easeGrowth` in the shader (control points 0.09,0.10 / 0.20,0.96,
+Newton-solved, checked against bisection), per root between its start (first 8% of the life) and its finish (94 to 99%). Lessons:
+prototype curves numerically against target samples (1, 2, 3, 4, 6 s of an 8 s toast) before touching the shader, then measure the
+compiled shader's reach at the same points; a linear component makes the curve look linear whatever the rest does; and an ease-in
+is what stops a pop. The lengths: the roots are 1.4 to 2.0 times the old length on the left and 1.1 to 1.7 on the bottom, with 16 steps per trunk. Cost
 went up (a vein is now ~45 loop iterations; `vein()` returns early beyond its grown radius). Untested apart from renders.
 
 ## Conventions
