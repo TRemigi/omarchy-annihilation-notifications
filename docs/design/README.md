@@ -64,12 +64,14 @@ mock-up C, whose wavy outline and ragged strip read as glitches:
 - **Roots**: fine curves with two side branches, along the left edge (about one per 18 px of the card's height, 67 to 96 px long) and the
   bottom edge (about one per 20 px of its width, 53 to 82 px; under a toast with another below they pass behind it, and under the
   last toast the screen is free). Those near the top lean down and those near the bottom lean up, so they stay in the card's band.
-  **Growth is a burst, then a creep, over the toast's whole life**: every root starts within the first 5% of the life (nearly
-  together, with a little stagger) and three quarters of its length comes in the burst, an ease-out of power 3 over 7 to 12% of the life
-  (about a second); the rest creeps in slowly and evenly, each root finishing at its own moment between 80% and 94% of the life, so
-  the last is done shortly before the countdown completes. `growth-stages.png`: 1%, 3%, 6%, 12%, 30% and 80% of the life. Earlier
-  versions: one root per corner growing in 1.5 s; then an ease-out of power 2, then 3.5 over a long window, each judged not
-  dramatic enough. Fainter ones grow across the card from its right corners.
+  **Growth runs over the toast's whole life**: each root starts at its own moment in the first 8% of it and finishes at its own
+  between 94% and 99%, so the last is done just before the countdown completes. Half of its length is an ease-out (power 3) over
+  the first 30 to 40% of the life and half is an even creep over all of it: fast at first without snapping into place (about half
+  grown after a second of an 8 s toast, two thirds after two, four fifths after four) and still visibly growing close to the end.
+  `growth-stages.png`: 2%, 6%, 12.5%, 25%, 50% and 92% of the life. Earlier versions, each judged wrong live: one root per corner in
+  1.5 s; ease-out of power 2 (not dramatic); power 3.5 (fine, but it then froze); a burst of 74% in a second plus a creep (snapped into
+  place) which also finished 80 to 94% through the life ("well before the countdown ends"). Fainter veins grow across the card from
+  its right corners.
 - **The countdown is the bottom border itself, lit**: drawn from the same distance field and sway as the outline, so it lies
   exactly on it and the two read as one line (the first version ran 3 px above the border, which the user saw as two lines).
   Where there is time left the border is brighter and thicker, its thickness undulating along it like a vein; the part that has run

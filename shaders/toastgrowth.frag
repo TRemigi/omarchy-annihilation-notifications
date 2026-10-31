@@ -126,16 +126,17 @@ vec3 walkTo(vec2 org, float ang, float stepLen, int k, float seed) {
     return vec3(p, a);
 }
 
-// How far a root has grown, from `g`, how far through the toast's life it is. Each root has its own moment to start (in the first
-// 5% of the life, so nearly together: a burst of activity) and its own to finish (between 80% and 94% of it, so the last is done
-// shortly before the countdown ends). Three quarters of its length comes in the burst, an ease-out of power 3 over 7 to 12% of the
-// life (about a second); the rest creeps in slowly and evenly from there to its finish.
+// How far a root has grown, from `g`, how far through the toast's life it is. Each root starts at its own moment in the first 8% of
+// the life, and finishes at its own between 94% and 99% of it, so the last is done just before the countdown ends. Half of its
+// length is an ease-out (power 3) over the first 30 to 40% of the life and half is an even creep over all of it, so it is fast at
+// first without snapping into place (about half grown after a second of an 8 s toast, two thirds after two, four fifths after
+// four), and is still visibly growing until close to the end.
 float rootReach(float g, float h1, float h2, float h3) {
-    float start = 0.05 * h1;
-    float end = 0.80 + 0.14 * h3;
-    float burst = 1.0 - pow(1.0 - clamp((g - start) / (0.07 + 0.05 * h2), 0.0, 1.0), 3.0);
+    float start = 0.08 * h1;
+    float end = 0.94 + 0.05 * h3;
+    float burst = 1.0 - pow(1.0 - clamp((g - start) / (0.30 + 0.10 * h2), 0.0, 1.0), 3.0);
     float creep = clamp((g - start) / (end - start), 0.0, 1.0);
-    return 0.74 * burst + 0.26 * creep;
+    return 0.5 * burst + 0.5 * creep;
 }
 
 // A vein (a root) with two side branches. `scale` (about 1 to 2) makes it shorter or longer. Nothing is drawn far from it.
