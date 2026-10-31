@@ -127,10 +127,12 @@ repo only works with the SSH URL. Public means the git history, including the au
 
 ## P2: the experience (in slices, each judged live before the next)
 
-Slices: **1 Motion** (done and released as 0.2.0 on 2026-10-30; the user confirmed all of checklist section D live): toasts unfold into the stack
-and fold away (expiry and right-click; click and IPC dismissals stay instant). **2** a countdown that is part of the
-border, and hover. **3** the exit dissolving into a few spores. **4** an accent per app or urgency from the Shimmer
-palette, and a setting to turn the motion off. Do not build the next slice before the user has seen the last.
+The look was chosen from mock-ups on 2026-10-30 (`docs/design/`): a blend of A (Refraction, the base, toned down),
+B's Cinzel small-caps header and C's spores; the full C "Growth" direction is a tracked follow-up experiment. Slices
+(renumbered): **1 Motion** (done and released as 0.2.0 on 2026-10-30; the user confirmed all of checklist section D live): toasts unfold into the stack
+and fold away (expiry and right-click; click and IPC dismissals stay instant). **2 The look** (iridescent rim, typography, ring
+icon; branch `p2/look`), **3** the countdown (a line of light that drains), **4** spores on exit, **5** a switch for
+the look and the motion, and a follow-up experiment, **6 Growth**. Do not build the next slice before the user has seen the last.
 
 How slice 1 works, so it is not re-derived:
 - `components/SlotMotion.qml` is a small non-visual item per delegate with `presence` (0 to 1) and `enter()` /

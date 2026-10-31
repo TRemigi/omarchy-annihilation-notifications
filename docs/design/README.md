@@ -35,6 +35,10 @@ corners, spores drifting off the top edge, and a countdown that is a wavering ve
 *Risk:* the hardest to make look intentional rather than crude; the wavy outline and ragged strip read as glitches at
 this size. The spores are the one part that works at once.
 
+## Decision (2026-10-30)
+The user chose the blend below. **Follow-up to try later: the full C "Growth" direction** (organic outline,
+lichen strip, veins, wavering countdown), on its own branch, judged against the blend.
+
 ## Recommendation
 Take **A as the base**, tuned down in saturation and with the rim ignited bright at arrival and cooling over about a
 second (light becoming matter, tying the ring to the card), **B's typographic header** (the Cinzel small-caps app
