@@ -129,7 +129,7 @@ repo only works with the SSH URL. Public means the git history, including the au
 
 The look was chosen from mock-ups on 2026-10-30 (`docs/design/`): a blend of A (Refraction, the base, toned down),
 B's Cinzel small-caps header and C's spores; the full C "Growth" direction is a tracked follow-up experiment. Slices
-(renumbered): **1 Motion** (done and released as 0.2.0 on 2026-10-30; the user confirmed all of checklist section D live): toasts unfold into the stack
+(renumbered): **1 Motion** (released as 0.2.0), **2 The look** and **3 The countdown** (released as 0.3.0; the user confirmed both live, the countdown after two fixes from their screenshots): toasts unfold into the stack
 and fold away (expiry and right-click; click and IPC dismissals stay instant). **2 The look** (iridescent rim, typography, ring
 icon; branch `p2/look`), **3** the countdown (a line of light that drains), **4** spores on exit, **5** a switch for
 the look and the motion, and a follow-up experiment, **6 Growth**. Do not build the next slice before the user has seen the last.
@@ -158,7 +158,7 @@ How slice 1 works, so it is not re-derived:
   and `test/motion-test.sh`; the real card (`BorderSurface`, the gradient border) under scaling is only checked live.
   Likely live issues: a blurred or cut border during the scale, flicker with several toasts.
 
-## P2 slice 2: the look (branch `p2/look`, awaiting the user's live check)
+## P2 slices 2 and 3: the look and the countdown (released as 0.3.0 on 2026-10-30)
 
 Built from the design chosen on 2026-10-30 (`docs/design/`: mock-up A toned down, B's header, C's spores later):
 - `shaders/toastrim.frag` (+ committed `.qsb`; rebuild with `tools/build-shaders.sh`) draws, as added light, an

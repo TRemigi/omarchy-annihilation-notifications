@@ -11,9 +11,9 @@ annihilation theme is active**: toasts unfold into the stack and fold away inste
 other theme it behaves exactly as stock. More is planned (a countdown built into the border, spores, accents);
 see [docs/plan.md](docs/plan.md). The motion is subtle by design; to exaggerate it, put `motion_slowdown=4` (0.25 to 8) in `~/.config/omarchy/annihilation-notifications-fork.conf`.
 
-The branch `p2/look` adds the card's new look on the annihilation theme (an iridescent rim that ignites at arrival, a
-small-caps caption, Jost and Cinzel, a ring round the icon; see [docs/design](docs/design)). It is not on `main` until
-it has been seen working. Its setting, in the same file: `rim_vividness` (0 to 1, default 0.75).
+0.3.0 also gives the card a new look on the annihilation theme (an iridescent rim that ignites at arrival, a small-caps
+caption, Jost and Cinzel, a ring round the icon, and a countdown line along the bottom edge; see
+[docs/design](docs/design)). Its setting, in the same file: `rim_vividness` (0 to 1, default 0.75).
 
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and

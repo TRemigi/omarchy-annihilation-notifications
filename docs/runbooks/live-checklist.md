@@ -102,7 +102,7 @@ the wrong direction, too much scale, or anything that flickers. Those are single
 
 ## E. The look (P2 slice 2, annihilation theme only)
 
-Needs the `p2/look` branch until it is merged (see D for how to switch to a branch). Everything here is a first
+Needs 0.3.0 or later, which is on `main` (see D for how to switch to a branch for anything unreleased). Everything here is a first
 judgement of taste, so say what you think of each, not just whether it works. The design is in `docs/design/`
 (`overview.png`, and `shader-settled.png` / `shader-ignite.png` for the rim as built).
 
@@ -141,5 +141,6 @@ Say what looks best and I will change the default.
 
 | Date | Omarchy | Fork | A | B | C | Notes |
 |------|---------|------|---|---|---|-------|
+| 2026-10-30 | 4.0.4-1 | 0.3.0 = `p2/look` @ b35037e (section E, the look and the countdown) | | | | E: the user reported "looks good" for the look, and for the countdown after two fixes found from their screenshots (the line was inset 14 px, then stopped at the corners leaving a gap; now border to border). Per-item notes were not given beyond that. Released as 0.3.0. |
 | 2026-10-30 | 4.0.4-1 | 0.2.0 = `p2/motion` @ e1d10ef (section D only) | | | | D: all items confirmed by the user ("all of those are good"): the fold, stacking several toasts, hover, border crispness, restart with a live toast, switching theme and back, DND; and the 480/300 ms timing feels right. Seen only after the entry was slowed: the first version (340 ms) was too quick to notice. Released as 0.2.0. |
 | 2026-10-30 | 4.0.4-1 | 0.1.0 (`omarchy plugin add` from the pushed repo) | pass | pass | pass | Reported by the user as all items passing; no per-item notes were given, so whether the disable-and-restore needed `omarchy restart shell` is not recorded. Add a row with details next time. |
