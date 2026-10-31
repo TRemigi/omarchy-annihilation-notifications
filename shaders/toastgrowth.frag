@@ -113,17 +113,15 @@ float curve(vec2 px, vec2 org, float ang, float stepLen, int n, float seed, floa
     return best;
 }
 
-// The shape of a root's growth, over its own window from 0 to 1: three parts exponential slowdown, 1 - exp(-5t) normalised (the speed
-// falls by the same ratio in each equal stretch of time: a hard but natural slowdown), and one part a gentle ease-out, 1 - (1-t)^1.5
-// (it keeps going and slows to a stop exactly at the end), under a short smoothstep ramp over the first 15% so it eases in instead
-// of popping. The exponential alone moved by under 2 px/s after four seconds and so looked finished long before the countdown was;
-// the gentle part keeps real movement to the end. On an 8 s toast: 10% grown after half a second, 39% after one, 64% after two, 78%
-// after three, 87% after four, 92% after five, 96% after six, 99% after seven; at its peak it moves at about 50% of its length a
-// second, at five seconds at 5%, at seven at 2%.
+// The shape of a root's growth, over its own window from 0 to 1: 65% exponential slowdown, 1 - exp(-3.5t) normalised (the speed falls by
+// the same ratio in each equal stretch of time: a hard but natural slowdown) and 35% a gentle ease-out, 1 - (1-t)^1.5 (it keeps going
+// and stops exactly at the end), under a short smoothstep ramp over the first 15% so it eases in instead of popping. Tuned (see
+// docs/design/README.md) against the *apparent activity* measured on the user's recording: with the shoots below, the visible root ink
+// after 1, 2, ... 7 s of an 8 s toast is 32, 57, 70, 82, 91, 97 and 100% of the final.
 float easeGrowth(float t) {
-    float e = (1.0 - exp(-5.0 * t)) / (1.0 - exp(-5.0));
+    float e = (1.0 - exp(-3.5 * t)) / (1.0 - exp(-3.5));
     float l = 1.0 - pow(1.0 - t, 1.5);
-    return smoothstep(0.0, 0.15, t) * (0.75 * e + 0.25 * l);
+    return smoothstep(0.0, 0.15, t) * (0.65 * e + 0.35 * l);
 }
 
 // How far a root has grown, from `g`, how far through the toast's life it is. Each root starts at its own moment in the first 8% of
@@ -136,13 +134,13 @@ float rootReach(float g, float h1, float h3) {
 }
 
 // How far a shoot has grown, from `g` (how far through the toast's life it is): it sprouts at `startAt` (a fraction of the life) and
-// is full at its own moment between 97% and 99.5% of it, an ease-out of power 1.8 under a short ease-in. The shoots of a root start
-// at different times through the first 75% of the life, so something is always still sprouting or extending, up to the end of the
+// is full at its own moment between 97% and 99.5% of it, an ease-out of power 1.5 under a short ease-in. The shoots of a root start
+// at different times, from about 16% to 70% of the life, so something is always still sprouting or extending, up to the end of the
 // countdown: the trunks alone slow down so much that the roots looked finished at about 40% of the life.
 float shootReach(float g, float startAt, float h) {
     float end = 0.97 + 0.025 * h;
     float t = clamp((g - startAt) / (end - startAt), 0.0, 1.0);
-    return smoothstep(0.0, 0.12, t) * (1.0 - pow(1.0 - t, 1.8));
+    return smoothstep(0.0, 0.12, t) * (1.0 - pow(1.0 - t, 1.5));
 }
 
 // A vein (a root): a trunk of 16 steps (which follows `reach`, from rootReach) and four shoots from it, at steps 4, 7, 10 and 13,
@@ -172,7 +170,7 @@ float vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, f
         if (i == 3 || i == 6 || i == 9 || i == 12) {
             float j = float((i - 3) / 3);
             float k = float(i + 1);
-            float sr = shootReach(g, 0.10 + 0.20 * j + 0.06 * hash(seed + j * 3.3), hash(seed + j * 5.1 + 1.0)) * smoothstep(k / 16.0, k / 16.0 + 0.06, reach);
+            float sr = shootReach(g, 0.16 + 0.16 * j + 0.06 * hash(seed + j * 3.3), hash(seed + j * 5.1 + 1.0)) * smoothstep(k / 16.0, k / 16.0 + 0.06, reach);
             if (sr > 0.0) {
                 float sgn = mod(j, 2.0) < 0.5 ? side : -side;
                 v = max(v, (0.82 - 0.06 * j) * curve(px, p, a + sgn * (0.9 - 0.05 * j), (3.0 - 0.15 * j) * scale, 7 - int(j > 0.5) - int(j > 1.5) - int(j > 2.5), seed + 1.3 + j * 1.1, sr, 0.5 - 0.03 * j));

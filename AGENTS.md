@@ -296,6 +296,14 @@ visible *ink* over time (video or harness), not by the trunk's length curve; and
 decelerating curve vs growth to the very end) look for a way to give the eye something moving instead of bending the curve.
 Untested apart from renders and the ink measurement.
 
+**Roots, round 9 (2026-10-31): tuning "apparent activity".** The user wants the roots alone to be able to show the toast's timing (the
+countdown line could then go), and said the activity lessened too soon. `test/growth-activity.py` measures the per-second visible ink on
+the compiled shader like the recording (agrees within ~5 points); the trunk curve hardly moves it, the shoot schedule does. Result: trunk
+65% exp(3.5) + 35% ease-out, shoots from 16% of the life in 16% steps with ease power 1.5; gains 34/25/13/11/8/6/2 per second (were
+43/19/12/9/8/6/3). **Do not run searches with a bare `&` or `( ... &)`**: the process is killed when the command ends, and nothing is
+printed until the end of a long script. Use `run_in_background` and print each result as it arrives (threads, not processes: the sandbox
+forbids the unix sockets multiprocessing needs). The remaining question is whether the user judges it good enough to drop the countdown line.
+
 ## Conventions
 
 - Match the surrounding (Omarchy's) QML style in vendored files: terse comments that explain why, no tutorials.

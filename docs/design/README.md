@@ -84,7 +84,15 @@ mock-up C, whose wavy outline and ragged strip read as glitches:
   jittered), once the trunk has reached their step, grow with a gentler ease-out, and are full at 97 to 99.5%. So something is always
   still sprouting or extending to the end of the countdown. Net root ink (excluding the rim's constant halo), as a share of the final,
   after 1, 2, 3, 4, 5, 6, 7 s of an 8 s toast: was 21, 77, 92, 96, 98, 99, 99; now 17, 55, 68, 79, 88, 93, 98. The roots end up
-  branchier (four shoots instead of two). Fainter veins grow across the card from its right corners.
+  branchier (four shoots instead of two).
+  **Tuning the pace against the recording** (2026-10-31, "the apparent amount of activity lessens too soon; slow the fast stage a bit and
+  push the slowdown later"): `test/growth-activity.py` measures, on the compiled shader, the same thing as the recording (high-pass ink
+  outside the card, pixels more than 22/255 above their 5 px blur, as a share of the final, per second of life; it agrees with the
+  recording to within about five points). The recording gained 43, 19, 12, 9, 8, 6 and 3 points per second: activity halved from the
+  first second to the second. A search over the trunk curve and the shoot schedule (the trunk barely moves the ink; the shoots do)
+  settled on a trunk of 65% exponential (rate 3.5) and 35% gentle ease-out, with shoots starting from 16% of the life in steps of 16% and
+  a more linear ease (power 1.5): gains of 34, 25, 13, 11, 8, 6 and 2 points per second (cumulative 34, 59, 72, 83, 91, 97 and 100).
+  Fainter veins grow across the card from its right corners.
 - **The countdown is the bottom border itself, lit**: drawn from the same distance field and sway as the outline, so it lies
   exactly on it and the two read as one line (the first version ran 3 px above the border, which the user saw as two lines).
   Where there is time left the border is brighter and thicker, its thickness undulating along it like a vein; the part that has run
