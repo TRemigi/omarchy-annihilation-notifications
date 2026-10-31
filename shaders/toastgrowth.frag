@@ -126,46 +126,39 @@ vec3 walkTo(vec2 org, float ang, float stepLen, int k, float seed) {
     return vec3(p, a);
 }
 
-// A vein with two side branches, off a corner. Nothing is drawn far from it.
-float vein(vec2 px, vec2 org, float ang, float seed, float reach) {
-    if (length(px - org) > 52.0) return 0.0;
-    float stepLen = 3.6;
+// A vein (a root) with two side branches. `scale` (about 0.7 to 1.2) makes it shorter or longer. Nothing is drawn far from it.
+float vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale) {
+    if (length(px - org) > 56.0) return 0.0;
+    float stepLen = 3.6 * scale;
     float v = curve(px, org, ang, stepLen, 12, seed, reach, 0.62);
     vec3 b1 = walkTo(org, ang, stepLen, 4, seed);
     vec3 b2 = walkTo(org, ang, stepLen, 8, seed);
     float side = hash(seed + 5.0) < 0.5 ? 1.0 : -1.0;
-    v = max(v, 0.8 * curve(px, b1.xy, b1.z + side * 0.9, 3.0, 6, seed + 1.3, clamp((reach - 4.0 / 12.0) * 2.2, 0.0, 1.0), 0.5));
-    v = max(v, 0.7 * curve(px, b2.xy, b2.z - side * 0.8, 2.8, 5, seed + 2.6, clamp((reach - 8.0 / 12.0) * 2.6, 0.0, 1.0), 0.45));
+    v = max(v, 0.8 * curve(px, b1.xy, b1.z + side * 0.9, 3.0 * scale, 6, seed + 1.3, clamp((reach - 4.0 / 12.0) * 2.2, 0.0, 1.0), 0.5));
+    v = max(v, 0.7 * curve(px, b2.xy, b2.z - side * 0.8, 2.8 * scale, 5, seed + 2.6, clamp((reach - 8.0 / 12.0) * 2.6, 0.0, 1.0), 0.45));
     return v;
 }
 
-// Lichen creeping over the card from its edges: tiny dots in colonies, dense and deep along the left edge (about 30 px in,
-// thinning inward), and hugging the top and bottom borders (a few px in, thicker toward the left, where it came from). Each
-// cell holds one dot at a random place and of a random size; a few are bigger. It creeps in as the toast arrives (`growth`):
-// nearest the edge first, each dot at its own moment. Kept clear of the icon.
+// Lichen: tiny dots in patches along the left edge inside the card, dense at the edge and thinning in, kept clear of the icon.
 float lichen(vec2 px, float d, float nearIcon) {
-    float fromLeft = px.x - ubuf.card.x;
-    if (d > 0.0 || -d > 34.0 || (-d > 10.0 && fromLeft > 40.0)) return 0.0;
-    vec2 hs = 0.5 * ubuf.card.zw, mid = ubuf.card.xy + hs;
-    vec2 cell = floor(px / 2.6);
+    float x = px.x - ubuf.card.x, y = px.y - ubuf.card.y;
+    if (x < 1.2 || x > 16.0 || d > 0.0) return 0.0;
+    vec2 g = vec2(x, y) / 3.0;
+    vec2 cell = floor(g);
+    float colony = smoothstep(0.18, 0.5, vnoise(vec2(y * 0.045, ubuf.seed * 0.37)));
     float acc = 0.0;
+    // each cell holds one dot at a random place in it, so the scatter does not look like a grid; check the cell and its neighbours
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
             vec2 c = cell + vec2(float(i), float(j));
             float h = hash2(c + ubuf.seed), h2 = hash2(c * 1.7 + ubuf.seed + 4.0), h3 = hash2(c * 2.3 + ubuf.seed + 9.0);
-            vec2 at = (c + vec2(0.15 + 0.7 * h2, 0.15 + 0.7 * h3)) * 2.6;
-            float edge = -roundBox(at - mid, hs, ubuf.radius);
-            if (edge < 0.6) continue;
-            float fl = at.x - ubuf.card.x;
-            float dens = max(exp(-(fl - 1.2) / 9.0), exp(-(edge - 0.6) / 2.8) * (0.4 + 0.6 * exp(-fl / 110.0)));
-            float colony = smoothstep(0.08, 0.34, vnoise(at * 0.04 + ubuf.seed * 0.37));
-            float appear = smoothstep(0.0, 0.25, ubuf.growth * 1.4 - 0.15 - edge / 45.0 + (h3 - 0.5) * 0.4);
-            float on = step(1.0 - clamp(dens * colony * 1.15, 0.0, 0.97), h) * appear;
-            float size = (0.45 + 0.4 * h2) * (h > 0.93 ? 1.5 : 1.0);   // at most 1.3 px: past the 3x3 cells searched, a dot would be cut flat
-            acc = max(acc, on * exp(-pow(length(px - at) / size, 2.0)));
+            vec2 centre = (c + vec2(0.2 + 0.6 * h2, 0.2 + 0.6 * h3)) * 3.0;
+            float dens = exp(-(centre.x - 1.2) / 5.0) * colony;
+            float on = step(1.0 - dens * 0.9, h);
+            acc = max(acc, on * exp(-pow(length(vec2(x, y) - centre) / (0.55 + 0.5 * h2), 2.0)));
         }
     }
-    return acc * smoothstep(2.0, 12.0, nearIcon);
+    return acc * smoothstep(2.0, 14.0, nearIcon);
 }
 
 void main() {
@@ -195,18 +188,32 @@ void main() {
     float halo = exp(-max(d, 0.0) / 4.0) * (1.0 - inside) * 0.13;
     vec3 rgb = col * (rim * (0.95 + sap) + spill + halo);
 
-    // Lichen, in a moss colour (an ember for a critical toast).
-    rgb += desaturate(palette(0.0, ubuf.urgency)) * lichen(px, d, nearIcon) * 0.8;
+    // Lichen, in a moss colour.
+    rgb += desaturate(palette(0.0, ubuf.urgency)) * lichen(px, d, nearIcon) * 0.7;
 
-    // Veins: out into the free space on the left, in across the card on the right; grown from the corners.
+    // Veins and roots: out into the free space on the left, in across the card on the right.
     float g = ubuf.growth;
-    vec2 tl = ubuf.card.xy + vec2(0.0, 1.0), bl = ubuf.card.xy + vec2(0.0, ubuf.card.w - 1.0);
     vec2 tr = ubuf.card.xy + vec2(ubuf.card.z, 1.0), br = ubuf.card.xy + vec2(ubuf.card.z, ubuf.card.w - 1.0);
-    float outer = vein(px, tl, 3.14159 - 0.3, seed, g) + vein(px, bl, 3.14159 + 0.35, seed + 11.0, g);
-    float inner = vein(px, tr, 3.14159 - 0.55, seed + 23.0, g) + vein(px, br, 4.71239 - 0.55, seed + 37.0, g);
+    // Roots: many, all along the left edge (about one per 10 px of the card's height), reaching out into the free space. Each
+    // has its own place, direction, length and moment of starting to grow. Those near the top lean down and those near the
+    // bottom lean up, so they stay in the card's own band (above and below is the screen's edge and the next toast).
+    float outer = 0.0;
+    float roots = clamp(floor(ubuf.card.w / 10.0), 5.0, 14.0);
+    for (int i = 0; i < 14; i++) {
+        float fi = float(i);
+        if (fi >= roots) break;
+        float h1 = hash(seed + fi * 5.3 + 40.0), h2 = hash(seed + fi * 3.1 + 41.0), h3 = hash(seed + fi * 7.7 + 42.0);
+        float u = (fi + 0.5 + (h1 - 0.5) * 0.6) / roots;
+        vec2 org = vec2(ubuf.card.x, ubuf.card.y + 1.0 + u * (ubuf.card.w - 2.0));
+        if (px.x > org.x + 1.0 || org.x - px.x > 56.0 || abs(px.y - org.y) > 46.0) continue;
+        float ang = 3.14159 + (h2 - 0.5) * 0.9 - (0.5 - u) * 0.9;
+        outer = max(outer, vein(px, org, ang, seed + fi * 13.0, clamp(g * 1.35 - h1 * 0.35, 0.0, 1.0), 0.75 + 0.45 * h3));
+    }
+    // And, fainter, across the card from its right corners.
+    float inner = vein(px, tr, 3.14159 - 0.55, seed + 23.0, g, 1.0) + vein(px, br, 4.71239 - 0.55, seed + 37.0, g, 1.0);
     float tipGlow = 1.0 + 1.6 * (1.0 - smoothstep(0.7, 1.0, g)) * g; // brighter while still growing
     vec3 vcol = desaturate(palette(0.55, ubuf.urgency));
-    rgb += vcol * (outer * 0.62 + inner * 0.36 * (0.5 + 0.5 * inside)) * tipGlow;
+    rgb += vcol * (outer * 0.7 + inner * 0.36 * (0.5 + 0.5 * inside)) * tipGlow;
 
     // The icon: a ring that is very slightly irregular, with a spore at its centre.
     if (ubuf.icon.z > 0.0) {

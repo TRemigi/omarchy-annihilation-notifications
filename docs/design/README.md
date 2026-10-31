@@ -58,13 +58,14 @@ shader behind `look=growth`, so the live comparison with the blend is one line i
 mock-up C, whose wavy outline and ragged strip read as glitches:
 - **The outline stays straight and is alive instead**: thickness and colour vary slowly along its length (colonies of moss
   and teal), its edge moves under a pixel, and a slow pulse of sap travels round it.
-- **Lichen is a scatter of tiny dots**, jittered so it is not a grid, of varying size, clustered in colonies: thick and
-  about 30 px deep along the left edge, thinning inward, and hugging the top and bottom borders a few px in (thicker toward the
-  left, where it came from). It creeps in as the toast arrives, nearest the edge first. Kept clear of the icon. The first
-  version was a thin patchy strip (49 to 125 lit pixels, by seed); after live testing ("increase it a lot") it is 3 to 7 times that.
-- **Veins** are fine curves with two side branches, grown from the four corners when the toast arrives (outward on the left,
-  where there is free space; inward on the right, since the screen's edge is there and the toast below is under): they cannot
-  run onto the next toast.
+- **Lichen is a scatter of tiny dots**, jittered so it is not a grid, clustered in patches on the left edge inside the card,
+  thinning inward and kept clear of the icon; not a ragged strip. (A denser, deeper version, creeping along the top and bottom
+  too, was tried after the first live test and was too much and in the way: the user had meant the roots, below, not the lichen.)
+- **Roots**: fine curves with two side branches, **many of them along the whole left edge** (about one per 10 px of the card's
+  height, each with its own place, direction, length and moment of starting), reaching out into the free space on the left as
+  the toast arrives; those near the top lean down and those near the bottom lean up, so they stay in the card's own band and
+  cannot reach the toast below or the screen's edge. Fainter ones grow across the card from its right corners (the screen's
+  edge is there). The first version had one from each corner.
 - **The countdown is the bottom border itself, lit**: drawn from the same distance field and sway as the outline, so it lies
   exactly on it and the two read as one line (the first version ran 3 px above the border, which the user saw as two lines).
   Where there is time left the border is brighter and thicker, its thickness undulating along it like a vein; the part that has run

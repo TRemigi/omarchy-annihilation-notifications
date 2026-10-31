@@ -105,22 +105,10 @@ render s2 U_seed=41; render s1b U_seed=7
 check "the same seed draws exactly the same" "$(px base 20 40) $(px base 12 118)" "$(px s1b 20 40) $(px s1b 12 118)"
 yes_if "another seed draws different veins" "$([[ $(left base) != $(left s2) ]] && echo yes || echo no)"
 
-# lichen: lots of dots on the left, inside the card, thinning inward, and hugging the top and bottom borders; creeping in as
-# the toast grows. (The first version had 49 to 125 lit pixels in this strip, depending on the seed, and was asked for "a lot more".)
-render lich U_icon=0,0,0
-render lich41 U_icon=0,0,0 U_seed=41; render lich3 U_icon=0,0,0 U_seed=3
-render lich0 U_icon=0,0,0 U_growth=0; render lich5 U_icon=0,0,0 U_growth=0.5
-strip() { lit "$1" 34 36 62 114 15; }
-for n in lich lich41 lich3; do
-  yes_if "lichen: the left strip is thick with dots ($n: at least 250 lit pixels, more than twice the first version's best)" "$([[ $(strip $n) -ge 250 ]] && echo yes || echo no)"
-done
-yes_if "lichen also hugs the top border (growth 1 has at least 100 more lit pixels than growth 0 in the 8 rows under it)" "$([[ $(( $(lit lich 100 33 400 41 15) - $(lit lich0 100 33 400 41 15) )) -ge 100 ]] && echo yes || echo no)"
-yes_if "and the bottom border" "$([[ $(( $(lit lich 100 110 400 118 15) - $(lit lich0 100 110 400 118 15) )) -ge 100 ]] && echo yes || echo no)"
-yes_if "it creeps in: none (under 30 lit pixels) at growth 0, some at 0.5, most at 1" "$([[ $(strip lich0) -lt 30 && $(strip lich5) -gt $(strip lich0) && $(strip lich5) -lt $(strip lich) ]] && echo yes || echo no)"
-yes_if "it is deepest at the left edge: more lit pixels in x 34 to 46 than in x 50 to 62" "$(gt "$(lit lich 34 36 46 114 15)" "$(lit lich 50 36 62 114 15)")"
-yes_if "but not further in than about 30 px: the band x 75 to 120 (clear of the top and bottom rows) has nothing lit" "$([[ $(lit lich 75 44 120 106 15) -eq 0 ]] && echo yes || echo no)"
-render lichicon U_seed=3 U_growth=1
-yes_if "lichen keeps clear of the icon: nothing lit just inside the ring's left side (x 47 to 51 at the icon's height) beyond the ring itself" "$([[ $(lit lichicon 40 70 44 80 15) -le $(lit lichicon 36 70 40 80 15) ]] && echo yes || echo no)"
+# lichen: dots on the left, inside the card, thinning inward; none further in
+render lich U_growth=0 U_icon=0,0,0
+yes_if "lichen: some dot just inside the left edge (x 34 to 46) is bright" "$(gt "$(maxlum lich 34 34 46 116)" 60)"
+yes_if "but the band further in (x 60 to 120) has nothing as bright" "$([[ $(maxlum lich 60 40 120 110) -lt 30 ]] && echo yes || echo no)"
 
 # the ignition and the roll-off
 render hot U_energy=2.2; render blaze U_energy=6
