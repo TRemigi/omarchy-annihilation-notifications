@@ -3,6 +3,7 @@
 // panel drives static rendering. Both use the same component.
 
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Layouts
 import Quickshell
 import qs.Commons
@@ -27,6 +28,31 @@ BorderSurface {
   property double timestamp: 0
   property int cornerRadius: 0
 
+  // annihilation: the themed look, set by the delegate while the annihilation theme is active. With it off the card is
+  // exactly Omarchy's: its own border, font and spacing, and none of the extras below.
+  property bool themed: false
+  FontLoader { id: jostFont; source: Qt.resolvedUrl("../fonts/Jost.ttf") }
+  FontLoader { id: cinzelFont; source: Qt.resolvedUrl("../fonts/Cinzel.ttf") }
+  readonly property string textFamily: themed && jostFont.status === FontLoader.Ready ? jostFont.name : "Liberation Sans"
+  // The app named in small capitals above the title: Omarchy's own toasts say Omarchy, and a bare notify-send says nothing.
+  readonly property string captionText: app === "omarchy-action" ? "Omarchy" : (app === "notify-send" ? "" : app)
+  property int clockTick: 0
+  readonly property string whenText: {
+    clockTick
+    var s = Math.max(0, (Date.now() - timestamp) / 1000)
+    if (s < 60) return "now"
+    var m = Math.floor(s / 60)
+    if (m < 60) return m + " min"
+    var h = Math.floor(m / 60)
+    return h < 24 ? h + " h" : Math.floor(h / 24) + " d"
+  }
+  Timer { interval: 30000; running: root.themed; repeat: true; onTriggered: root.clockTick++ }
+  // Where the icon is and what ring it needs, for ToastRim: centre x, centre y, radius; radius 0 when there is none.
+  // The icon slot sits 12 px in from the border and is 40 px wide, centred on the card's height.
+  readonly property vector3d iconRing: themed && smallIconSlot.visible
+    ? Qt.vector3d(borderLeft + Style.space(12) + Style.space(20), height / 2, hasSmallIcon && !hasGlyph ? Style.space(26) : Style.space(17))
+    : Qt.vector3d(0, 0, 0)
+
   // System monospace font injected by the container.
   property string fontFamily: ""
 
@@ -49,7 +75,10 @@ BorderSurface {
   readonly property color dimColor: Qt.darker(Color.notifications.text, 1.4)
   readonly property color bodyColor: Qt.darker(Color.notifications.text, 1.15)
   readonly property color accentColor: urgency === 2 ? Color.urgent : (urgency === 0 ? dimColor : Color.notifications.countdown)
-  readonly property var cardBorderSpec: Border.surfaceSpec("notifications", "border", Color.notifications.border, Math.max(1, Style.space(2)))
+  // annihilation: themed, the border is invisible but keeps its width, so the layout is unchanged; ToastRim draws the light instead.
+  readonly property var cardBorderSpec: themed
+    ? Border.flat("transparent", Math.max(1, Style.space(2)))
+    : Border.surfaceSpec("notifications", "border", Color.notifications.border, Math.max(1, Style.space(2)))
 
   function sanitizeBody(s) {
     return NotificationLogic.sanitizeBody(s, app, appIcon)
@@ -158,7 +187,34 @@ BorderSurface {
         Layout.alignment: Qt.AlignVCenter
         spacing: Style.space(2)
 
+        // annihilation: the caption row: the app in small Cinzel capitals, and how long ago.
+        RowLayout {
+          Layout.fillWidth: true
+          visible: root.themed && root.captionText.length > 0
+          spacing: Style.space(8)
+
+          Text {
+            Layout.fillWidth: true
+            textFormat: Text.PlainText
+            text: root.captionText
+            elide: Text.ElideRight
+            font.family: cinzelFont.name
+            font.variableAxes: ({ "wght": 600 })
+            font.pixelSize: Math.round(Style.font.title * 0.7)
+            font.letterSpacing: 2.2
+            font.capitalization: Font.AllUppercase
+            color: "#DE9616"
+          }
+          Text {
+            text: root.whenText
+            font.family: jostFont.name
+            font.pixelSize: Math.round(Style.font.title * 0.7)
+            color: "#8A826A"
+          }
+        }
+
         Text {
+          id: titleText
           // The spec defines the summary as a single line of plain text, so
           // AutoText could only ever promote a hostile string to rich text.
           // The body below is StyledText on purpose — see Service.qml's
@@ -167,13 +223,31 @@ BorderSurface {
           Layout.fillWidth: true
           visible: root.summary.length > 0
           text: root.summary
-          font.family: "Liberation Sans"
-          color: Color.notifications.text
+          font.family: root.textFamily
+          font.variableAxes: root.themed ? ({ "wght": 500 }) : ({})
+          color: root.themed ? "#EBE1C6" : Color.notifications.text
           font.pixelSize: Style.font.title
-          font.bold: true
+          font.bold: !root.themed
           wrapMode: Text.WordWrap
           elide: Text.ElideRight
           maximumLineCount: 2
+
+          // annihilation: a faint glow behind the title, like the screensaver's text: a blurred copy, under it.
+          Text {
+            visible: root.themed
+            z: -1
+            anchors.fill: parent
+            text: parent.text
+            textFormat: Text.PlainText
+            font: parent.font
+            color: "#46B8C8"
+            opacity: 0.55
+            wrapMode: parent.wrapMode
+            elide: parent.elide
+            maximumLineCount: parent.maximumLineCount
+            layer.enabled: root.themed
+            layer.effect: MultiEffect { blurEnabled: true; blur: 0.6; blurMax: 12 }
+          }
         }
 
         Text {
@@ -182,8 +256,9 @@ BorderSurface {
           visible: root.sanitizedBody.length > 0
           text: root.styledBody
           textFormat: Text.StyledText
-          font.family: "Liberation Sans"
-          color: root.bodyColor
+          font.family: root.textFamily
+          font.variableAxes: root.themed ? ({ "wght": 380 }) : ({})
+          color: root.themed ? "#B0A78C" : root.bodyColor
           font.pixelSize: Style.font.title
           wrapMode: Text.WordWrap
           elide: Text.ElideRight

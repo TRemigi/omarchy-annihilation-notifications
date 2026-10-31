@@ -17,7 +17,7 @@ update and fall back from it.
 |-------|------|-------|
 | P0 | Fork repo exists and is a functional-parity clone of upstream, installable | **done and live-verified** by the user on 2026-10-30 (installed with `omarchy plugin add`; checklist passed) |
 | P1 | Update tooling, runbooks and manual fallback (fork repo); installer, README and drift hooks (this repo) | **This repo's side done** (`extras/notifications-fork`, `extras/install notifications ...`, the post-update and post-boot guard hooks, README; 141 checks, 22 breaks caught; not yet seen on a real update). **Fork repo's side partly done in P0**: `check-upstream`, `import-upstream` and their tests, and the runbooks. **Left there:** `contract-check`, `status`, a `fallback` tool, CI |
-| P2 | The actual experience: the look (iridescent rim, typography, ring icon), countdown, spores, a switch (theme-gated) | **slice 1 (motion) released as 0.2.0**; look chosen 2026-10-30 (blend of mock-ups A, B and C's spores); **slice 2 (the look) in progress** on fork branch `p2/look`; Growth kept as a follow-up experiment |
+| P2 | The actual experience: the look (iridescent rim, typography, ring icon), countdown, spores, a switch (theme-gated) | **slice 1 (motion) released as 0.2.0**; look chosen 2026-10-30 (blend of mock-ups A, B and C's spores); **slice 2 (the look) built** on fork branch `p2/look`, awaiting the user's live check (checklist section E); Growth kept as a follow-up experiment |
 | P3 | Integration with the shimmer plugin, automatic fallback, CI | not started |
 
 This file is mirrored in the fork repo as `docs/plan.md` (the fork's own copy). The fork's phases are
@@ -287,7 +287,7 @@ the arrival ring visibly becomes the card.
 
 1. **Motion** (done, released as 0.2.0, all of live-checklist section D confirmed by the user; the first version
    read as "the same" and was slowed and softened, with a `motion_slowdown` setting to exaggerate it).
-2. **The look** (next, branch `p2/look`). The iridescent rim with its prism spill inside and faint halo outside
+2. **The look** (built on branch `p2/look`, awaiting the user's live check; checklist section E). The iridescent rim with its prism spill inside and faint halo outside
    (one small shader per card), igniting at arrival; the Cinzel small-caps caption (app name, time) above the
    title; Jost for the text, with a faint glow on the title; the app icon in a ring; palettes per urgency (teal to
    violet normally, amber to pink for critical, moss for low).

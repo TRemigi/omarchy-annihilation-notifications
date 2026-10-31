@@ -35,6 +35,12 @@ corners, spores drifting off the top edge, and a countdown that is a wavering ve
 *Risk:* the hardest to make look intentional rather than crude; the wavy outline and ragged strip read as glitches at
 this size. The spores are the one part that works at once.
 
+## As built (slice 2)
+`shader-settled.png` and `shader-ignite.png` are the real `shaders/toastrim.frag`, run on Mesa's software GL and composited
+over the same backdrop (no text; `test/rim-preview.py` makes them): the settled rim and icon ring, and the brighter
+gleam it starts from when the toast arrives and cools from over about a second. The rim is the toned-down version of
+mock A (vividness 0.75).
+
 ## Decision (2026-10-30)
 The user chose the blend below. **Follow-up to try later: the full C "Growth" direction** (organic outline,
 lichen strip, veins, wavering countdown), on its own branch, judged against the blend.

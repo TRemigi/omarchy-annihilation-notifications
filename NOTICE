@@ -6,5 +6,8 @@ components/ that originated there. The `upstream` branch holds pristine copies, 
 version, and UPSTREAM records which version and which file hashes the fork was last merged against.
 What this fork changed is exactly `git diff upstream main -- <those files>`.
 
+The fonts in fonts/ are Jost and Cinzel, bundled under the SIL Open Font License (OFL-Jost.txt, OFL-Cinzel.txt),
+as in the annihilation theme.
+
 Changes made by this fork are released under the same MIT licence (see LICENSE). The licence text is
 Omarchy's, unaltered; add your own copyright line for your changes if you wish.

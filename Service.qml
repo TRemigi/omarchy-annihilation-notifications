@@ -33,21 +33,26 @@ Item {
   }
 
   // annihilation: the fork's own settings, ~/.config/omarchy/annihilation-notifications-fork.conf, one
-  // `key=value` per line, re-read when saved. Only motion_slowdown so far: 0.25 to 8 times the designed
-  // duration of the toast motion (1 by default); a large value makes it obvious that it is running.
+  // `key=value` per line, re-read when saved:
+  //   motion_slowdown  0.25 to 8, default 1: times the designed duration of the toast motion; a large value
+  //                    makes it obvious that it is running.
+  //   rim_vividness    0 to 1, default 0.75: how strong and saturated the light on the card's rim is.
   property real motionSlowdown: 1
-  function parseSlowdown(raw) {
-    var m = String(raw || "").match(/^\s*motion_slowdown\s*=\s*([0-9]*\.?[0-9]+)\s*$/m)
-    var v = m ? Number(m[1]) : 1
-    return isFinite(v) && v >= 0.25 && v <= 8 ? v : 1
+  property real rimVividness: 0.75
+  function parseNumber(raw, key, lo, hi, fallback) {
+    var m = String(raw || "").match(new RegExp("^\\s*" + key + "\\s*=\\s*([0-9]*\\.?[0-9]+)\\s*$", "m"))
+    var v = m ? Number(m[1]) : fallback
+    return isFinite(v) && v >= lo && v <= hi ? v : fallback
   }
+  function parseSlowdown(raw) { return parseNumber(raw, "motion_slowdown", 0.25, 8, 1) }
+  function parseVividness(raw) { return parseNumber(raw, "rim_vividness", 0, 1, 0.75) }
   FileView {
     path: service.home + "/.config/omarchy/annihilation-notifications-fork.conf"
     watchChanges: true
     printErrors: false
-    onLoaded: service.motionSlowdown = service.parseSlowdown(text())
+    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()) }
     onFileChanged: reload()
-    onLoadFailed: service.motionSlowdown = 1
+    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75 }
   }
   // History + DND live under XDG_STATE_HOME: they're persistent user state
   // (the notifications received, the last-set DND preference), not
@@ -1085,6 +1090,8 @@ Item {
             NotificationCard {
               id: card
               anchors.right: parent.right
+              // annihilation: the themed look (ToastRim draws its light, below); stock when the theme is off.
+              themed: service.themed
               // annihilation: the unfold; stock values when the theme is off.
               opacity: motion.cardOpacity
               scale: motion.cardScale
@@ -1102,6 +1109,16 @@ Item {
 
               onCloseRequested: motion.leave(function() { service.dismissPopup(cardSlot.index) }) // annihilation
               onCardClicked: service.invokePopupDefault(cardSlot.index)
+            }
+
+            // annihilation: the light on the card, over it. Invisible (so nothing is drawn) while the theme is off.
+            ToastRim {
+              target: card
+              visible: service.themed
+              urgency: cardSlot.urgency
+              slowdown: service.motionSlowdown
+              vividness: service.rimVividness
+              Component.onCompleted: ignite()
             }
           }
         }

@@ -21,6 +21,7 @@ cfg=$tmp/cfg; mkdir -p "$cfg/fork/components"
 for e in "$OMARCHY"/shell/*; do b=$(basename "$e"); [[ $b == shell.qml || $b == plugins ]] || ln -s "$e" "$cfg/$b"; done
 cp "$HERE/test/service-probe/shell.qml" "$cfg/shell.qml"
 cp "$HERE/Service.qml" "$HERE/NotificationLogic.js" "$cfg/fork/"; cp "$HERE"/components/*.qml "$cfg/fork/components/"
+cp -r "$HERE/fonts" "$cfg/fork/fonts"                       # the card loads Jost and Cinzel from ../fonts
 python3 - "$cfg/fork" <<'PY'
 import re, sys
 d = sys.argv[1] + "/"
@@ -35,14 +36,46 @@ m = m.replace("  property var pendingDone: null",
   "  property var pendingDone: null\n  onPresenceChanged: console.log('PROBE presence=' + presence.toFixed(3))\n"
   "  Component.onCompleted: console.log('PROBE motion created fx=' + fx + ' slowdown=' + slowdown + ' enterMs=' + enterMs)", 1)
 open(d + "components/SlotMotion.qml", "w").write(m)
+c = open(d + "components/NotificationCard.qml").read()
+probe = ("  Timer { interval: 700; running: true; onTriggered: console.log('PROBE card ' + root.summary + ' themed=' + root.themed"
+         " + ' family=' + root.textFamily + ' jost=' + jostFont.status + ' cinzel=' + cinzelFont.status + ' caption=' + root.captionText + ' when=' + root.whenText"
+         " + ' ring=' + root.iconRing.x.toFixed(0) + ',' + root.iconRing.y.toFixed(0) + ',' + root.iconRing.z.toFixed(0)"
+         " + ' size=' + Math.round(root.width) + 'x' + Math.round(root.height) + ' border=' + root.borderTop + ' bordercolor=' + root.cardBorderSpec.color) }\n")
+c = c.replace("  property bool themed: false\n", "  property bool themed: false\n" + probe, 1)
+open(d + "components/NotificationCard.qml", "w").write(c)
 PY
+
+# A second config root whose card is Omarchy's own, pristine from the upstream branch, with only a size probe added:
+# what "stock when the theme is off" has to match.
+ref=$(git -C "$HERE" rev-parse --verify -q upstream || git -C "$HERE" rev-parse --verify -q origin/upstream || true)
+if [[ -n $ref ]]; then
+  cfg_stock=$tmp/cfg-stock; cp -a "$cfg" "$cfg_stock"
+  git -C "$HERE" show "$ref:components/NotificationCard.qml" >"$cfg_stock/fork/components/NotificationCard.qml"
+  # Omarchy's card has no `themed` and no ToastRim, so take the fork's hooks for them out of this copy of the service.
+  python3 - "$cfg_stock/fork/Service.qml" <<'PY'
+import re, sys
+p = sys.argv[1]; s = open(p).read()
+s = re.sub(r'^\s*themed: service\.themed\n', '', s, flags=re.M)
+s = re.sub(r'^\s*ToastRim \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+open(p, "w").write(s)
+PY
+  python3 - "$cfg_stock/fork/components/NotificationCard.qml" <<'PY'
+import sys
+p = sys.argv[1]; c = open(p).read()
+probe = ("  Timer { interval: 700; running: true; onTriggered: console.log('PROBE card ' + root.summary"
+         " + ' size=' + Math.round(root.width) + 'x' + Math.round(root.height)) }\n")
+assert "  property int cornerRadius: 0\n" in c
+open(p, "w").write(c.replace("  property int cornerRadius: 0\n", "  property int cornerRadius: 0\n" + probe, 1))
+PY
+fi
+CFGDIR=$cfg
 
 run() { # scenario initial-theme [conf-line]
   local home=$tmp/home-$1-$RANDOM
   mkdir -p "$home/.local/state/omarchy/current" "$home/.config/omarchy"
   printf '%s' "$2" >"$home/.local/state/omarchy/current/theme.name"
   [[ -n ${3:-} ]] && printf '%s\n' "$3" >"$home/.config/omarchy/annihilation-notifications-fork.conf"
-  (cd "$cfg" && env -u DISPLAY -u WAYLAND_DISPLAY HOME="$home" XDG_RUNTIME_DIR="$tmp/xdg" QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME= \
+  (cd "$CFGDIR" && env -u DISPLAY -u WAYLAND_DISPLAY HOME="$home" XDG_RUNTIME_DIR="$tmp/xdg" QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME= \
      PROBE_SCENARIO="$1" timeout 40 quickshell -p shell.qml --no-duplicate 2>&1) | sed 's/\x1b\[[0-9;]*m//g' | grep "PROBE" | sed 's/^.*PROBE /PROBE /'
 }
 mkdir -p "$tmp/xdg"; chmod 700 "$tmp/xdg"
@@ -61,6 +94,16 @@ check "parse: found among other keys" 3 "$(parsed 'other keys')"
 check "parse: a different key only" 1 "$(parsed 'no key')"
 check "parse: trailing junk is ignored" 1 "$(parsed 'trailing junk')"
 
+parsedv() { sed -n "s/^PROBE parseV $1 -> //p" <<<"$out"; }
+check "vividness: the default is 0.75" 0.75 "$(parsedv empty)"
+check "vividness: plain" 0.4 "$(parsedv plain)"
+check "vividness: 0 is allowed" 0 "$(parsedv 'zero is allowed')"
+check "vividness: 1 is allowed" 1 "$(parsedv 'one is allowed')"
+check "vividness: above 1 is ignored" 0.75 "$(parsedv 'above 1')"
+check "vividness: junk is ignored" 0.75 "$(parsedv junk)"
+check "vividness: found beside the other key" 0.9 "$(parsedv 'beside the other key')"
+check "vividness: the other key alone leaves the default" 0.75 "$(parsedv 'the other key only')"
+
 # -- another theme: stock behaviour, nothing animates
 out=$(run plain other)
 has "other theme: the toast was inserted with the gate closed" "PROBE insert 1 themed=false" "$out"
@@ -78,6 +121,41 @@ n=$(grep -c 'PROBE presence=' <<<"$out"); (( n > 12 )) && n=many
 check "annihilation: it takes many frames, not one jump" many "$n"
 mono=$(grep 'PROBE presence=' <<<"$out" | sed 's/.*=//' | awk 'NR>1 && $1 < prev {bad=1} {prev=$1} END{print bad ? "no" : "yes"}')
 check "annihilation: and only ever rises" yes "$mono"
+
+# -- the card itself
+out=$(run cards annihilation)
+cardline() { grep "PROBE card $1 " <<<"$out" | head -n1; }
+field() { sed -n "s/.* $2=\([^ ]*\).*/\1/p" <<<"$1"; }
+sig=$(cardline "from signal"); om=$(cardline "from omarchy"); ns=$(cardline "from notify-send")
+check "themed card: the gate reaches the card" true "$(field "$sig" themed)"
+check "themed card: Jost is loaded and used" "Jost" "$(field "$sig" family)"
+check "themed card: both bundled fonts report Ready" "1 1" "$(field "$sig" jost) $(field "$sig" cinzel)"
+check "themed card: the caption is the app" Signal "$(field "$sig" caption)"
+check "themed card: a fresh toast says now" now "$(field "$sig" when)"
+check "themed card: Omarchy's own toasts are captioned Omarchy" Omarchy "$(field "$om" caption)"
+check "themed card: a bare notify-send has no caption" "" "$(field "$ns" caption)"
+check "themed card: no icon means no ring" "0,0,0" "$(field "$sig" ring)"
+check "themed card: Omarchy's own border is made invisible (ToastRim draws the light)" transparent "$(field "$sig" bordercolor)"
+ring=$(field "$om" ring); check "themed card: a glyph icon gets a ring 17 px across, on the left, centred on the height" yes "$([[ $ring =~ ^34,[0-9]+,17$ ]] && echo yes || echo no)"
+themed_h=$(field "$sig" size | sed 's/.*x//'); themed_b=$(field "$sig" border)
+out=$(run cards other)
+sig=$(cardline "from signal")
+check "other theme: the card is stock (not themed, Omarchy's font)" "false Liberation Sans" "$(field "$sig" themed) $(sed -n 's/.* family=\(.*\) jost=.*/\1/p' <<<"$sig")"
+check "other theme: the border keeps its width when themed" "$(field "$sig" border)" "$themed_b"
+check "other theme: Omarchy's own border is kept" yes "$([[ -n $(field "$sig" bordercolor) && $(field "$sig" bordercolor) != transparent ]] && echo yes || echo no)"
+plain_h=$(field "$sig" size | sed 's/.*x//')
+check "the themed card is taller than stock by the caption row, and not by more than a line or two" yes "$([[ $themed_h -gt $plain_h && $((themed_h - plain_h)) -lt 30 ]] && echo yes || echo no)"
+
+# -- with the theme off, the card is exactly Omarchy's: the same size as the pristine upstream card, for every kind of toast
+if [[ -n $ref ]]; then
+  fork_sizes=$(for k in "from signal" "from omarchy" "from notify-send"; do field "$(grep "PROBE card $k " <<<"$out" | head -n1)" size; done | tr '\n' ' ')
+  CFGDIR=$cfg_stock; out_stock=$(run cards other); CFGDIR=$cfg
+  stock_sizes=$(for k in "from signal" "from omarchy" "from notify-send"; do field "$(grep "PROBE card $k " <<<"$out_stock" | head -n1)" size; done | tr '\n' ' ')
+  check "theme off: every card is the same size as Omarchy's pristine card" "$stock_sizes" "$fork_sizes"
+  check "theme off: and those sizes were actually read" 3 "$(wc -w <<<"$stock_sizes" | tr -d ' ')"
+else
+  echo "note: no upstream branch here, so the pristine-card comparison was skipped"
+fi
 
 # -- slowdown from the file
 out=$(run themed annihilation "motion_slowdown=3")

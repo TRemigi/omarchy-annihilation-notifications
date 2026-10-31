@@ -100,6 +100,32 @@ When reporting, say what feels wrong: too slow or too quick (entry is 480 ms, ex
 the wrong direction, too much scale, or anything that flickers. Those are single numbers in
 `components/SlotMotion.qml`, and `motion_slowdown` (0.25 to 8) lets you try other speeds without any code change.
 
+## E. The look (P2 slice 2, annihilation theme only)
+
+Needs the `p2/look` branch until it is merged (see D for how to switch to a branch). Everything here is a first
+judgement of taste, so say what you think of each, not just whether it works. The design is in `docs/design/`
+(`overview.png`, and `shader-settled.png` / `shader-ignite.png` for the rim as built).
+
+- [ ] a toast has an **iridescent rim**, brightest toward the top right, with a soft glow just inside and a faint
+      halo just outside; it is not a flat outline
+- [ ] **it ignites**: the rim is brighter for the first moment after a toast arrives and cools to its settled
+      strength over about a second, so the arrival ring seems to become the card
+- [ ] the **caption** above the title (the app in small Cinzel capitals, "now" at the right) reads well; Omarchy's
+      own toasts say OMARCHY, and a plain `notify-send` has no caption
+- [ ] the **title** is in Jost with a faint teal glow behind it; the body is lighter; both are easy to read
+- [ ] a toast with an **icon** shows a thin ring round it (a ring round app icons that are squares may poke at the
+      corners: say if it looks wrong); a toast with a glyph or no icon looks right too
+- [ ] a **critical** toast is warm (amber to pink), a **low** one greenish: `notify-send -u critical -a Signal "x" "y"`
+      and `-u low`
+- [ ] with several toasts, the halos of neighbours do not look like a mess
+- [ ] **switch to another theme**: toasts are Omarchy's own, exactly as before, no caption, no rim, Liberation Sans
+- [ ] nothing flickers, and the shell does not feel heavier while a toast is up
+- [ ] the motion from D still works with the new look
+
+Tune without code in `~/.config/omarchy/annihilation-notifications-fork.conf` (re-read when saved):
+`rim_vividness=0.4` (0 to 1, default 0.75) for a quieter rim, `rim_vividness=1` for the mock-up's full strength.
+Say what looks best and I will change the default.
+
 ## Results
 
 | Date | Omarchy | Fork | A | B | C | Notes |

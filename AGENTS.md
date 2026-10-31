@@ -158,6 +158,37 @@ How slice 1 works, so it is not re-derived:
   and `test/motion-test.sh`; the real card (`BorderSurface`, the gradient border) under scaling is only checked live.
   Likely live issues: a blurred or cut border during the scale, flicker with several toasts.
 
+## P2 slice 2: the look (branch `p2/look`, awaiting the user's live check)
+
+Built from the design chosen on 2026-10-30 (`docs/design/`: mock-up A toned down, B's header, C's spores later):
+- `shaders/toastrim.frag` (+ committed `.qsb`; rebuild with `tools/build-shaders.sh`) draws, as added light, an
+  iridescent rim (a narrow slice of the spectrum across the card, brightest toward the top right), a prism spill just
+  inside, a faint halo outside, and a ring with a spore round the icon. It works in logical px (the QML passes
+  logical sizes; the preview renders at 2x but passes logical values), is premultiplied with alpha 0 (additive, as the
+  theme's other shaders) and rolls off with `1 - exp(-x)`. Uniforms: `energy` (1 settled; 2.2 igniting), `vividness`
+  (0.75), `urgency` (0 low, 1 normal, 2 critical, the `NotificationUrgency` numbers), `radius`, `size`, `card`, `icon`, `time`.
+- `components/ToastRim.qml` lies over the card (a sibling in the slot, so it can anchor to it; it follows the card's
+  scale and opacity), takes no input, ignites on creation (energy 2.2 to 1 over 1.1 s after a 120 ms pause, times
+  `motion_slowdown`) and ticks `time` at 15 fps. Invisible, so nothing is drawn, with the theme off.
+- `components/NotificationCard.qml` (marked edits): `themed` property; when set, Omarchy's border is made invisible with
+  `Border.flat("transparent", 2px)` (same width, so the layout is unchanged), Jost replaces Liberation Sans (weights
+  500 title and 380 body through `font.variableAxes`), a caption row (the app in Cinzel capitals, amber, and "now" /
+  "N min") goes above the title, the title has a blurred copy behind it as a faint glow (`MultiEffect`), and
+  `iconRing` says where the icon is (centre x = border + 12 + 20, centre y = half the height; radius 26 around an app
+  icon, 17 round a glyph, none when the icon slot is hidden). With `themed` false none of it applies.
+- `fonts/`: Jost and Cinzel (SIL OFL) copied from the theme repo.
+- Setting `rim_vividness` (0 to 1, default 0.75) next to `motion_slowdown` in the fork's conf file.
+- Verified: `test/shader-test.sh` (19 checks on the compiled shader through the harness: where it draws, the light's
+  direction, ignition, palettes, ring, additive, no flat clipping, vividness, drift; 10 deliberate breaks caught);
+  `test/service-probe.sh` (50 checks: the REAL `Service.qml` and card in an offscreen Quickshell, including that with the
+  theme off every card is the **same size as Omarchy's pristine card** and keeps its border; 8 deliberate breaks of the
+  card edits caught); `test/rim-preview.py` renders the shader over a backdrop (`docs/design/shader-*.png`).
+- **Not verified, needs the user** (section E of the live checklist): how it actually looks (taste), the title glow's
+  `MultiEffect` in a real shell, the ring round square app icons, several toasts' halos together, and that it does
+  not feel heavier. A first lesson from section D applies: if it "looks the same", check the branch and the
+  `p2/look` code is what runs before concluding anything.
+- Lint baseline now: `Service.qml` 21, `NotificationCard.qml` 14, `ToastRim.qml` 0 (the same classes as before).
+
 ## Conventions
 
 - Match the surrounding (Omarchy's) QML style in vendored files: terse comments that explain why, no tutorials.
