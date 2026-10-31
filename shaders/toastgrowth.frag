@@ -104,9 +104,9 @@ vec4 tube(vec2 px, vec2 p, vec2 se, float r0, float r1, float fade) {
     vec2 c = pa - se * h;
     float dist = length(c);
     float r = mix(r0, r1, h);
-    vec2 pb = pa - vec2(-1.4, 1.6);                                    // away from the light: down and to the left
+    vec2 pb = pa - vec2(-0.8 - 0.5 * r, 0.9 + 0.55 * r);                                    // away from the light: down and to the left
     float ds = length(pb - se * clamp(dot(pb, se) * inv, 0.0, 1.0));
-    float shadow = 1.0 - smoothstep(0.4 * r, r + 2.6, ds);
+    float shadow = 1.0 - smoothstep(0.4 * r, r + 3.0, ds);
     float cover = 1.0 - smoothstep(r - 0.6, r + 0.6, dist);
     if (cover <= 0.0) return vec4(0.0, 0.0, 0.0, shadow);
     vec2 t = se * inversesqrt(max(dot(se, se), 1e-6));
@@ -177,12 +177,12 @@ float shootReach(float g, float startAt, float h) {
 
 // A vein (a root): a trunk of 16 steps (which follows `reach`, from rootReach) and four shoots from it, at steps 4, 7, 10 and 13,
 // alternating sides, which sprout on their own schedule (see shootReach) once the trunk has got there. `scale` (about 1 to 2) makes
-// it shorter and thinner or longer and thicker. Returns what tube() returns for the nearest bit of it. Nothing is drawn far from it.
-vec4 vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, float g) {
+// it shorter and thinner or longer and thicker, and `thick` multiplies the radius (2 for the roots, 1 for the faint veins inside the card). Returns what tube() returns for the nearest bit of it. Nothing is drawn far from it.
+vec4 vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, float g, float thick) {
     if (reach <= 0.0) return vec4(0.0);
     float stepLen = 3.0 * scale;
     if (length(px - org) > stepLen * (16.0 * min(reach, 1.0) + 8.0) + 8.0) return vec4(0.0);
-    float rt = 0.60 + 0.16 * scale;                                    // the trunk's radius at its base, in px
+    float rt = (0.60 + 0.16 * scale) * thick;                          // the trunk's radius at its base, in px (twice that for the roots, 1 for the faint veins in the card)
     vec2 p = org;
     float a = ang;
     vec4 v = vec4(0.0);
@@ -268,11 +268,11 @@ void main() {
     // Veins and roots: out into the free space on the left, in across the card on the right.
     float g = ubuf.growth;
     vec2 tr = ubuf.card.xy + vec2(ubuf.card.z, 1.0), br = ubuf.card.xy + vec2(ubuf.card.z, ubuf.card.w - 1.0);
-    // Roots: many, along the left edge (about one per 18 px of the card's height), reaching out into the free space. Each
+    // Roots: many, along the left edge (about one per 24 px of the card's height), reaching out into the free space. Each
     // has its own place, direction, length and moment of starting to grow. Those near the top lean down and those near the
     // bottom lean up, so they stay in the card's own band (above and below is the screen's edge and the next toast).
     vec4 outer = vec4(0.0);
-    float roots = clamp(floor(ubuf.card.w / 18.0), 3.0, 8.0);
+    float roots = clamp(floor(ubuf.card.w / 24.0), 3.0, 6.0);
     for (int i = 0; i < 14; i++) {
         float fi = float(i);
         if (fi >= roots) break;
@@ -282,13 +282,13 @@ void main() {
         if (px.x > org.x + 1.0 || org.x - px.x > 112.0 || abs(px.y - org.y) > 92.0) continue;
         float ang = 3.14159 + (h2 - 0.5) * 0.9 - (0.5 - u) * 0.9;
         float reach = rootReach(g, h1, h3);
-        vec4 v = vein(px, org, ang, seed + fi * 13.0, reach, 1.4 + 0.6 * h3, g);
+        vec4 v = vein(px, org, ang, seed + fi * 13.0, reach, 1.4 + 0.6 * h3, g, 2.0);
         v.yz *= 1.0 + 0.5 * (1.0 - reach);                            // brighter while it is still growing
         outer = over(outer, v);
     }
-    // The same along the bottom edge (about one per 20 px of its width): down and leaning left, shorter, since the gap to the
+    // The same along the bottom edge (about one per 28 px of its width): down and leaning left, shorter, since the gap to the
     // toast below is small (they pass behind it) and, under the last toast, the screen is free.
-    float bottomRoots = clamp(floor(ubuf.card.z / 20.0), 6.0, 24.0);
+    float bottomRoots = clamp(floor(ubuf.card.z / 28.0), 5.0, 18.0);
     float belowEdge = ubuf.card.y + ubuf.card.w;
     vec4 under = vec4(0.0);
     if (px.y > belowEdge - 1.0 && px.y < belowEdge + 105.0) {
@@ -301,7 +301,7 @@ void main() {
             if (abs(px.x - org.x) > 100.0) continue;
             float ang = 1.5708 + 0.35 + (h2 - 0.5) * 0.9;
             float reach = rootReach(g, h1, h3);
-            vec4 v = vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 1.1 + 0.6 * h3, g);
+            vec4 v = vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 1.1 + 0.6 * h3, g, 2.0);
             v.yz *= 1.0 + 0.5 * (1.0 - reach);
             under = over(under, v);
         }
@@ -309,7 +309,7 @@ void main() {
     under.yz *= 0.85;
     outer = over(outer, under);
     // And, fainter, across the card from its right corners (no shadow: it would darken the card).
-    vec4 inner = over(vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0, g), vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0, g));
+    vec4 inner = over(vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0, g, 1.0), vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0, g, 1.0));
     vec3 vcol = desaturate(palette(0.55, ubuf.urgency));
     vec3 glint = mix(vcol, vec3(1.0, 0.97, 0.9), 0.7);
     rgb += vcol * outer.x * outer.y * 0.95 + glint * outer.x * outer.z * 0.75;

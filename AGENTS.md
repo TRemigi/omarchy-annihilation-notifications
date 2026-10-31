@@ -312,7 +312,7 @@ uniform-parity contract); `curve()` is replaced by `tube()` (a round tube with a
 specular, and a shadow offset down-left), `over()` and `shoot()`; `vein()` returns `vec4(cover, diffuse, specular, shadow)`; the output now
 has **alpha > 0 for the shadow only** (premultiplied: light in rgb, darkening in alpha), so **`test/growth-test.sh`'s "alpha is 0 everywhere"
 check and its countdown checks are stale, and the roots test's thresholds are untested on thicker roots.** Committed without running the tests
-at the user's request; fix them before releasing. The root radius is `0.60 + 0.16 * scale` px at the base.
+at the user's request; fix them before releasing. The root radius is `(0.60 + 0.16 * scale) * thick` px at the base: `thick` is 2 for the roots (the user asked for "at least twice as thick" after a first, too thin, attempt) and 1 for the faint veins inside the card. Roots are one per 24 px of the card's height on the left (3 to 6) and one per 28 px of its width below (5 to 18); the shadow offset grows with the radius.
 
 ## Conventions
 
