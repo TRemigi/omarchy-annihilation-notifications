@@ -38,9 +38,11 @@ Item {
   //                    makes it obvious that it is running.
   //   rim_vividness    0 to 1, default 0.75: how strong and saturated the light on the card's rim is.
   //   spore_amount     0 to 1, default 1: how many spores a toast leaves as it goes; 0 for none.
+  //   look             blend (default) or growth: the rim of light, or the living outline, lichen and veins (an experiment).
   property real motionSlowdown: 1
   property real rimVividness: 0.75
   property real sporeAmount: 1
+  property string look: "blend"
   function parseNumber(raw, key, lo, hi, fallback) {
     var m = String(raw || "").match(new RegExp("^\\s*" + key + "\\s*=\\s*([0-9]*\\.?[0-9]+)\\s*$", "m"))
     var v = m ? Number(m[1]) : fallback
@@ -49,13 +51,17 @@ Item {
   function parseSlowdown(raw) { return parseNumber(raw, "motion_slowdown", 0.25, 8, 1) }
   function parseVividness(raw) { return parseNumber(raw, "rim_vividness", 0, 1, 0.75) }
   function parseSpores(raw) { return parseNumber(raw, "spore_amount", 0, 1, 1) }
+  function parseLook(raw) {
+    var m = String(raw || "").match(/^\s*look\s*=\s*(\w+)\s*$/m)
+    return m && m[1] === "growth" ? "growth" : "blend"
+  }
   FileView {
     path: service.home + "/.config/omarchy/annihilation-notifications-fork.conf"
     watchChanges: true
     printErrors: false
-    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()) }
+    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()); service.look = service.parseLook(text()) }
     onFileChanged: reload()
-    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1 }
+    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1; service.look = "blend" }
   }
   // History + DND live under XDG_STATE_HOME: they're persistent user state
   // (the notifications received, the last-set DND preference), not
@@ -1140,6 +1146,7 @@ Item {
               // annihilation: the countdown follows the toast's own clock, so it freezes while hovered and restarts on an update.
               remaining: cardSlot.lifetime > 0 ? cardSlot.remainingLifetime : -1
               spores: service.sporeAmount
+              look: service.look
               Component.onCompleted: ignite()
             }
           }

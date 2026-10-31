@@ -1,4 +1,4 @@
-// annihilation: the light on a toast, drawn by shaders/toastrim.frag over a card: an iridescent rim with a prism
+// annihilation: the light on a toast, drawn by shaders/toastrim.frag (or toastgrowth.frag, `look: "growth"`) over a card: an iridescent rim with a prism
 // spill inside and a faint halo outside, and a ring round the app icon. It lies over the card with a margin for
 // the halo, follows its size, scale and opacity, takes no input, and draws nothing but light.
 //
@@ -18,6 +18,11 @@ Item {
   property real remaining: -1
   // 0 to 1: the faint spores off the card's left edge (the user's spore_amount); 0 for none.
   property real spores: 1
+  // "blend" (the rim, toastrim.frag) or "growth" (toastgrowth.frag: a living outline, lichen, veins that grow out on arrival).
+  property string look: "blend"
+  // Growth only: per toast, so no two grow alike; and how far its veins have reached (0 to 1, animated on arrival).
+  property real seed: Math.random() * 100
+  property real growth: 1
 
   property real energy: 1
   property real time: 0
@@ -40,6 +45,15 @@ Item {
     igniteAnim.stop()
     energy = 2.2
     igniteAnim.start()
+    growth = 0
+    growAnim.restart()
+  }
+
+  // The veins reach out over about a second and a half, a little after the rim lights (times `slowdown`).
+  SequentialAnimation {
+    id: growAnim
+    PauseAnimation { duration: Math.round(180 * root.slowdown) }
+    NumberAnimation { target: root; property: "growth"; to: 1; duration: Math.round(1500 * root.slowdown); easing.type: Easing.OutQuad }
   }
 
   SequentialAnimation {
@@ -69,7 +83,9 @@ Item {
     property vector3d icon: root.icon
     property real remaining: root.remaining
     property real spores: root.spores
+    property real seed: root.seed
+    property real growth: root.growth
 
-    fragmentShader: Qt.resolvedUrl("../shaders/toastrim.frag.qsb")
+    fragmentShader: Qt.resolvedUrl(root.look === "growth" ? "../shaders/toastgrowth.frag.qsb" : "../shaders/toastrim.frag.qsb")
   }
 }

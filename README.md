@@ -17,6 +17,9 @@ caption, Jost and Cinzel, a ring round the icon, and a countdown line along the 
 dissolves into a few spores, and a few very faint ones drift off a card's left edge while it is up; `spore_amount` (0 to 1,
 default 1) controls both.
 
+Experimental (branch `p2/growth`, not released): `look=growth` in the same file swaps the rim for a living outline with
+lichen and veins that grow out from the corners (`look=blend`, the default, is the rim above).
+
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and
 > know the [fallback](#falling-back-to-stock) before you need it.

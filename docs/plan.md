@@ -295,7 +295,7 @@ the arrival ring visibly becomes the card.
    bottom edge that drains, ending in a spark; frozen while hovering; none for critical toasts.
 4. **Spores.** The exit dissolves into a few spores (done, released as 0.4.0; they drift left, since a toast in the top-right corner has no room above it), and a faint drift off a card's left edge (also done).
 5. **Switch and accents.** A setting to turn the new look and the motion off, and any per-app accents.
-6. **Follow-up experiment: Growth.** Try the rest of C on a branch: the organic outline, the lichen strip, veins
+6. **Follow-up experiment: Growth.** (Built on `p2/growth` as `look=growth`, a second shader, `shaders/toastgrowth.frag`; not released, waiting for the user to judge it against the blend: checklist section G.) Try the rest of C on a branch: the organic outline, the lichen strip, veins
    reaching out from the corners, the wavering countdown. Judge it against the blend; the mock-up's wavy outline
    and ragged strip read as glitches, so this needs more design before it is worth building.
 

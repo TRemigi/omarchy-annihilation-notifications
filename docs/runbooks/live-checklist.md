@@ -167,6 +167,32 @@ Direction is a design choice to judge: they drift left (away from the screen edg
 toast below) because a toast in the top-right corner has no room above it, as the first mock-up assumed. Say if you would
 rather they went another way.
 
+## G. Growth (P2 slice 6, an experiment; branch `p2/growth`, annihilation theme only)
+
+Not released. Run it from the branch (`omarchy plugin add` the checkout, or switch to `p2/growth`), then restart the shell.
+The new look is **off until you ask for it**: put `look=growth` in `~/.config/omarchy/annihilation-notifications-fork.conf`
+(it is read live; `look=blend` or removing the line goes back to the rim of 0.3.0 and 0.4.0). Judge it **against the blend**, by
+flipping between the two with the same notifications. The design is `docs/design/growth-settled.png` and `growth-arriving.png`.
+
+- [ ] with `look=growth`, toasts have a **living outline**: its thickness and colour vary slowly along its length, moss
+      and teal, and a slow pulse of light travels round it; the outline is **straight**, not wavy
+- [ ] fine **veins with side branches grow out of the four corners** when a toast arrives (over about a second and a half),
+      outward to the left on the left corners, across the card on the right ones, and then stay faint; none cross onto the
+      toast below
+- [ ] on the left edge, inside the card, a **scatter of tiny dots (lichen)** in patches, thinning inward and kept clear of
+      the icon; some toasts have none, which is intended
+- [ ] the icon ring is very slightly irregular (it should read as organic, not as a lumpy circle)
+- [ ] the countdown is **a vein**: it wavers a little along the bottom, still runs from border to border, retreats from
+      the right and ends in a bud
+- [ ] a **critical** toast is ember (amber to rose), a **low** one a dark moss
+- [ ] two toasts do not look alike (each has its own seed), and an updated toast keeps its look
+- [ ] it does **not** read as dirt, glitches or hair on the card (say which part if it does: the veins, the lichen, the
+      outline's thickness), and the text is as readable as with the blend
+- [ ] it does not feel heavier than the blend (several toasts at once), and nothing flickers when `look` is changed
+- [ ] `look=blend` and a **different theme** are exactly as before (stock off the theme)
+
+Say which you prefer, and what to take from the other: this is the experiment the plan left open.
+
 ## Results
 
 | Date | Omarchy | Fork | A | B | C | Notes |

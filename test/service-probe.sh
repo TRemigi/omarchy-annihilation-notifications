@@ -41,7 +41,7 @@ m = m.replace("  property var pendingDone: null",
   "  Component.onCompleted: console.log('PROBE motion created fx=' + fx + ' slowdown=' + slowdown + ' enterMs=' + enterMs)", 1)
 open(d + "components/SlotMotion.qml", "w").write(m)
 r = open(d + "components/ToastRim.qml").read()
-r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores) }\n", 1)
+r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores + ' look=' + root.look) }\n", 1)
 open(d + "components/ToastRim.qml", "w").write(r)
 sp = open(d + "components/SporeLayer.qml").read()
 sp = sp.replace("    if (!(amount > 0)) return\n", "    if (!(amount > 0)) return\n    console.log('PROBE burst urgency=' + urgency + ' size=' + Math.round(w) + 'x' + Math.round(h) + ' amount=' + amount)\n", 1)
@@ -114,6 +114,15 @@ check "spore_amount: plain" 0.3 "$(parseds plain)"
 check "spore_amount: 0 is allowed" 0 "$(parseds zero)"
 check "spore_amount: above 1 is ignored" 1 "$(parseds above)"
 check "spore_amount: junk is ignored" 1 "$(parseds junk)"
+parsedl() { sed -n "s/^PROBE parseL $1 -> //p" <<<"$out"; }
+check "look: the default is blend" blend "$(parsedl empty)"
+check "look: growth" growth "$(parsedl growth)"
+check "look: blend" blend "$(parsedl blend)"
+check "look: spaces around = are fine" growth "$(parsedl spaced)"
+check "look: an unknown name falls back to blend" blend "$(parsedl unknown)"
+check "look: found beside another key" growth "$(parsedl 'beside others')"
+check "look: a value that merely starts with growth is not growth" blend "$(parsedl 'prefix only')"
+check "look: a key that merely ends in look is not look" blend "$(parsedl 'other key')"
 parsedv() { sed -n "s/^PROBE parseV $1 -> //p" <<<"$out"; }
 check "vividness: the default is 0.75" 0.75 "$(parsedv empty)"
 check "vividness: plain" 0.4 "$(parsedv plain)"
@@ -180,6 +189,9 @@ check "countdown: a low toast's life is shorter (5 s, not 8), so it has used up 
 check "ambient spores: on by default (the rim gets spores=1)" 1 "$(rimval "$(rimline 'from signal')" spores)"
 out_half=$(run cards annihilation "spore_amount=0.5")
 check "ambient spores: spore_amount=0.5 reaches the rim" 0.5 "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_half" | head -n1)" spores)"
+check "look: the rim is the blend by default" blend "$(rimval "$(rimline 'from signal')" look)"
+out_growth=$(run cards annihilation "look=growth")
+check "look: look=growth reaches the rim" growth "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_growth" | head -n1)" look)"
 out_none=$(run cards annihilation "spore_amount=0")
 check "ambient spores: spore_amount=0 turns them off" 0 "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_none" | head -n1)" spores)"
 

@@ -51,6 +51,22 @@ the top-right corner of the screen has no room above it, and drifting down would
 `shader-ambient.png` is the faint drift (slice 4b) at two moments: a few small spores leaving a card's left edge and drifting
 away over several seconds, deliberately barely there (`test/rim-preview.py ... 1 <time>`).
 
+## As built (slice 6, the Growth experiment, on `p2/growth`)
+`growth-settled.png` and `growth-arriving.png` (the second 0.4 of the way through the arrival, rim still bright) are the real
+`shaders/toastgrowth.frag`, rendered like the others (`SHADER=toastgrowth python3 test/rim-preview.py ...`). It is a second
+shader behind `look=growth`, so the live comparison with the blend is one line in the conf file. What changed from the
+mock-up C, whose wavy outline and ragged strip read as glitches:
+- **The outline stays straight and is alive instead**: thickness and colour vary slowly along its length (colonies of moss
+  and teal), its edge moves under a pixel, and a slow pulse of sap travels round it.
+- **Lichen is a scatter of tiny dots**, jittered so it is not a grid, clustered in patches on the left edge inside the card,
+  thinning inward and kept clear of the icon; not a ragged strip.
+- **Veins** are fine curves with two side branches, grown from the four corners when the toast arrives (outward on the left,
+  where there is free space; inward on the right, since the screen's edge is there and the toast below is under): they cannot
+  run onto the next toast.
+- **The countdown is a vein** that wavers and ends in a bud; geometry as in the blend (border to border).
+- Palettes: moss and teal; ember for critical; dark moss for low. Everything is added light, as in the blend, and the spores
+  (exit burst and faint drift) are shared.
+
 ## Decision (2026-10-30)
 The user chose the blend below. **Follow-up to try later: the full C "Growth" direction** (organic outline,
 lichen strip, veins, wavering countdown), on its own branch, judged against the blend.

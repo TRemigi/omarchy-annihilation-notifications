@@ -38,6 +38,8 @@ layout(std140, binding = 0) uniform buf {
     vec3 icon;         // the icon ring: centre x, centre y, radius; radius <= 0 for none
     float remaining;   // 0 to 1: the toast's life left; negative for none
     float spores;      // 0 to 1: the faint spores off the left edge (the user's spore_amount); 0 for none
+    float seed;        // unused here: toastgrowth.frag's, kept so ToastRim feeds both shaders the same properties
+    float growth;      // unused here, as above
 } ubuf;
 
 // Light colours, as in the theme's shaders. Normal runs teal to blue to violet to pink, critical amber to peach to

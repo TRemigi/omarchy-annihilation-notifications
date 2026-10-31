@@ -4,6 +4,7 @@
 # design mock-up for scale. Developer tool; needs numpy and pillow and the compiled shaders/toastrim.frag.qsb.
 #
 #   python3 test/rim-preview.py OUTDIR [vividness] [energy] [remaining] [spores] [time]
+# SHADER=toastgrowth renders the Growth look instead (GROWTH=0..1 is how far its veins have reached, SEED=n).
 # The first card is a normal toast with `remaining` of its life left (default 0.62); the second is critical, which never expires, so has no countdown.
 import os, subprocess, sys, tempfile
 import numpy as np
@@ -12,11 +13,12 @@ from PIL import Image, ImageFilter
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 OUT = sys.argv[1]; VIV = sys.argv[2] if len(sys.argv) > 2 else "0.75"; ENERGY = sys.argv[3] if len(sys.argv) > 3 else "1"; REMAINING = sys.argv[4] if len(sys.argv) > 4 else "0.62"
 SPORES = sys.argv[5] if len(sys.argv) > 5 else "0"; TIME = sys.argv[6] if len(sys.argv) > 6 else "3"
+SHADER = os.environ.get("SHADER", "toastrim"); GROWTH = os.environ.get("GROWTH", "1"); SEED = os.environ.get("SEED", "7")
 os.makedirs(OUT, exist_ok=True)
 S = 2
 tmp = tempfile.mkdtemp()
 frag = tmp + "/s.frag"; harness = tmp + "/harness"
-subprocess.run(["/usr/lib/qt6/bin/qsb", "-x", "glsl,100 es", "-o", frag, ROOT + "/shaders/toastrim.frag.qsb"], check=True)
+subprocess.run(["/usr/lib/qt6/bin/qsb", "-x", "glsl,100 es", "-o", frag, ROOT + "/shaders/" + SHADER + ".frag.qsb"], check=True)
 subprocess.run(["gcc", "-O2", HERE + "/shader-harness.c", "-o", harness, "-lEGL", "-lGLESv2"], check=True)
 
 backdrop = Image.open(ROOT + "/docs/design/backdrop.png").convert("RGB")
@@ -45,7 +47,7 @@ for c in cards:                                                     # the shader
     ow, oh = 380 + 2 * mx, (c["y"] - oy) + 78 + mx
     env = dict(os.environ, EGL_PLATFORM="surfaceless", LIBGL_ALWAYS_SOFTWARE="1",
                # the shader works in logical px (as the QML will pass them) while the bitmap is drawn at 2x
-               U_time=TIME, U_spores=SPORES, U_energy=ENERGY, U_vividness=VIV, U_urgency=str(c["urgency"]), U_radius="5",
+               U_time=TIME, U_spores=SPORES, U_seed=SEED if c["urgency"] == 1 else "19", U_growth=GROWTH, U_energy=ENERGY, U_vividness=VIV, U_urgency=str(c["urgency"]), U_radius="5",
                U_size=f"{ow},{oh}", U_card=f"{mx},{c['y'] - oy},380,78",
                U_icon=f"{mx + 32},{c['y'] - oy + 39},15", U_remaining=c["remaining"])
     pam = tmp + "/o.pam"
@@ -57,6 +59,6 @@ for c in cards:                                                     # the shader
     o = o[:region.shape[0], :region.shape[1]]                       # the margin may run past the backdrop's edge
     img[ys:ys + o.shape[0], xs:xs + o.shape[1]] = np.clip(o[..., :3] + region * (1 - o[..., 3:4]), 0, 1)
 
-name = f"{OUT}/rim-v{VIV}-e{ENERGY}-r{REMAINING}-s{SPORES}-t{TIME}.png"
+name = f"{OUT}/{SHADER[5:] if SHADER != 'toastrim' else 'rim'}-v{VIV}-e{ENERGY}-r{REMAINING}-s{SPORES}-t{TIME}.png"
 Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8)).save(name)
 print(name)

@@ -64,6 +64,7 @@ changes nothing.
 bash test/tools-test.sh          # import-upstream and check-upstream, against a scratch Omarchy (47 checks)
 node test/logic-test.js          # NotificationLogic.js (35 checks)
 bash test/motion-test.sh         # components/SlotMotion.qml, offscreen with the real Qt Quick runtime (22 checks)
+bash test/growth-test.sh         # shaders/toastgrowth.frag through the harness (32 checks)
 bash test/service-probe.sh       # the REAL Service.qml in an offscreen Quickshell (26 checks, ~30 s): the theme gate on,
                                  # off and switched live, motion_slowdown, the setting parser. Only the layer-shell
                                  # window type is swapped for a plain one in a copy; everything else is as shipped.
@@ -243,6 +244,20 @@ Plan: the exit dissolves into spores, and a faint drift off a card. Both are bui
   tail at the edge.
 - **Not verified, needs the user** (checklist section F): how the spores look and feel (taste: size, count, brightness, direction),
   that nothing flickers when the last toast goes, and that the layer never intercepts input.
+
+## P2 slice 6: Growth (experiment, branch `p2/growth`, not released)
+
+`look=growth` in the fork's conf file (parsed by `parseLook`, `blend` otherwise) makes `ToastRim` load `shaders/toastgrowth.frag`
+instead of `toastrim.frag`; same overlay, same added-light output, same uniforms plus `seed` (random per toast) and `growth`
+(0 to 1, animated by `ToastRim` on arrival: 180 ms pause, 1.5 s, times `motion_slowdown`). Both shaders declare the **same uniform
+set** (the blend's `seed` and `growth` are unused) so `ToastRim`'s ShaderEffect feeds either; `shader-test.sh` and
+`growth-test.sh` both check that. What the design does and why (the mock-up's wavy outline and ragged strip read as glitches, so
+the outline stays straight and is alive instead; lichen is jittered dots; veins are curves with branches that cannot reach the
+toast below) is in `docs/design/README.md`. Verified: `test/growth-test.sh` (32 checks; 13 deliberate breaks: 12 caught (one only after adding a check on the ring itself), the
+last, removing the veins' distance early-out, is equivalent since no vein is longer than it); `test/service-probe.sh` (86: the
+parser and that `look` reaches the rim). **Not verified, needs the user** (checklist section G): how it looks next to the
+blend. The preview needs numpy and pillow, which this sandbox lacks: `python3 -m venv $TMPDIR/v && $TMPDIR/v/bin/pip install numpy pillow`
+works (the network is open to PyPI).
 
 ## Conventions
 
