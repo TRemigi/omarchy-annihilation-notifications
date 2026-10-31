@@ -30,7 +30,7 @@ Item {
 
   property real energy: 1
   property real time: 0
-  readonly property real margin: 80    // the halo needs 20, the faint spores 56, and the Growth look's roots up to about 70
+  readonly property real margin: 110    // the halo needs 20, the faint spores 56, and the Growth look's roots up to about 100
 
   anchors.fill: target
   anchors.margins: -margin

@@ -249,7 +249,7 @@ Plan: the exit dissolves into spores, and a faint drift off a card. Both are bui
 
 `look=growth` in the fork's conf file (parsed by `parseLook`, `blend` otherwise) makes `ToastRim` load `shaders/toastgrowth.frag`
 instead of `toastrim.frag`; same overlay, same added-light output, same uniforms plus `seed` (random per toast) and `growth`
-(0 to 1: how far through its life the toast is, from `1 - remaining` and never decreasing, so the roots grow over the whole life, each with its own start and finish, the last by 94%, via `rootReach` in the shader; a toast without a countdown, i.e. critical, animates it over 8 s times `motion_slowdown`). `ToastRim`'s margin is 80 px for the roots. Both shaders declare the **same uniform
+(0 to 1: how far through its life the toast is, from `1 - remaining` and never decreasing, so the roots grow over the whole life, each with its own start and finish, the last by 94%, via `rootReach` in the shader: a burst over the first ~1 s with a slow creep after; a toast without a countdown, i.e. critical, animates it over 8 s times `motion_slowdown`). `ToastRim`'s margin is 110 px for the roots. Both shaders declare the **same uniform
 set** (the blend's `seed` and `growth` are unused) so `ToastRim`'s ShaderEffect feeds either; `shader-test.sh` and
 `growth-test.sh` both check that. What the design does and why (the mock-up's wavy outline and ragged strip read as glitches, so
 the outline stays straight and is alive instead; lichen is jittered dots; veins are curves with branches that cannot reach the
@@ -273,6 +273,10 @@ fix before releasing.
 **Roots, round 3 (2026-10-31):** left roots cut to one per 18 px, longer (scale 1.0 to 1.5), and the roots grow over the toast's life as above. Also
 committed **without running the tests** at the user's request: `test/growth-test.sh` treats `growth` as an arrival animation (growth 0.5 = half
 grown) and the vein regions assume the old lengths and the 30 px left margin of its overlay; expect to revisit it.
+
+**Roots, round 4:** the ease is a burst (power 3 over 7 to 12% of the life, starts within 5%) plus a linear creep to the root's finish
+(80 to 94%), and the roots are 1.4 to 2.0 times the old length on the left and 1.1 to 1.7 on the bottom, with 16 steps per trunk. Cost
+went up (a vein is now ~45 loop iterations; `vein()` returns early beyond its grown radius). Untested apart from renders.
 
 ## Conventions
 
