@@ -127,13 +127,14 @@ vec3 walkTo(vec2 org, float ang, float stepLen, int k, float seed) {
 }
 
 // How far a root has grown, from `g`, how far through the toast's life it is. Each root has its own moment to start (in the first
-// fifth of the life) and its own to finish (between 80% and 94% of it, so the last is done shortly before the countdown ends),
-// and grows fast at first and slows toward the end.
+// 14% of the life) and its own to finish (between 80% and 94% of it, so the last is done shortly before the countdown ends). It
+// bursts out and slows hard: an ease-out of power 3.5, so it is 30% grown a tenth of the way through its time, 64% a quarter of
+// the way, 91% half way, and then creeps.
 float rootReach(float g, float h1, float h3) {
-    float start = 0.22 * h1;
+    float start = 0.14 * h1;
     float end = 0.80 + 0.14 * h3;
     float t = clamp((g - start) / (end - start), 0.0, 1.0);
-    return 1.0 - (1.0 - t) * (1.0 - t);
+    return 1.0 - pow(1.0 - t, 3.5);
 }
 
 // A vein (a root) with two side branches. `scale` (about 0.7 to 1.2) makes it shorter or longer. Nothing is drawn far from it.

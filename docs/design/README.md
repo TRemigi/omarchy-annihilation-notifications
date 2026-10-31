@@ -65,9 +65,10 @@ mock-up C, whose wavy outline and ragged strip read as glitches:
   (about one per 20 px of its width), 1.0 to 1.5 times the first length on the left (up to about 65 px) and a little shorter below,
   where the gap to the toast below is small (they pass behind it; under the last toast the screen is free). Those near the top
   lean down and those near the bottom lean up, so they stay in the card's band. **They grow over the toast's whole life**, not
-  at arrival: each starts at its own moment (in the first fifth of the life) and finishes at its own (between 80% and 94% of it,
-  so the last is done shortly before the countdown completes), fast at first and slowing toward the end (`growth-stages.png`: 4%,
-  15%, 40%, 70% and 100% of the life). Fainter ones grow across the card from its right corners. The first version had one per
+  at arrival: each starts at its own moment (in the first 14% of the life) and finishes at its own (between 80% and 94% of it,
+  so the last is done shortly before the countdown completes). It bursts out and slows hard (an ease-out of power 3.5: 30% grown
+  a tenth of the way through its time, 64% a quarter of the way, 91% half way, then it creeps; an earlier power of 2 was not
+  dramatic enough). `growth-stages.png`: 2%, 5%, 10%, 20%, 40% and 80% of the life. Fainter ones grow across the card from its right corners. The first version had one per
   corner and grew in 1.5 s.
 - **The countdown is the bottom border itself, lit**: drawn from the same distance field and sway as the outline, so it lies
   exactly on it and the two read as one line (the first version ran 3 px above the border, which the user saw as two lines).
