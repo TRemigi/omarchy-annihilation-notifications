@@ -178,11 +178,11 @@ flipping between the two with the same notifications. The design is `docs/design
       and teal, and a slow pulse of light travels round it; the outline is **straight**, not wavy
 - [ ] **roots** (with side branches) hang from the left edge (about one per 18 px of height, so sparser than before) and the bottom
       edge (one per 20 px), longer than before; those on the left are not denser than those below
-- [ ] the growth **eases in** (no pop when a toast arrives), is fastest in the first second or two, then **slows decisively but
-      smoothly** (not linear-looking, not a sudden stop); about a quarter of the length after a second, half after two, four
-      fifths after four; roots start a little apart; the last finish just before the countdown line does (the growth freezes with
-      the countdown while you hover; an update that restarts the countdown does not shrink them; a critical toast, which has no
-      countdown, grows them over about eight seconds)
+- [ ] the growth **eases in** (no pop when a toast arrives), is **fast for most of the growth**, then **slows down hard** and
+      creeps toward the end: about a third of the length after a second, three fifths after two, over four fifths after
+      three, and nearly all by four seconds; it does not look linear; roots start a little apart; the last finish just before the
+      countdown line does (the growth freezes with the countdown while you hover; an update that restarts the countdown does not
+      shrink them; a critical toast, which has no countdown, grows them over about eight seconds)
 - [ ] they are **long** (left ones up to about 95 px, bottom ones up to about 80 px) and do not look cut off at the end; with
       several toasts at once nothing stutters (the roots are the most expensive part of the shader: say if it does)
 - [ ] fainter veins grow across the card from its right corners; none cross onto the toast below. Under a toast with another

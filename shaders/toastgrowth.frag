@@ -126,21 +126,13 @@ vec3 walkTo(vec2 org, float ang, float stepLen, int k, float seed) {
     return vec3(p, a);
 }
 
-// The shape of a root's growth: a cubic Bezier ease (the CSS kind) with control points (0.09, 0.10) and (0.20, 0.96). It eases in a
-// little (about 6% grown a thirtieth of the way through), is fastest early on, slows decisively but smoothly from about a third of
-// the way, and ends creeping rather than stopping dead. On an 8 s toast: 32% grown after a second, 57% after two, 74% after three,
-// 85% after four, 97% after six. x(s) = t is solved by Newton's method from s = t.
+// The shape of a root's growth, over its own window from 0 to 1: an exponential slowdown, 1 - exp(-5t) normalised, so the speed falls
+// by the same ratio in each equal stretch of time (a hard but natural slowdown, not a straight line and not a sudden stop), with
+// a short smoothstep ramp over the first 15% so it eases in instead of popping. On an 8 s toast (window about 7.5 s): 12% grown after
+// half a second, 47% after one, 64% after one and a half, 74% after two, 87% after three, 94% after four, 97% after five, and it is
+// moving at about a fiftieth of its peak speed by then. (A cubic Bezier could not be both this fast and this decisive.)
 float easeGrowth(float t) {
-    const vec4 c = vec4(0.09, 0.10, 0.20, 0.96);
-    float s = t;
-    for (int i = 0; i < 6; i++) {
-        float m = 1.0 - s;
-        float x = 3.0 * m * m * s * c.x + 3.0 * m * s * s * c.z + s * s * s - t;
-        float dx = 3.0 * m * m * c.x + 6.0 * m * s * (c.z - c.x) + 3.0 * s * s * (1.0 - c.z);
-        s = clamp(s - x / max(dx, 1e-3), 0.0, 1.0);
-    }
-    float m = 1.0 - s;
-    return 3.0 * m * m * s * c.y + 3.0 * m * s * s * c.w + s * s * s;
+    return smoothstep(0.0, 0.15, t) * (1.0 - exp(-5.0 * t)) / (1.0 - exp(-5.0));
 }
 
 // How far a root has grown, from `g`, how far through the toast's life it is. Each root starts at its own moment in the first 8% of

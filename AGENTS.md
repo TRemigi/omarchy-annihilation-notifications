@@ -274,12 +274,13 @@ fix before releasing.
 committed **without running the tests** at the user's request: `test/growth-test.sh` treats `growth` as an arrival animation (growth 0.5 = half
 grown) and the vein regions assume the old lengths and the 30 px left margin of its overlay; expect to revisit it.
 
-**Roots, rounds 4 and 5:** the growth curve was judged wrong four times live (see `docs/design/README.md` for the list), the last two for a
-pop at the start and for looking linear. It is now a cubic Bezier ease, `easeGrowth` in the shader (control points 0.09,0.10 / 0.20,0.96,
-Newton-solved, checked against bisection), per root between its start (first 8% of the life) and its finish (94 to 99%). Lessons:
-prototype curves numerically against target samples (1, 2, 3, 4, 6 s of an 8 s toast) before touching the shader, then measure the
-compiled shader's reach at the same points; a linear component makes the curve look linear whatever the rest does; and an ease-in
-is what stops a pop. The lengths: the roots are 1.4 to 2.0 times the old length on the left and 1.1 to 1.7 on the bottom, with 16 steps per trunk. Cost
+**Roots, rounds 4 to 6:** the growth curve was judged wrong five times live (see `docs/design/README.md` for the list), most recently
+for "still pretty linear". It is now `easeGrowth` in the shader: `smoothstep(0, 0.15, t) * (1 - exp(-5t)) / (1 - exp(-5))` per root between
+its start (first 8% of the life) and its finish (94 to 99%). A cubic Bezier (what it was) cannot be both fast in the body and decisive
+at the end; an exponential slowdown has a constant speed ratio per unit time, which is what reads as natural. Lessons: prototype curves
+numerically against target samples (1, 2, 3, 4, 6 s of an 8 s toast) *and the speed at 1 s against the speed at 5 s* before touching the
+shader, then measure the compiled shader's reach at the same points (render at `U_growth=g` with the card at x=130 in `test/shader-harness.c` and take the leftmost lit pixel); a linear component makes the curve look
+linear whatever the rest does; and an ease-in is what stops a pop. The lengths: the roots are 1.4 to 2.0 times the old length on the left and 1.1 to 1.7 on the bottom, with 16 steps per trunk. Cost
 went up (a vein is now ~45 loop iterations; `vein()` returns early beyond its grown radius). Untested apart from renders.
 
 ## Conventions
