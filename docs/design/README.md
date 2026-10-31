@@ -41,6 +41,9 @@ over the same backdrop (no text; `test/rim-preview.py` makes them): the settled 
 gleam it starts from when the toast arrives and cools from over about a second. The rim is the toned-down version of
 mock A (vividness 0.75).
 
+`shader-countdown.png` adds the countdown (slice 3): a line of light along the bottom edge that drains, ending in a
+spark, here with 62% of the toast's life left; the critical toast below it has none, because it never expires.
+
 ## Decision (2026-10-30)
 The user chose the blend below. **Follow-up to try later: the full C "Growth" direction** (organic outline,
 lichen strip, veins, wavering countdown), on its own branch, judged against the blend.

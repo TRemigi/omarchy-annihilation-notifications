@@ -1118,6 +1118,8 @@ Item {
               urgency: cardSlot.urgency
               slowdown: service.motionSlowdown
               vividness: service.rimVividness
+              // annihilation: the countdown follows the toast's own clock, so it freezes while hovered and restarts on an update.
+              remaining: cardSlot.lifetime > 0 ? cardSlot.remainingLifetime : -1
               Component.onCompleted: ignite()
             }
           }

@@ -10,6 +10,10 @@
 // arrival, cooling back over about a second. Output is added light (colour above alpha, as in windowglow.frag),
 // rolled off with 1 - exp(-x) so a bright ignition never clips flat.
 //
+// The countdown is a line of light along the bottom edge that drains as the toast runs out, ending in a bright spark;
+// its colours are fixed along its full length, so it seems to retreat and reveal them rather than to recolour.
+// `remaining` is the fraction of the toast's life left; negative means no countdown (critical toasts never expire).
+//
 // Rebuild with tools/build-shaders.sh after editing.
 
 layout(location = 0) in vec2 qt_TexCoord0;
@@ -26,6 +30,7 @@ layout(std140, binding = 0) uniform buf {
     vec2 size;         // the overlay's size, px
     vec4 card;         // the card inside it: x, y, width, height, px
     vec3 icon;         // the icon ring: centre x, centre y, radius; radius <= 0 for none
+    float remaining;   // 0 to 1: the toast's life left; negative for none
 } ubuf;
 
 // Light colours, as in the theme's shaders. Normal runs teal to blue to violet to pink, critical amber to peach to
@@ -87,6 +92,25 @@ void main() {
         vec3 icol = spectrum(ti, ubuf.urgency);
         icol = mix(vec3(dot(icol, vec3(0.299, 0.587, 0.114))), icol, 0.55 + 0.45 * ubuf.vividness);
         rgb += icol * (ring * 0.85 + core * 0.9 + fill + ringHalo);
+    }
+
+    // The countdown: a line just inside the bottom edge, from 14 px in, shrinking from the right.
+    if (ubuf.remaining >= 0.0) {
+        float lineY = ubuf.card.y + ubuf.card.w - 3.2;
+        float x0 = ubuf.card.x + 14.0;
+        float full = max(ubuf.card.z - 28.0, 1.0);
+        float x1 = x0 + clamp(ubuf.remaining, 0.0, 1.0) * full;
+        float seg = smoothstep(x0 - 1.0, x0 + 6.0, px.x) * (1.0 - smoothstep(x1 - 6.0, x1, px.x));
+        float life = smoothstep(0.0, 0.08, ubuf.remaining);          // it fades out at the very end
+        float dy = px.y - lineY;
+        float line = exp(-pow(dy / 0.8, 2.0)) * seg;
+        float glow = exp(-pow(dy / 3.2, 2.0)) * seg * 0.18;
+        vec3 lcol = spectrum((px.x - x0) / full, ubuf.urgency);
+        lcol = mix(vec3(dot(lcol, vec3(0.299, 0.587, 0.114))), lcol, 0.55 + 0.45 * ubuf.vividness);
+        float sd = length(px - vec2(x1, lineY));
+        float spark = exp(-pow(sd / 2.2, 2.0)) * 0.8;
+        float sparkHalo = exp(-pow(sd / 7.0, 2.0)) * 0.25;
+        rgb += (lcol * (line * 0.95 + glow + sparkHalo) + vec3(1.0, 0.96, 0.92) * spark) * life;
     }
 
     rgb *= (0.7 + 0.3 * ubuf.vividness) * ubuf.energy;

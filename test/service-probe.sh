@@ -36,6 +36,9 @@ m = m.replace("  property var pendingDone: null",
   "  property var pendingDone: null\n  onPresenceChanged: console.log('PROBE presence=' + presence.toFixed(3))\n"
   "  Component.onCompleted: console.log('PROBE motion created fx=' + fx + ' slowdown=' + slowdown + ' enterMs=' + enterMs)", 1)
 open(d + "components/SlotMotion.qml", "w").write(m)
+r = open(d + "components/ToastRim.qml").read()
+r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency) }\n", 1)
+open(d + "components/ToastRim.qml", "w").write(r)
 c = open(d + "components/NotificationCard.qml").read()
 probe = ("  Timer { interval: 700; running: true; onTriggered: console.log('PROBE card ' + root.summary + ' themed=' + root.themed"
          " + ' family=' + root.textFamily + ' jost=' + jostFont.status + ' cinzel=' + cinzelFont.status + ' caption=' + root.captionText + ' when=' + root.whenText"
@@ -123,7 +126,7 @@ mono=$(grep 'PROBE presence=' <<<"$out" | sed 's/.*=//' | awk 'NR>1 && $1 < prev
 check "annihilation: and only ever rises" yes "$mono"
 
 # -- the card itself
-out=$(run cards annihilation)
+out=$(run cards annihilation); out_cards=$out
 cardline() { grep "PROBE card $1 " <<<"$out" | head -n1; }
 field() { sed -n "s/.* $2=\([^ ]*\).*/\1/p" <<<"$1"; }
 sig=$(cardline "from signal"); om=$(cardline "from omarchy"); ns=$(cardline "from notify-send")
@@ -145,6 +148,16 @@ check "other theme: the border keeps its width when themed" "$(field "$sig" bord
 check "other theme: Omarchy's own border is kept" yes "$([[ -n $(field "$sig" bordercolor) && $(field "$sig" bordercolor) != transparent ]] && echo yes || echo no)"
 plain_h=$(field "$sig" size | sed 's/.*x//')
 check "the themed card is taller than stock by the caption row, and not by more than a line or two" yes "$([[ $themed_h -gt $plain_h && $((themed_h - plain_h)) -lt 30 ]] && echo yes || echo no)"
+
+# -- the countdown follows the toast's own clock
+rimline() { grep "PROBE rim $1 " <<<"$out_cards" | head -n1; }
+rimval() { sed -n "s/.* $2=\([^ ]*\).*/\1/p" <<<"$1"; }
+sigrem=$(rimval "$(rimline 'from signal')" remaining)
+check "countdown: a normal toast has used up a little of its life, but not much, after about a second" yes "$(awk -v v="$sigrem" 'BEGIN{print (v > 0.80 && v < 0.99) ? "yes" : "no"}')"
+check "countdown: a critical toast never expires, so it has no countdown" -1.000 "$(rimval "$(rimline 'from power')" remaining)"
+check "countdown: a low toast has one" yes "$(awk -v v="$(rimval "$(rimline 'from mail')" remaining)" 'BEGIN{print (v > 0 && v < 1) ? "yes" : "no"}')"
+check "countdown: the urgency reaches the shader (critical is 2)" 2 "$(rimval "$(rimline 'from power')" urgency)"
+check "countdown: a low toast's life is shorter (5 s, not 8), so it has used up more of it" yes "$(awk -v a="$sigrem" -v b="$(rimval "$(rimline 'from mail')" remaining)" 'BEGIN{print (b < a) ? "yes" : "no"}')"
 
 # -- with the theme off, the card is exactly Omarchy's: the same size as the pristine upstream card, for every kind of toast
 if [[ -n $ref ]]; then

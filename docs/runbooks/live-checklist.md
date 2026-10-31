@@ -122,6 +122,16 @@ judgement of taste, so say what you think of each, not just whether it works. Th
 - [ ] nothing flickers, and the shell does not feel heavier while a toast is up
 - [ ] the motion from D still works with the new look
 
+**Section E, the countdown (slice 3, same branch).** A line of light along the bottom edge shows how long a toast has left.
+
+- [ ] a normal toast has a **line along its bottom edge** that shrinks from the right over its 8 seconds, ending in a
+      small bright spark, in the colours of the rim (teal into violet)
+- [ ] it **freezes while you hover** the toast, and carries on when you move off
+- [ ] it fades out in the last moment, and the toast then folds away
+- [ ] a **critical** toast has no line (it never expires); a **low** one has a shorter run (5 seconds) in green-blue tones
+- [ ] it is not distracting: it should read as part of the rim, not as a progress bar. If it is too bright or too
+      prominent, say so (it follows `rim_vividness` too)
+
 Tune without code in `~/.config/omarchy/annihilation-notifications-fork.conf` (re-read when saved):
 `rim_vividness=0.4` (0 to 1, default 0.75) for a quieter rim, `rim_vividness=1` for the mock-up's full strength.
 Say what looks best and I will change the default.

@@ -15,10 +15,10 @@ ShellRoot {
   Service { id: svc; shell: null }
 
   function setTheme(name) { Quickshell.execDetached(["bash", "-c", "printf '%s' \"$1\" > \"$2\"", "--", name, themeFile]) }
-  function addToast(app, glyph, summary) {
+  function addToast(app, glyph, summary, urgency) {
     var id = nextId++
     console.log("PROBE insert " + id + " themed=" + svc.themed + " slowdown=" + svc.motionSlowdown)
-    svc.popupModel.insert(0, { id: id, originalId: id, app: app || "Signal", appIcon: "", summary: summary || ("probe " + id), body: "body", image: "", glyph: glyph || "", execArgv: "", urgency: 1, expireTimeout: 0, timestamp: Date.now() })
+    svc.popupModel.insert(0, { id: id, originalId: id, app: app || "Signal", appIcon: "", summary: summary || ("probe " + id), body: "body", image: "", glyph: glyph || "", execArgv: "", urgency: urgency === undefined ? 1 : urgency, expireTimeout: 0, timestamp: Date.now() })
   }
   function parse(label, raw) { console.log("PROBE parse " + label + " -> " + svc.parseSlowdown(raw)) }
   function parseV(label, raw) { console.log("PROBE parseV " + label + " -> " + svc.parseVividness(raw)) }
@@ -35,7 +35,7 @@ ShellRoot {
 
   Timer { interval: 400; running: true; onTriggered: console.log("PROBE early themed=" + svc.themed) }
   Timer { interval: 900; running: true; onTriggered: {
-    if (scenario === "cards") { addToast("Signal", "", "from signal"); addToast("omarchy-action", "G", "from omarchy"); addToast("notify-send", "", "from notify-send") }
+    if (scenario === "cards") { addToast("Signal", "", "from signal"); addToast("omarchy-action", "G", "from omarchy"); addToast("notify-send", "", "from notify-send"); addToast("Power", "", "from power", 2); addToast("Mail", "", "from mail", 0) }
   } }
   Timer { interval: 700; running: true; onTriggered: {
     if (scenario === "switch") { setTheme("annihilation") }

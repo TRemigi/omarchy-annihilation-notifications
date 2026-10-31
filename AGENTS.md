@@ -176,11 +176,17 @@ Built from the design chosen on 2026-10-30 (`docs/design/`: mock-up A toned down
   "N min") goes above the title, the title has a blurred copy behind it as a faint glow (`MultiEffect`), and
   `iconRing` says where the icon is (centre x = border + 12 + 20, centre y = half the height; radius 26 around an app
   icon, 17 round a glyph, none when the icon slot is hidden). With `themed` false none of it applies.
+- **Slice 3, the countdown (same branch):** the shader's `remaining` uniform (0 to 1; negative for none) draws a line
+  along the bottom edge (3.2 px up, from 14 px in, `remaining` x the card's width less 28 px long) with a glow and a
+  bright spark at its right end; its colours are fixed along the full length, so it retreats instead of recolouring, and it
+  fades over the last 8%. The delegate passes `cardSlot.remainingLifetime` (the toast's own clock, so it freezes on hover
+  and restarts on an update) or -1 when the toast never expires (critical). Preview: `docs/design/shader-countdown.png`.
 - `fonts/`: Jost and Cinzel (SIL OFL) copied from the theme repo.
 - Setting `rim_vividness` (0 to 1, default 0.75) next to `motion_slowdown` in the fork's conf file.
-- Verified: `test/shader-test.sh` (19 checks on the compiled shader through the harness: where it draws, the light's
-  direction, ignition, palettes, ring, additive, no flat clipping, vividness, drift; 10 deliberate breaks caught);
-  `test/service-probe.sh` (50 checks: the REAL `Service.qml` and card in an offscreen Quickshell, including that with the
+- Verified: `test/shader-test.sh` (32 checks on the compiled shader through the harness: where it draws, the light's
+  direction, ignition, palettes, ring, additive, no flat clipping, vividness, drift, the countdown, and that the shader's
+  uniforms and ToastRim's ShaderEffect properties are the same set; 15 deliberate breaks caught, one equivalent);
+  `test/service-probe.sh` (55 checks: the REAL `Service.qml` and card in an offscreen Quickshell, including that with the
   theme off every card is the **same size as Omarchy's pristine card** and keeps its border; 8 deliberate breaks of the
   card edits caught); `test/rim-preview.py` renders the shader over a backdrop (`docs/design/shader-*.png`).
 - **Not verified, needs the user** (section E of the live checklist): how it actually looks (taste), the title glow's

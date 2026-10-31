@@ -80,6 +80,34 @@ check "the colour drifts with time, but only slowly (brightness within 30%)" yes
 check "and the hue does change" yes "$([[ "$(px base 200 30)" != "$(px later 200 30)" ]] && echo yes || echo no)"
 render faded U_qt_Opacity=0.5; check "qt_Opacity scales the light" yes "$([[ $(lum "$(px faded 400 30)") -lt $(( $(lum "$(px base 400 30)") * 6 / 10 )) ]] && echo yes || echo no)"
 
+# the countdown: a line of light along the bottom edge (y = 30 + 90 - 3.2), from x = 44, 352 px long when full
+render none U_remaining=-1; render full U_remaining=1; render half U_remaining=0.5; render quarter U_remaining=0.25; render almost U_remaining=0.9; render gone U_remaining=0
+y=117
+# Row 117 already has a little light without a countdown (the bottom rim's spill), so "lit" means above that.
+over() { echo $(( $(lum "$(px "$1" "$2" $y)") - $(lum "$(px none "$2" $y)") )); }
+check "no countdown (a critical toast) is the same as an empty one: nothing added" "$(px gone 200 $y)" "$(px none 200 $y)"
+check "a full countdown draws a bright line along the bottom" yes "$([[ $(over full 200) -gt 50 ]] && echo yes || echo no)"
+check "at half, the first half of the line is lit" yes "$([[ $(over half 130) -gt 50 ]] && echo yes || echo no)"
+check "at half, the second half is exactly as without a countdown" "$(px none 308 $y)" "$(px half 308 $y)"
+check "the spark at the end of the line is brighter than the line" yes "$([[ $(lum "$(px half 220 $y)") -gt $(( $(lum "$(px half 130 $y)") + 15 )) ]] && echo yes || echo no)"
+lit() { local n=0 x; for x in $(seq 40 4 420); do [[ $(over $1 $x) -gt 30 ]] && n=$((n + 1)); done; echo $n; }
+check "the line only ever gets shorter as time runs out (lit samples: 0.9 > 0.5 > 0.25)" yes "$([[ $(lit almost) -gt $(lit half) && $(lit half) -gt $(lit quarter) && $(lit quarter) -gt 0 ]] && echo yes || echo no)"
+check "an empty countdown draws nothing" yes "$([[ $(lit gone) -eq 0 ]] && echo yes || echo no)"
+read -r fr fg fb _ <<<"$(px full 100 $y)"; read -r hr hg hb _ <<<"$(px half 100 $y)"
+check "the line's colours stay put as it drains (it retreats, it does not recolour): same colour at x=100 at full and at half" yes "$([[ $(( fr > hr ? fr - hr : hr - fr )) -lt 14 && $(( fg > hg ? fg - hg : hg - fg )) -lt 14 && $(( fb > hb ? fb - hb : hb - fb )) -lt 14 ]] && echo yes || echo no)"
+render critline U_remaining=0.5 U_urgency=2; read -r kr kg kb _ <<<"$(px critline 100 $y)"
+check "a critical-palette line is warm" yes "$([[ $kr -gt $kb ]] && echo yes || echo no)"
+render fading U_remaining=0.04
+check "the line fades out over the last 8% of the toast's life" yes "$([[ $(over fading 60) -lt $(( $(over half 60) * 8 / 10 )) && $(over fading 60) -gt 0 ]] && echo yes || echo no)"
+check "the countdown is added light too: alpha stays 0" 0 "$(read -r _ _ a <<<"$(stat full)"; echo $a)"
+
+# the contract with the QML: every uniform the shader declares has a property of the same name on ToastRim's
+# ShaderEffect, and every property there is a uniform (the offscreen tests cannot see a mismatch: nothing renders)
+uniforms=$(/usr/lib/qt6/bin/qsb --dump "$HERE/shaders/toastrim.frag.qsb" | sed -n 's/^ *"name": "\(.*\)",\{0,1\}$/\1/p' | grep -vx -e qt_TexCoord0 -e fragColor -e qt_Matrix -e qt_Opacity | sort -u | tr '\n' ' ')
+props=$(sed -n '/^  ShaderEffect {/,/fragmentShader/p' "$HERE/components/ToastRim.qml" | grep -oE "^ +property [a-z0-9]+ [a-zA-Z]+" | awk '{print $3}' | sort -u | tr '\n' ' ')
+check "the shader's uniforms and ToastRim's ShaderEffect properties are the same set" "$uniforms" "$props"
+check "and that set is not empty" yes "$([[ -n $uniforms ]] && echo yes || echo no)"
+
 # the shader works in logical px: the same drawing at 2x the size has a rim twice as thick in bitmap px, i.e. the same look
 echo
 if (( fail == 0 )); then echo "ALL $pass CHECKS PASS"; else echo "$fail FAILED, $pass passed"; fi
