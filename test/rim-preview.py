@@ -42,7 +42,7 @@ for c in cards:                                                     # the card b
     img = img * (1 - a[..., None]) + body * a[..., None]
 
 for c in cards:                                                     # the shader's output for each, over a margin
-    mx = 56 if float(SPORES) > 0 else 20          # the faint spores drift up to ~50 px out of the left edge
+    mx = 80 if (float(SPORES) > 0 or SHADER == 'toastgrowth') else 20   # the faint spores drift up to ~50 px out of the left edge, the roots further
     ox, oy = 320 - mx, max(c["y"] - mx, 0)
     ow, oh = 380 + 2 * mx, (c["y"] - oy) + 78 + mx
     env = dict(os.environ, EGL_PLATFORM="surfaceless", LIBGL_ALWAYS_SOFTWARE="1",

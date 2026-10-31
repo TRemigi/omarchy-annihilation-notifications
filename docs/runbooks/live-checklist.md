@@ -176,10 +176,14 @@ flipping between the two with the same notifications. The design is `docs/design
 
 - [ ] with `look=growth`, toasts have a **living outline**: its thickness and colour vary slowly along its length, moss
       and teal, and a slow pulse of light travels round it; the outline is **straight**, not wavy
-- [ ] **many roots** (about one per 10 px of the card's height, each with side branches) grow out of the left edge when a toast
-      arrives (over about a second and a half), reaching into the free space; fainter veins grow across the card from its
-      right corners; **roots also hang from the bottom edge** (shorter, leaning left): under the last toast they hang free, and
-      under a toast with another below they should pass behind that one, not over it (say if they show on top of it)
+- [ ] **roots** (with side branches) hang from the left edge (about one per 18 px of height, so sparser than before) and the bottom
+      edge (one per 20 px), longer than before; those on the left are not denser than those below
+- [ ] they **grow over the toast's whole life**, not all at once: they start at different moments, are fast at first and slow
+      toward the end, and the last are **done slightly before the countdown line reaches the end** (it freezes with the countdown
+      while you hover; an update that restarts the countdown does not shrink them; a critical toast, which has no countdown,
+      grows them over about eight seconds)
+- [ ] fainter veins grow across the card from its right corners; none cross onto the toast below. Under a toast with another
+      below, the roots from its bottom edge pass **behind** that one, not over it (say if they show on top of it)
 - [ ] on the left edge, inside the card, a **scatter of tiny dots (lichen)** in patches, thinning inward and kept clear of
       the icon; some toasts have none, which is intended
 - [ ] the icon ring is very slightly irregular (it should read as organic, not as a lumpy circle)

@@ -12,7 +12,7 @@
 // The countdown is the bottom border itself, lit as a vein whose thickness undulates, retreating to a bud.
 //
 // `energy`, `vividness`, `urgency`, `remaining` and `spores` mean what they mean in toastrim.frag. `seed` makes every toast
-// grow differently; `growth` is how far the veins have reached (the arrival animates it 0 to 1).
+// grow differently; `growth` is how far through its life the toast is: the roots grow over all of it, each starting and finishing at its own moment, the last just before the countdown ends.
 //
 // Rebuild with tools/build-shaders.sh after editing.
 
@@ -33,7 +33,7 @@ layout(std140, binding = 0) uniform buf {
     float remaining;   // 0 to 1: the toast's life left; negative for none
     float spores;      // 0 to 1: the faint spores off the left edge (the user's spore_amount); 0 for none
     float seed;        // per toast, so no two grow alike
-    float growth;      // 0 to 1: how far the veins have reached
+    float growth;      // 0 to 1: how far through its life the toast is (never goes back); the roots grow over it
 } ubuf;
 
 // Living colours: moss and teal for a normal toast, a darker moss for a low one, embers for a critical one.
@@ -126,9 +126,19 @@ vec3 walkTo(vec2 org, float ang, float stepLen, int k, float seed) {
     return vec3(p, a);
 }
 
+// How far a root has grown, from `g`, how far through the toast's life it is. Each root has its own moment to start (in the first
+// fifth of the life) and its own to finish (between 80% and 94% of it, so the last is done shortly before the countdown ends),
+// and grows fast at first and slows toward the end.
+float rootReach(float g, float h1, float h3) {
+    float start = 0.22 * h1;
+    float end = 0.80 + 0.14 * h3;
+    float t = clamp((g - start) / (end - start), 0.0, 1.0);
+    return 1.0 - (1.0 - t) * (1.0 - t);
+}
+
 // A vein (a root) with two side branches. `scale` (about 0.7 to 1.2) makes it shorter or longer. Nothing is drawn far from it.
 float vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale) {
-    if (length(px - org) > 56.0) return 0.0;
+    if (length(px - org) > 84.0) return 0.0;
     float stepLen = 3.6 * scale;
     float v = curve(px, org, ang, stepLen, 12, seed, reach, 0.62);
     vec3 b1 = walkTo(org, ang, stepLen, 4, seed);
@@ -167,7 +177,7 @@ void main() {
     float d = roundBox(px - centre, 0.5 * ubuf.card.zw, ubuf.radius);
 
     float nearIcon = ubuf.icon.z > 0.0 ? length(px - ubuf.icon.xy) - ubuf.icon.z : 1e3;
-    if (d > 60.0 && nearIcon > 40.0) { fragColor = vec4(0.0); return; }
+    if (d > 90.0 && nearIcon > 40.0) { fragColor = vec4(0.0); return; }
 
     float seed = ubuf.seed;
     float inside = 1.0 - smoothstep(-0.5, 0.5, d);
@@ -194,44 +204,45 @@ void main() {
     // Veins and roots: out into the free space on the left, in across the card on the right.
     float g = ubuf.growth;
     vec2 tr = ubuf.card.xy + vec2(ubuf.card.z, 1.0), br = ubuf.card.xy + vec2(ubuf.card.z, ubuf.card.w - 1.0);
-    // Roots: many, along the left edge (about one per 10 px of the card's height), reaching out into the free space. Each
+    // Roots: many, along the left edge (about one per 18 px of the card's height), reaching out into the free space. Each
     // has its own place, direction, length and moment of starting to grow. Those near the top lean down and those near the
     // bottom lean up, so they stay in the card's own band (above and below is the screen's edge and the next toast).
     float outer = 0.0;
-    float roots = clamp(floor(ubuf.card.w / 10.0), 5.0, 14.0);
+    float roots = clamp(floor(ubuf.card.w / 18.0), 3.0, 8.0);
     for (int i = 0; i < 14; i++) {
         float fi = float(i);
         if (fi >= roots) break;
         float h1 = hash(seed + fi * 5.3 + 40.0), h2 = hash(seed + fi * 3.1 + 41.0), h3 = hash(seed + fi * 7.7 + 42.0);
         float u = (fi + 0.5 + (h1 - 0.5) * 0.6) / roots;
         vec2 org = vec2(ubuf.card.x, ubuf.card.y + 1.0 + u * (ubuf.card.w - 2.0));
-        if (px.x > org.x + 1.0 || org.x - px.x > 56.0 || abs(px.y - org.y) > 46.0) continue;
+        if (px.x > org.x + 1.0 || org.x - px.x > 84.0 || abs(px.y - org.y) > 70.0) continue;
         float ang = 3.14159 + (h2 - 0.5) * 0.9 - (0.5 - u) * 0.9;
-        outer = max(outer, vein(px, org, ang, seed + fi * 13.0, clamp(g * 1.35 - h1 * 0.35, 0.0, 1.0), 0.75 + 0.45 * h3));
+        float reach = rootReach(g, h1, h3);
+        outer = max(outer, vein(px, org, ang, seed + fi * 13.0, reach, 1.0 + 0.5 * h3) * (1.0 + 0.5 * (1.0 - reach)));
     }
     // The same along the bottom edge (about one per 20 px of its width): down and leaning left, shorter, since the gap to the
     // toast below is small (they pass behind it) and, under the last toast, the screen is free.
     float bottomRoots = clamp(floor(ubuf.card.z / 20.0), 6.0, 24.0);
     float belowEdge = ubuf.card.y + ubuf.card.w;
     float under = 0.0;
-    if (px.y > belowEdge - 1.0 && px.y < belowEdge + 50.0) {
+    if (px.y > belowEdge - 1.0 && px.y < belowEdge + 80.0) {
         for (int i = 0; i < 24; i++) {
             float fi = float(i);
             if (fi >= bottomRoots) break;
             float h1 = hash(seed + fi * 4.1 + 70.0), h2 = hash(seed + fi * 2.9 + 71.0), h3 = hash(seed + fi * 6.3 + 72.0);
             float u = (fi + 0.5 + (h1 - 0.5) * 0.6) / bottomRoots;
             vec2 org = vec2(ubuf.card.x + u * ubuf.card.z, belowEdge - 1.0);
-            if (abs(px.x - org.x) > 50.0) continue;
+            if (abs(px.x - org.x) > 84.0) continue;
             float ang = 1.5708 + 0.35 + (h2 - 0.5) * 0.9;
-            under = max(under, vein(px, org, ang, seed + fi * 17.0 + 100.0, clamp(g * 1.35 - h1 * 0.35, 0.0, 1.0), 0.55 + 0.4 * h3));
+            float reach = rootReach(g, h1, h3);
+            under = max(under, vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 0.8 + 0.5 * h3) * (1.0 + 0.5 * (1.0 - reach)));
         }
     }
     outer = max(outer, 0.85 * under);
     // And, fainter, across the card from its right corners.
-    float inner = vein(px, tr, 3.14159 - 0.55, seed + 23.0, g, 1.0) + vein(px, br, 4.71239 - 0.55, seed + 37.0, g, 1.0);
-    float tipGlow = 1.0 + 1.6 * (1.0 - smoothstep(0.7, 1.0, g)) * g; // brighter while still growing
+    float inner = vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0) + vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0);
     vec3 vcol = desaturate(palette(0.55, ubuf.urgency));
-    rgb += vcol * (outer * 0.7 + inner * 0.36 * (0.5 + 0.5 * inside)) * tipGlow;
+    rgb += vcol * (outer * 0.7 + inner * 0.36 * (0.5 + 0.5 * inside));
 
     // The icon: a ring that is very slightly irregular, with a spore at its centre.
     if (ubuf.icon.z > 0.0) {

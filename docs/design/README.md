@@ -61,13 +61,14 @@ mock-up C, whose wavy outline and ragged strip read as glitches:
 - **Lichen is a scatter of tiny dots**, jittered so it is not a grid, clustered in patches on the left edge inside the card,
   thinning inward and kept clear of the icon; not a ragged strip. (A denser, deeper version, creeping along the top and bottom
   too, was tried after the first live test and was too much and in the way: the user had meant the roots, below, not the lichen.)
-- **Roots**: fine curves with two side branches, **many of them along the whole left edge** (about one per 10 px of the card's
-  height, each with its own place, direction, length and moment of starting), reaching out into the free space on the left as
-  the toast arrives; those near the top lean down and those near the bottom lean up, so they stay in the card's own band and
-  cannot reach the toast below or the screen's edge. Fainter ones grow across the card from its right corners (the screen's
-  edge is there). The first version had one from each corner. **Roots along the bottom edge too** (about one per 20 px of its
-  width): down and leaning left, shorter, since the gap to the toast below is small; they pass behind it, and under the last
-  toast the screen is free.
+- **Roots**: fine curves with two side branches, along the left edge (about one per 18 px of the card's height) and the bottom edge
+  (about one per 20 px of its width), 1.0 to 1.5 times the first length on the left (up to about 65 px) and a little shorter below,
+  where the gap to the toast below is small (they pass behind it; under the last toast the screen is free). Those near the top
+  lean down and those near the bottom lean up, so they stay in the card's band. **They grow over the toast's whole life**, not
+  at arrival: each starts at its own moment (in the first fifth of the life) and finishes at its own (between 80% and 94% of it,
+  so the last is done shortly before the countdown completes), fast at first and slowing toward the end (`growth-stages.png`: 4%,
+  15%, 40%, 70% and 100% of the life). Fainter ones grow across the card from its right corners. The first version had one per
+  corner and grew in 1.5 s.
 - **The countdown is the bottom border itself, lit**: drawn from the same distance field and sway as the outline, so it lies
   exactly on it and the two read as one line (the first version ran 3 px above the border, which the user saw as two lines).
   Where there is time left the border is brighter and thicker, its thickness undulating along it like a vein; the part that has run

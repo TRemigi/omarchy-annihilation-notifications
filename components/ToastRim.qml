@@ -20,13 +20,17 @@ Item {
   property real spores: 1
   // "blend" (the rim, toastrim.frag) or "growth" (toastgrowth.frag: a living outline, lichen, veins that grow out on arrival).
   property string look: "blend"
-  // Growth only: per toast, so no two grow alike; and how far its veins have reached (0 to 1, animated on arrival).
+  // Growth only: per toast, so no two grow alike; and how far through its life the toast is (0 to 1, never back), which the roots
+  // grow over: each starts and finishes at its own moment, the last just before the countdown ends. It follows `remaining`, so it
+  // freezes while the toast is hovered; an update restarts the countdown but the roots do not shrink. A toast that never
+  // expires (critical) is given a nominal eight seconds.
   property real seed: Math.random() * 100
-  property real growth: 1
+  property real growth: 0
+  onRemainingChanged: if (remaining >= 0) growth = Math.max(growth, 1 - remaining)
 
   property real energy: 1
   property real time: 0
-  readonly property real margin: 56    // the halo needs 20, the faint spores drifting off the left edge need 56
+  readonly property real margin: 80    // the halo needs 20, the faint spores 56, and the Growth look's roots up to about 70
 
   anchors.fill: target
   anchors.margins: -margin
@@ -46,21 +50,11 @@ Item {
     energy = 2.2
     igniteAnim.start()
     growth = 0
-    growAnim.restart()
+    if (remaining < 0) growAnim.restart()
   }
 
-  // The veins reach out over about a second and a half, a little after the rim lights (times `slowdown`).
-  SequentialAnimation {
-    id: growAnim
-    PauseAnimation { duration: Math.round(180 * root.slowdown) }
-    NumberAnimation { target: root; property: "growth"; to: 1; duration: Math.round(1500 * root.slowdown); easing.type: Easing.OutQuad }
-  }
-
-  SequentialAnimation {
-    id: igniteAnim
-    PauseAnimation { duration: Math.round(120 * root.slowdown) }
-    NumberAnimation { target: root; property: "energy"; to: 1; duration: Math.round(1100 * root.slowdown); easing.type: Easing.OutCubic }
-  }
+  // For a toast with no countdown: the roots grow over a nominal eight seconds (times `slowdown`).
+  NumberAnimation { id: growAnim; target: root; property: "growth"; from: 0; to: 1; duration: Math.round(8000 * root.slowdown) }
 
   // The slow drift of the colour, at a few frames a second: it only needs to be smooth, not fast.
   Timer {
