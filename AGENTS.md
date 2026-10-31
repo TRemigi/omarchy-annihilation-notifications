@@ -205,7 +205,7 @@ Built from the design chosen on 2026-10-30 (`docs/design/`: mock-up A toned down
   `p2/look` code is what runs before concluding anything.
 - Lint baseline now: `Service.qml` 26, `NotificationCard.qml` 14, `ToastRim.qml` 0 (the same classes as before).
 
-## P2 slice 4: spores (branch `p2/spores`, awaiting the user's live check)
+## P2 slice 4: spores (released as 0.4.0 on 2026-10-30; the user reported "the spores look good")
 
 Plan: the exit dissolves into spores, and a faint drift off a card. Both are built (the drift is the second commit on the branch). **The exit burst**:
 - `shaders/toastspores.frag` (+ `.qsb`): up to four bursts of 22 spores each, computed from a hash of the burst's seed (no

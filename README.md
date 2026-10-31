@@ -13,7 +13,7 @@ see [docs/plan.md](docs/plan.md). The motion is subtle by design; to exaggerate 
 
 0.3.0 also gives the card a new look on the annihilation theme (an iridescent rim that ignites at arrival, a small-caps
 caption, Jost and Cinzel, a ring round the icon, and a countdown line along the bottom edge; see
-[docs/design](docs/design)). Its setting, in the same file: `rim_vividness` (0 to 1, default 0.75). On the branch `p2/spores`, a toast that goes also
+[docs/design](docs/design)). Its setting, in the same file: `rim_vividness` (0 to 1, default 0.75). 0.4.0 adds spores: a toast that goes also
 dissolves into a few spores, and a few very faint ones drift off a card's left edge while it is up; `spore_amount` (0 to 1,
 default 1) controls both.
 

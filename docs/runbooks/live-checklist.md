@@ -137,9 +137,9 @@ Tune without code in `~/.config/omarchy/annihilation-notifications-fork.conf` (r
 `rim_vividness=0.4` (0 to 1, default 0.75) for a quieter rim, `rim_vividness=1` for the mock-up's full strength.
 Say what looks best and I will change the default.
 
-## F. Spores (P2 slice 4, annihilation theme only; branch `p2/spores` until released)
+## F. Spores (P2 slice 4, annihilation theme only; released as 0.4.0)
 
-Switch to the branch as in D (`p2/spores`) and restart the shell. A toast that goes dissolves into spores. Judge the
+Needs 0.4.0 or later, which is on `main`. A toast that goes dissolves into spores. Judge the
 look, not only that it works; the design is `docs/design/spores-exit.png`.
 
 - [ ] when a toast **expires**, it folds away and a scatter of small glowing spores (amber, and teal for a normal
@@ -171,6 +171,7 @@ rather they went another way.
 
 | Date | Omarchy | Fork | A | B | C | Notes |
 |------|---------|------|---|---|---|-------|
+| 2026-10-30 | 4.0.4-1 | 0.4.0 = `p2/spores` @ 2653217 (section F, spores) | | | | F: the user reported "the spores look good" and asked to release. Per-item notes (direction, brightness, the faint drift, the window staying up, clicks) were not given, so only that is recorded. Released as 0.4.0. |
 | 2026-10-30 | 4.0.4-1 | 0.3.0 = `p2/look` @ b35037e (section E, the look and the countdown) | | | | E: the user reported "looks good" for the look, and for the countdown after two fixes found from their screenshots (the line was inset 14 px, then stopped at the corners leaving a gap; now border to border). Per-item notes were not given beyond that. Released as 0.3.0. |
 | 2026-10-30 | 4.0.4-1 | 0.2.0 = `p2/motion` @ e1d10ef (section D only) | | | | D: all items confirmed by the user ("all of those are good"): the fold, stacking several toasts, hover, border crispness, restart with a live toast, switching theme and back, DND; and the 480/300 ms timing feels right. Seen only after the entry was slowed: the first version (340 ms) was too quick to notice. Released as 0.2.0. |
 | 2026-10-30 | 4.0.4-1 | 0.1.0 (`omarchy plugin add` from the pushed repo) | pass | pass | pass | Reported by the user as all items passing; no per-item notes were given, so whether the disable-and-restore needed `omarchy restart shell` is not recorded. Add a row with details next time. |
