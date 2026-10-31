@@ -37,8 +37,10 @@ Item {
   //   motion_slowdown  0.25 to 8, default 1: times the designed duration of the toast motion; a large value
   //                    makes it obvious that it is running.
   //   rim_vividness    0 to 1, default 0.75: how strong and saturated the light on the card's rim is.
+  //   spore_amount     0 to 1, default 1: how many spores a toast leaves as it goes; 0 for none.
   property real motionSlowdown: 1
   property real rimVividness: 0.75
+  property real sporeAmount: 1
   function parseNumber(raw, key, lo, hi, fallback) {
     var m = String(raw || "").match(new RegExp("^\\s*" + key + "\\s*=\\s*([0-9]*\\.?[0-9]+)\\s*$", "m"))
     var v = m ? Number(m[1]) : fallback
@@ -46,13 +48,14 @@ Item {
   }
   function parseSlowdown(raw) { return parseNumber(raw, "motion_slowdown", 0.25, 8, 1) }
   function parseVividness(raw) { return parseNumber(raw, "rim_vividness", 0, 1, 0.75) }
+  function parseSpores(raw) { return parseNumber(raw, "spore_amount", 0, 1, 1) }
   FileView {
     path: service.home + "/.config/omarchy/annihilation-notifications-fork.conf"
     watchChanges: true
     printErrors: false
-    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()) }
+    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()) }
     onFileChanged: reload()
-    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75 }
+    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1 }
   }
   // History + DND live under XDG_STATE_HOME: they're persistent user state
   // (the notifications received, the last-set DND preference), not
@@ -991,7 +994,7 @@ Item {
       id: popupWindow
       required property var modelData
       screen: modelData
-      visible: popupModel.count > 0
+      visible: popupModel.count > 0 || sporeLayer.active // annihilation: stay up while spores are still drifting
 
       WlrLayershell.namespace: "omarchy-notifications"
       WlrLayershell.layer: WlrLayer.Overlay
@@ -1011,6 +1014,16 @@ Item {
       // Keep the surface click-through except over the toast column, so the
       // rest of the (invisible) full-screen overlay never eats input.
       mask: Region { item: popupColumn }
+
+      // annihilation: the spores of toasts that have left, over the whole stack; it outlasts the cards. See SporeLayer.qml.
+      SporeLayer {
+        id: sporeLayer
+        anchors.top: parent.top
+        anchors.right: parent.right
+        width: Style.space(380) + 260
+        height: Math.min(parent.height, Style.space(720))
+        amount: service.themed ? service.sporeAmount : 0
+      }
 
       ColumnLayout {
         id: popupColumn
@@ -1054,11 +1067,17 @@ Item {
             readonly property bool ticking: cardSlot.lifetime > 0 && !card.hovered && !motion.leaving // annihilation: not while leaving
 
             // annihilation: see components/SlotMotion.qml.
+            // annihilation: the spores a toast leaves as it goes, from where its card is now; also used when it is clicked.
+            function releaseSpores() {
+              var p = card.mapToItem(sporeLayer, 0, 0)
+              sporeLayer.burst(p.x, p.y, card.width, card.height, cardSlot.urgency)
+            }
             SlotMotion {
               id: motion
               fx: service.themed
               slowdown: service.motionSlowdown
               spacing: Style.space(8)
+              onLeaveStarted: cardSlot.releaseSpores()
             }
             Component.onCompleted: motion.enter()
 
@@ -1108,7 +1127,7 @@ Item {
               glyph: cardSlot.glyph
 
               onCloseRequested: motion.leave(function() { service.dismissPopup(cardSlot.index) }) // annihilation
-              onCardClicked: service.invokePopupDefault(cardSlot.index)
+              onCardClicked: { cardSlot.releaseSpores(); service.invokePopupDefault(cardSlot.index) } // annihilation: a click dissolves it too
             }
 
             // annihilation: the light on the card, over it. Invisible (so nothing is drawn) while the theme is off.

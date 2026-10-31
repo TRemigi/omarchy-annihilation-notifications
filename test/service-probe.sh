@@ -27,6 +27,10 @@ import re, sys
 d = sys.argv[1] + "/"
 s = open(d + "Service.qml").read()
 s = s.replace("PanelWindow {", "FloatingWindow {")
+# a toast that clicks itself 300 ms after it appears, when PROBE_CLICK is set (a click removes it at once, with no fold)
+s = s.replace("            Component.onCompleted: motion.enter()\n", "            Component.onCompleted: { motion.enter(); if (Quickshell.env('PROBE_CLICK') === '1') clicker.start() }\n            Timer { id: clicker; interval: 300; onTriggered: card.cardClicked() }\n", 1)
+# a log of the window, which has to outlive its toasts
+s = s.replace("FloatingWindow {\n", "FloatingWindow {\n      Timer { interval: 400; running: true; repeat: true; onTriggered: console.log('PROBE win rows=' + popupModel.count + ' visible=' + visible + ' spores=' + sporeLayer.active) }\n", 1)
 for pat in [r'^\s*screen: modelData\n', r'^\s*WlrLayershell\.[a-zA-Z.]+: .*\n', r'^\s*exclusionMode: .*\n',
             r'^\s*anchors \{ top: true; bottom: true; left: true; right: true \}\n', r'^\s*mask: Region \{ item: popupColumn \}\n']:
     s = re.sub(pat, "", s, flags=re.M)
@@ -39,6 +43,9 @@ open(d + "components/SlotMotion.qml", "w").write(m)
 r = open(d + "components/ToastRim.qml").read()
 r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency) }\n", 1)
 open(d + "components/ToastRim.qml", "w").write(r)
+sp = open(d + "components/SporeLayer.qml").read()
+sp = sp.replace("    if (!(amount > 0)) return\n", "    if (!(amount > 0)) return\n    console.log('PROBE burst urgency=' + urgency + ' size=' + Math.round(w) + 'x' + Math.round(h) + ' amount=' + amount)\n", 1)
+open(d + "components/SporeLayer.qml", "w").write(sp)
 c = open(d + "components/NotificationCard.qml").read()
 probe = ("  Timer { interval: 700; running: true; onTriggered: console.log('PROBE card ' + root.summary + ' themed=' + root.themed"
          " + ' family=' + root.textFamily + ' jost=' + jostFont.status + ' cinzel=' + cinzelFont.status + ' caption=' + root.captionText + ' when=' + root.whenText"
@@ -71,6 +78,10 @@ assert "  property int cornerRadius: 0\n" in c
 open(p, "w").write(c.replace("  property int cornerRadius: 0\n", "  property int cornerRadius: 0\n" + probe, 1))
 PY
 fi
+# A third config root where toasts last 0.7 s, so that one expires (and dissolves into spores) within a test.
+cfg_spores=$tmp/cfg-spores; cp -a "$cfg" "$cfg_spores"
+sed -i 's/readonly property int lowPopupDuration: 5000/readonly property int lowPopupDuration: 700/; s/readonly property int normalPopupDuration: 8000/readonly property int normalPopupDuration: 700/' "$cfg_spores/fork/Service.qml"
+grep -q 'normalPopupDuration: 700' "$cfg_spores/fork/Service.qml" || { echo "could not shorten the lifetimes for the spore scenarios" >&2; exit 2; }
 CFGDIR=$cfg
 
 run() { # scenario initial-theme [conf-line]
@@ -97,6 +108,12 @@ check "parse: found among other keys" 3 "$(parsed 'other keys')"
 check "parse: a different key only" 1 "$(parsed 'no key')"
 check "parse: trailing junk is ignored" 1 "$(parsed 'trailing junk')"
 
+parseds() { sed -n "s/^PROBE parseS $1 -> //p" <<<"$out"; }
+check "spore_amount: the default is 1" 1 "$(parseds empty)"
+check "spore_amount: plain" 0.3 "$(parseds plain)"
+check "spore_amount: 0 is allowed" 0 "$(parseds zero)"
+check "spore_amount: above 1 is ignored" 1 "$(parseds above)"
+check "spore_amount: junk is ignored" 1 "$(parseds junk)"
 parsedv() { sed -n "s/^PROBE parseV $1 -> //p" <<<"$out"; }
 check "vividness: the default is 0.75" 0.75 "$(parsedv empty)"
 check "vividness: plain" 0.4 "$(parsedv plain)"
@@ -169,6 +186,31 @@ if [[ -n $ref ]]; then
 else
   echo "note: no upstream branch here, so the pristine-card comparison was skipped"
 fi
+
+# -- spores: a toast that leaves dissolves into them, from a layer that outlives it
+CFGDIR=$cfg_spores
+out=$(run spores annihilation)
+check "spores: a toast that expires releases exactly one burst" 1 "$(grep -c 'PROBE burst' <<<"$out")"
+b=$(grep -m1 'PROBE burst' <<<"$out")
+check "spores: it is a normal toast's burst, from a card of some size, at full amount" yes "$([[ $b == *'urgency=1'* && $b =~ size=[1-9][0-9]+x[1-9][0-9]+ && $b == *'amount=1'* ]] && echo yes || echo no)"
+check "spores: the window stays up after the toast is gone, while the spores drift" yes "$([[ -n $(grep 'PROBE win rows=0 visible=true spores=true' <<<"$out") ]] && echo yes || echo no)"
+check "spores: and goes away once they have faded" yes "$([[ -n $(grep 'PROBE win rows=0 visible=false spores=false' <<<"$out") ]] && echo yes || echo no)"
+check "spores: the window was never hidden while spores were active" 0 "$(grep -c 'PROBE win rows=0 visible=false spores=true' <<<"$out")"
+out=$(PROBE_CLICK=1 run spores annihilation)
+check "spores: a toast that is clicked dissolves too, exactly once" 1 "$(grep -c 'PROBE burst' <<<"$out")"
+check "spores: and its row goes at once, with the window kept up for the spores" yes "$([[ -n $(grep 'PROBE win rows=0 visible=true spores=true' <<<"$out") ]] && echo yes || echo no)"
+out=$(PROBE_CLICK=1 run spores other)
+check "spores: a click on another theme releases none (stock)" 0 "$(grep -c 'PROBE burst' <<<"$out")"
+out=$(run spores other)
+check "spores: with another theme there are none" 0 "$(grep -c 'PROBE burst' <<<"$out")"
+check "spores: and the window goes away with the toast, as stock (never visible with no rows)" 0 "$(grep -c 'PROBE win rows=0 visible=true' <<<"$out")"
+out=$(run spores annihilation "spore_amount=0")
+check "spores: spore_amount=0 releases none" 0 "$(grep -c 'PROBE burst' <<<"$out")"
+check "spores: and the toast still goes, and the window with it" yes "$([[ -n $(grep 'PROBE win rows=0 visible=false' <<<"$out") ]] && echo yes || echo no)"
+out=$(run spores annihilation "spore_amount=0.5")
+check "spores: spore_amount=0.5 reaches the layer" yes "$([[ $(grep -m1 'PROBE burst' <<<"$out") == *'amount=0.5'* ]] && echo yes || echo no)"
+
+CFGDIR=$cfg     # back to the normal lifetimes for the rest
 
 # -- slowdown from the file
 out=$(run themed annihilation "motion_slowdown=3")

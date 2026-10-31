@@ -137,6 +137,27 @@ Tune without code in `~/.config/omarchy/annihilation-notifications-fork.conf` (r
 `rim_vividness=0.4` (0 to 1, default 0.75) for a quieter rim, `rim_vividness=1` for the mock-up's full strength.
 Say what looks best and I will change the default.
 
+## F. Spores (P2 slice 4, annihilation theme only; branch `p2/spores` until released)
+
+Switch to the branch as in D (`p2/spores`) and restart the shell. A toast that goes dissolves into spores. Judge the
+look, not only that it works; the design is `docs/design/spores-exit.png`.
+
+- [ ] when a toast **expires**, it folds away and a scatter of small glowing spores (amber, and teal for a normal
+      toast) lifts off where it was, drifts **to the left**, and fades over about a second and a half
+- [ ] when you **right-click** a toast to dismiss it, the same happens
+- [ ] when you **click** a toast to act on it (e.g. the screenshot toast), it disappears at once and dissolves into
+      spores too
+- [ ] a **critical** toast's spores are amber and pink; a **low** one's amber and green
+- [ ] the spores are **faint and brief enough** not to be a distraction, and not so faint that you never notice them
+- [ ] with several toasts leaving close together, the spores do not turn into a mess
+- [ ] the spores never **cover or block** anything you click, and the screen does not flicker when the last toast goes
+- [ ] **switch to another theme**: toasts vanish with no spores, as stock
+- [ ] `spore_amount=0` in `~/.config/omarchy/annihilation-notifications-fork.conf` turns them off; `0.5` halves them
+
+Direction is a design choice to judge: they drift left (away from the screen edge, into free space, never across the
+toast below) because a toast in the top-right corner has no room above it, as the first mock-up assumed. Say if you would
+rather they went another way.
+
 ## Results
 
 | Date | Omarchy | Fork | A | B | C | Notes |

@@ -39,6 +39,9 @@ Item {
 
   property var pendingDone: null
 
+  // Emitted when a toast starts to fold away (not when nothing animates): the moment its spores are released.
+  signal leaveStarted()
+
   function enter() {
     if (!fx) return
     enterAnim.stop()
@@ -55,6 +58,7 @@ Item {
       return
     }
     leaving = true
+    leaveStarted()
     pendingDone = done
     enterAnim.stop()
     exitAnim.restart()

@@ -44,6 +44,10 @@ mock A (vividness 0.75).
 `shader-countdown.png` adds the countdown (slice 3): a line of light along the bottom edge that drains, ending in a
 spark, here with 62% of the toast's life left (`shader-countdown-full.png`: a fresh toast, the line from border to border); the critical toast below it has none, because it never expires.
 
+`spores-exit.png` is the exit burst as built (slice 4): a toast folding away over the backdrop, and its spores at 0, 120,
+300, 600, 950 and 1400 ms (`test/spores-preview.py`). They drift **left**, not up as in mock-up C, because a toast in
+the top-right corner of the screen has no room above it, and drifting down would cross the toast below.
+
 ## Decision (2026-10-30)
 The user chose the blend below. **Follow-up to try later: the full C "Growth" direction** (organic outline,
 lichen strip, veins, wavering countdown), on its own branch, judged against the blend.

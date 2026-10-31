@@ -61,6 +61,9 @@ All return a string; keep the names and the argument lists.
   `history/`. Left-click (which acts at once) and the IPC dismissals are not delayed. The theme's `MissedTracker`
   cannot know this; the only effect is that a toast dismissed in roughly the last second of its lifetime can be
   counted as expired (a false "missed").
+- **With the annihilation theme active, the popup window can stay up, empty and click-through, for up to about 2.2 s after
+  the last toast has gone**, to finish drawing the spores it left (`components/SporeLayer.qml`). It never covers or
+  intercepts anything: its input region is the toast column, which is empty by then. The layer namespace is unchanged.
 - Click runs the toast's default action (`omarchy-exec-argv`, else the sender's `default` action) and
   dismisses; right click dismisses; hovering pauses the countdown.
 - Live toasts survive a shell restart (restored from the popup files).

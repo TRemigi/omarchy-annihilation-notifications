@@ -21,6 +21,7 @@ ShellRoot {
     svc.popupModel.insert(0, { id: id, originalId: id, app: app || "Signal", appIcon: "", summary: summary || ("probe " + id), body: "body", image: "", glyph: glyph || "", execArgv: "", urgency: urgency === undefined ? 1 : urgency, expireTimeout: 0, timestamp: Date.now() })
   }
   function parse(label, raw) { console.log("PROBE parse " + label + " -> " + svc.parseSlowdown(raw)) }
+  function parseS(label, raw) { console.log("PROBE parseS " + label + " -> " + svc.parseSpores(raw)) }
   function parseV(label, raw) { console.log("PROBE parseV " + label + " -> " + svc.parseVividness(raw)) }
 
   Component.onCompleted: {
@@ -31,6 +32,7 @@ ShellRoot {
     parseV("empty", ""); parseV("plain", "rim_vividness=0.4"); parseV("zero is allowed", "rim_vividness=0"); parseV("one is allowed", "rim_vividness=1")
     parseV("above 1", "rim_vividness=1.5"); parseV("junk", "rim_vividness=loud"); parseV("beside the other key", "motion_slowdown=2\nrim_vividness=0.9\n")
     parseV("the other key only", "motion_slowdown=2")
+    parseS("empty", ""); parseS("plain", "spore_amount=0.3"); parseS("zero", "spore_amount=0"); parseS("above", "spore_amount=2"); parseS("junk", "spore_amount=lots")
   }
 
   Timer { interval: 400; running: true; onTriggered: console.log("PROBE early themed=" + svc.themed) }
@@ -47,5 +49,6 @@ ShellRoot {
   } }
   Timer { interval: 2600; running: true; onTriggered: { if (scenario === "switch") setTheme("other") } }
   Timer { interval: 3400; running: true; onTriggered: { if (scenario === "switch") addToast() } }
-  Timer { interval: 4600; running: true; onTriggered: Qt.quit() }
+  Timer { interval: 600; running: true; onTriggered: { if (scenario === "spores") addToast("Signal", "", "dissolve") } }
+  Timer { interval: scenario === "spores" ? 6800 : 4600; running: true; onTriggered: Qt.quit() }
 }

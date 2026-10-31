@@ -203,7 +203,35 @@ Built from the design chosen on 2026-10-30 (`docs/design/`: mock-up A toned down
   `MultiEffect` in a real shell, the ring round square app icons, several toasts' halos together, and that it does
   not feel heavier. A first lesson from section D applies: if it "looks the same", check the branch and the
   `p2/look` code is what runs before concluding anything.
-- Lint baseline now: `Service.qml` 21, `NotificationCard.qml` 14, `ToastRim.qml` 0 (the same classes as before).
+- Lint baseline now: `Service.qml` 25, `NotificationCard.qml` 14, `ToastRim.qml` 0 (the same classes as before).
+
+## P2 slice 4: spores (branch `p2/spores`, awaiting the user's live check)
+
+Plan: the exit dissolves into spores, and a faint drift off a card (the drift is the second commit on the branch). Built so far, **the exit burst**:
+- `shaders/toastspores.frag` (+ `.qsb`): up to four bursts of 22 spores each, computed from a hash of the burst's seed (no
+  particle objects): they lift off the card's body over 0.28 s, drift **left** 28 to 102 px (ease-out, with a little sway), and
+  fade over 0.9 to 1.7 s; amber and the toast's own colour (teal, pink for critical, green for low). Additive, rolled off with
+  `1 - exp(-x)`. **Direction is left, not up as in the mock-up**: the toasts sit in the top-right corner, so there is no room
+  above, and down would cross the toast below. A pixel far from every burst returns early.
+- `components/SporeLayer.qml`: lives in the popup window over the stack (`Style.space(380) + 260` wide, up to `Style.space(720)`
+  tall, top right), because a toast's own item is gone after its 300 ms fold and the spores last 2.2 s. `burst(x, y, w, h,
+  urgency)` takes the card's rect in layer pixels and a random seed; a `FrameAnimation` runs only while a burst is alive;
+  invisible and costless otherwise; click-through (`enabled: false`).
+- `components/SlotMotion.qml` emits `leaveStarted()` when a fold begins; the delegate's `releaseSpores()` (`card.mapToItem` the
+  layer) fires on that and on a click (a click removes the row at once, with no fold). `SporeLayer.amount` is
+  `themed ? spore_amount : 0`, so another theme gets none.
+- `Service.qml` (marked edits): the window's `visible` is now `popupModel.count > 0 || sporeLayer.active` so it stays up for the
+  spores (CONTRACT.md notes it); `spore_amount` (0 to 1, default 1) in the fork's conf file, with `parseSpores`.
+- Verified: `test/spores-test.sh` (21 checks on the shader through the harness, including a one-spore variant that proves each
+  spore eases in and out; 10 deliberate breaks caught, one equivalent: the burst-level 2.2 s cutoff is redundant with each
+  spore's own end); `test/service-probe.sh` (73 checks; its spore scenarios run in a config root where toasts last 0.7 s, and
+  cover expiry, click, another theme, `spore_amount` 0 and 0.5, the window staying up for the spores and then going, and the
+  parser; 6 deliberate breaks caught); `test/spores-preview.py` renders `docs/design/spores-exit.png`.
+- Two test pitfalls hit here, worth knowing: `VAR=1 out=$(run ...)` does **not** export `VAR` into the substitution (it is two
+  shell assignments), which made a click scenario silently not click and two mutations survive; write `out=$(VAR=1 run ...)`.
+  And shortening toast lifetimes must be done in its own config root, or it breaks every other scenario.
+- **Not verified, needs the user** (checklist section F): how the spores look and feel (taste: size, count, brightness, direction),
+  that nothing flickers when the last toast goes, and that the layer never intercepts input.
 
 ## Conventions
 
