@@ -93,10 +93,13 @@ mock-up C, whose wavy outline and ragged strip read as glitches:
   settled on a trunk of 65% exponential (rate 3.5) and 35% gentle ease-out, with shoots starting from 16% of the life in steps of 16% and
   a more linear ease (power 1.5): gains of 34, 25, 13, 11, 8, 6 and 2 points per second (cumulative 34, 59, 72, 83, 91, 97 and 100).
   Fainter veins grow across the card from its right corners.
-  **Roots as lit 3D tubes** (after 0.5.0, `growth-roots-3d.png`): each segment is a round tube with a soft edge, about twice as thick as the
-  first lines (radius about 1.65 to 1.85 px at the base, tapering to 45% of that; the faint veins inside the card stay thin, so they
-  do not run over the text), and thinned out to make room (about one root per 24 px of the card's height on the left, one per 28 px of
-  its width below), shaded as a cylinder lit from the top right (the
+  **Roots as lit 3D tubes** (after 0.5.0, `growth-roots-3d.png`): each segment is a round tube with a soft edge, six times as thick as the
+  first lines (asked for in three steps: a little thicker, "at least twice as thick", "three times thicker now"; radius about 4.9 to 5.5 px at
+  the base on the left and 4.7 to 5.1 below, tapering to 28% of that so they end in points; the faint veins inside the card stay thin, so they do
+  not run over the text), and thinned out to make room (about one root per 24 px of the card's height on the left, one per 40 px of
+  its width below). Two rendering lessons at this size: shading each segment from its own axis shows the joins (and with ties settled by
+  coverage, as stacked beads), so the shading comes from the direction to the nearest point on the spine and, where two pieces overlap, from the
+  piece the pixel is nearer the middle of, with the silhouettes joined, shaded as a cylinder lit from the top right (the
   direction of the card's own light): a diffuse term, a soft specular highlight and a darker side away from the light, and a soft
   shadow they cast down and to the left (a little alpha, the only part that darkens; the roots inside the card cast none).
 - **No countdown line** (removed after 0.5.0, at the user's request): the roots grow over the toast's whole life and are the timer.

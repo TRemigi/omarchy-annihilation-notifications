@@ -90,14 +90,18 @@ float roundBox(vec2 p, vec2 halfSize, float r) {
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
+struct Tube { float cover; float lit; float spec; float shadow; float key; };
+
 // A piece of a root as a lit tube, in 3D: round in section, seen from the front, lit from the top right (where the light on the
 // card comes from) with a soft specular highlight, and darker on the side away from the light. Returns
-//   x  how much of the pixel the tube covers (a soft edge, about a pixel),
-//   y  the diffuse light on it, 0 to 1 (already dimmed by `fade`),
-//   z  the specular highlight (also dimmed by `fade`),
-//   w  the shadow it casts on what is behind it: the same tube moved down and to the left and blurred, 0 to 1.
+//   cover   how much of the pixel the tube covers (a soft edge, about a pixel),
+//   lit     the diffuse light on it, 0 to 1 (already dimmed by `fade`),
+//   spec    the specular highlight (also dimmed by `fade`),
+//   shadow  the shadow it casts on what is behind it: the same tube moved down and to the left and blurred, 0 to 1,
+//   key     how far from its axis the pixel is, in radii (0 at the centre, 1 at the edge): of two tubes that overlap, the pixel
+//           is shaded by the one it is nearer the middle of, so the joins between pieces do not show.
 // `p` is where the piece starts, `se` its vector (so its length is how much of it has grown), `r0` and `r1` its radius at each end.
-vec4 tube(vec2 px, vec2 p, vec2 se, float r0, float r1, float fade) {
+Tube tube(vec2 px, vec2 p, vec2 se, float r0, float r1, float fade) {
     vec2 pa = px - p;
     float inv = 1.0 / max(dot(se, se), 1e-4);
     float h = clamp(dot(pa, se) * inv, 0.0, 1.0);
@@ -108,28 +112,29 @@ vec4 tube(vec2 px, vec2 p, vec2 se, float r0, float r1, float fade) {
     float ds = length(pb - se * clamp(dot(pb, se) * inv, 0.0, 1.0));
     float shadow = 1.0 - smoothstep(0.4 * r, r + 3.0, ds);
     float cover = 1.0 - smoothstep(r - 0.6, r + 0.6, dist);
-    if (cover <= 0.0) return vec4(0.0, 0.0, 0.0, shadow);
-    vec2 t = se * inversesqrt(max(dot(se, se), 1e-6));
-    float s = clamp(dot(c, vec2(-t.y, t.x)) / max(r, 0.35), -1.0, 1.0);   // across the tube: -1 one edge, 1 the other
-    vec3 n = vec3(vec2(-t.y, t.x) * s, sqrt(max(1.0 - s * s, 0.0)));      // the surface's normal there
+    if (cover <= 0.0) return Tube(0.0, 0.0, 0.0, shadow, 9.0);
+    vec2 q = c / max(r, 0.35);                                         // from the tube's axis to this pixel, in radii: its sideways lean
+    q *= min(1.0, inversesqrt(max(dot(q, q), 1e-6)));
+    vec3 n = vec3(q, sqrt(max(1.0 - dot(q, q), 0.0)));                 // the surface's normal there (seamless through bends and at the ends)
     float diff = clamp(dot(n, vec3(0.553, -0.553, 0.623)), 0.0, 1.0);
     float spec = pow(clamp(dot(n, vec3(0.307, -0.307, 0.901)), 0.0, 1.0), 18.0);
-    return vec4(cover, (0.16 + 1.0 * diff) * fade, spec * fade, shadow);
+    return Tube(cover, (0.16 + 1.0 * diff) * fade, spec * fade, shadow, dist / max(r, 0.35));
 }
 
-// Two tubes together: the one that covers the pixel more shows; the shadows add up to the strongest.
-vec4 over(vec4 a, vec4 b) {
-    vec4 r = b.x > a.x ? b : a;
-    r.w = max(a.w, b.w);
+// Two tubes together: the silhouettes join, the shading is the one the pixel is nearer the middle of, the shadows add up to the strongest.
+Tube over(Tube a, Tube b) {
+    Tube r = (b.cover > 0.0 && b.key < a.key) ? b : a;
+    r.cover = max(a.cover, b.cover);
+    r.shadow = max(a.shadow, b.shadow);
     return r;
 }
 
 // A shoot: a curve of up to 7 short steps whose heading turns smoothly (two slow sine waves, different for each), thinning and
 // dimming toward its tip. `reach` (0 to 1) is how much of it has grown; the step being grown is drawn part way.
-vec4 shoot(vec2 px, vec2 org, float ang, float stepLen, int n, float seed, float reach, float r0) {
+Tube shoot(vec2 px, vec2 org, float ang, float stepLen, int n, float seed, float reach, float r0) {
     vec2 p = org;
     float a = ang;
-    vec4 best = vec4(0.0);
+    Tube best = Tube(0.0, 0.0, 0.0, 0.0, 9.0);
     for (int i = 0; i < 8; i++) {
         if (i >= n) break;
         float fi = float(i);
@@ -138,7 +143,7 @@ vec4 shoot(vec2 px, vec2 org, float ang, float stepLen, int n, float seed, float
         vec2 e = vec2(cos(a), sin(a)) * stepLen;
         if (grown > 0.0) {
             float along = fi / float(n);
-            best = over(best, tube(px, p, e * grown, max(r0 * (1.0 - 0.55 * along), 0.4), max(r0 * (1.0 - 0.55 * (along + 1.0 / float(n))), 0.4), 1.0 - 0.45 * along));
+            best = over(best, tube(px, p, e * grown, max(r0 * (1.0 - 0.72 * along), 0.4), max(r0 * (1.0 - 0.72 * (along + 1.0 / float(n))), 0.4), 1.0 - 0.45 * along));
         }
         p += e;
     }
@@ -177,15 +182,15 @@ float shootReach(float g, float startAt, float h) {
 
 // A vein (a root): a trunk of 16 steps (which follows `reach`, from rootReach) and four shoots from it, at steps 4, 7, 10 and 13,
 // alternating sides, which sprout on their own schedule (see shootReach) once the trunk has got there. `scale` (about 1 to 2) makes
-// it shorter and thinner or longer and thicker, and `thick` multiplies the radius (2 for the roots, 1 for the faint veins inside the card). Returns what tube() returns for the nearest bit of it. Nothing is drawn far from it.
-vec4 vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, float g, float thick) {
-    if (reach <= 0.0) return vec4(0.0);
+// it shorter and thinner or longer and thicker, and `thick` multiplies the radius (6 for the roots, 1 for the faint veins inside the card). Returns what tube() returns for the nearest bit of it. Nothing is drawn far from it.
+Tube vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, float g, float thick) {
+    if (reach <= 0.0) return Tube(0.0, 0.0, 0.0, 0.0, 9.0);
     float stepLen = 3.0 * scale;
-    if (length(px - org) > stepLen * (16.0 * min(reach, 1.0) + 8.0) + 8.0) return vec4(0.0);
-    float rt = (0.60 + 0.16 * scale) * thick;                          // the trunk's radius at its base, in px (twice that for the roots, 1 for the faint veins in the card)
+    if (length(px - org) > stepLen * (16.0 * min(reach, 1.0) + 8.0) + 8.0) return Tube(0.0, 0.0, 0.0, 0.0, 9.0);
+    float rt = (0.60 + 0.16 * scale) * thick;                          // the trunk's radius at its base, in px (six times that for the roots, 1 for the faint veins in the card)
     vec2 p = org;
     float a = ang;
-    vec4 v = vec4(0.0);
+    Tube v = Tube(0.0, 0.0, 0.0, 0.0, 9.0);
     float side = hash(seed + 5.0) < 0.5 ? 1.0 : -1.0;
     for (int i = 0; i < 16; i++) {
         float fi = float(i);
@@ -194,7 +199,7 @@ vec4 vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, fl
         vec2 e = vec2(cos(a), sin(a)) * stepLen;
         if (grown > 0.0) {
             float along = fi / 16.0;
-            v = over(v, tube(px, p, e * grown, max(rt * (1.0 - 0.55 * along), 0.45), max(rt * (1.0 - 0.55 * (along + 1.0 / 16.0)), 0.45), 1.0 - 0.45 * along));
+            v = over(v, tube(px, p, e * grown, max(rt * (1.0 - 0.72 * along), 0.45), max(rt * (1.0 - 0.72 * (along + 1.0 / 16.0)), 0.45), 1.0 - 0.45 * along));
         }
         p += e;
         // a shoot leaves the trunk after steps 3, 6, 9 and 12 (the 4th, 7th, 10th and 13th), once the trunk has grown to there
@@ -204,8 +209,9 @@ vec4 vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, fl
             float sr = shootReach(g, 0.16 + 0.16 * j + 0.06 * hash(seed + j * 3.3), hash(seed + j * 5.1 + 1.0)) * smoothstep(k / 16.0, k / 16.0 + 0.06, reach);
             if (sr > 0.0) {
                 float sgn = mod(j, 2.0) < 0.5 ? side : -side;
-                vec4 sh = shoot(px, p, a + sgn * (0.9 - 0.05 * j), (3.0 - 0.15 * j) * scale, 7 - int(j > 0.5) - int(j > 1.5) - int(j > 2.5), seed + 1.3 + j * 1.1, sr, rt * (0.68 - 0.05 * j));
-                sh.yz *= 0.9 - 0.06 * j;
+                Tube sh = shoot(px, p, a + sgn * (0.9 - 0.05 * j), (3.0 - 0.15 * j) * scale, 7 - int(j > 0.5) - int(j > 1.5) - int(j > 2.5), seed + 1.3 + j * 1.1, sr, rt * (0.68 - 0.05 * j));
+                sh.lit *= 0.9 - 0.06 * j;
+                sh.spec *= 0.9 - 0.06 * j;
                 v = over(v, sh);
             }
         }
@@ -271,7 +277,7 @@ void main() {
     // Roots: many, along the left edge (about one per 24 px of the card's height), reaching out into the free space. Each
     // has its own place, direction, length and moment of starting to grow. Those near the top lean down and those near the
     // bottom lean up, so they stay in the card's own band (above and below is the screen's edge and the next toast).
-    vec4 outer = vec4(0.0);
+    Tube outer = Tube(0.0, 0.0, 0.0, 0.0, 9.0);
     float roots = clamp(floor(ubuf.card.w / 24.0), 3.0, 6.0);
     for (int i = 0; i < 14; i++) {
         float fi = float(i);
@@ -282,15 +288,16 @@ void main() {
         if (px.x > org.x + 1.0 || org.x - px.x > 112.0 || abs(px.y - org.y) > 92.0) continue;
         float ang = 3.14159 + (h2 - 0.5) * 0.9 - (0.5 - u) * 0.9;
         float reach = rootReach(g, h1, h3);
-        vec4 v = vein(px, org, ang, seed + fi * 13.0, reach, 1.4 + 0.6 * h3, g, 2.0);
-        v.yz *= 1.0 + 0.5 * (1.0 - reach);                            // brighter while it is still growing
+        Tube v = vein(px, org, ang, seed + fi * 13.0, reach, 1.4 + 0.6 * h3, g, 6.0);
+        v.lit *= 1.0 + 0.5 * (1.0 - reach);                           // brighter while it is still growing
+        v.spec *= 1.0 + 0.5 * (1.0 - reach);
         outer = over(outer, v);
     }
-    // The same along the bottom edge (about one per 28 px of its width): down and leaning left, shorter, since the gap to the
+    // The same along the bottom edge (about one per 40 px of its width): down and leaning left, shorter, since the gap to the
     // toast below is small (they pass behind it) and, under the last toast, the screen is free.
-    float bottomRoots = clamp(floor(ubuf.card.z / 28.0), 5.0, 18.0);
+    float bottomRoots = clamp(floor(ubuf.card.z / 40.0), 4.0, 14.0);
     float belowEdge = ubuf.card.y + ubuf.card.w;
-    vec4 under = vec4(0.0);
+    Tube under = Tube(0.0, 0.0, 0.0, 0.0, 9.0);
     if (px.y > belowEdge - 1.0 && px.y < belowEdge + 105.0) {
         for (int i = 0; i < 24; i++) {
             float fi = float(i);
@@ -301,21 +308,23 @@ void main() {
             if (abs(px.x - org.x) > 100.0) continue;
             float ang = 1.5708 + 0.35 + (h2 - 0.5) * 0.9;
             float reach = rootReach(g, h1, h3);
-            vec4 v = vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 1.1 + 0.6 * h3, g, 2.0);
-            v.yz *= 1.0 + 0.5 * (1.0 - reach);
+            Tube v = vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 1.1 + 0.6 * h3, g, 6.0);
+            v.lit *= 1.0 + 0.5 * (1.0 - reach);
+            v.spec *= 1.0 + 0.5 * (1.0 - reach);
             under = over(under, v);
         }
     }
-    under.yz *= 0.85;
+    under.lit *= 0.85;
+    under.spec *= 0.85;
     outer = over(outer, under);
     // And, fainter, across the card from its right corners (no shadow: it would darken the card).
-    vec4 inner = over(vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0, g, 1.0), vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0, g, 1.0));
+    Tube inner = over(vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0, g, 1.0), vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0, g, 1.0));
     vec3 vcol = desaturate(palette(0.55, ubuf.urgency));
     vec3 glint = mix(vcol, vec3(1.0, 0.97, 0.9), 0.7);
-    rgb += vcol * outer.x * outer.y * 0.95 + glint * outer.x * outer.z * 0.75;
-    rgb += (vcol * inner.x * inner.y * 0.4 + glint * inner.x * inner.z * 0.2) * (0.5 + 0.5 * inside);
+    rgb += vcol * outer.cover * outer.lit * 0.72 + glint * outer.cover * outer.spec * 0.5;
+    rgb += (vcol * inner.cover * inner.lit * 0.4 + glint * inner.cover * inner.spec * 0.2) * (0.5 + 0.5 * inside);
     // Where the roots are not, they darken what is behind them a little: the shadow they cast, down and to the left.
-    float shade = outer.w * (1.0 - outer.x) * 0.36;
+    float shade = outer.shadow * (1.0 - outer.cover) * 0.36;
 
     // The icon: a ring that is very slightly irregular, with a spore at its centre.
     if (ubuf.icon.z > 0.0) {
