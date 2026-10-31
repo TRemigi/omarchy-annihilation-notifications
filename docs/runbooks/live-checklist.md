@@ -124,8 +124,9 @@ judgement of taste, so say what you think of each, not just whether it works. Th
 
 **Section E, the countdown (slice 3, same branch).** A line of light along the bottom edge shows how long a toast has left.
 
-- [ ] a normal toast has a **line along its bottom edge** that shrinks from the right over its 8 seconds, ending in a
-      small bright spark, in the colours of the rim (teal into violet)
+- [ ] a normal toast has a **line along its bottom edge**, **the card's full length when the toast arrives**
+      (corner to corner), that shrinks from the right over its 8 seconds, ending in a small bright spark, in the
+      colours of the rim (teal into violet)
 - [ ] it **freezes while you hover** the toast, and carries on when you move off
 - [ ] it fades out in the last moment, and the toast then folds away
 - [ ] a **critical** toast has no line (it never expires); a **low** one has a shorter run (5 seconds) in green-blue tones

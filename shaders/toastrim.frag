@@ -10,8 +10,10 @@
 // arrival, cooling back over about a second. Output is added light (colour above alpha, as in windowglow.frag),
 // rolled off with 1 - exp(-x) so a bright ignition never clips flat.
 //
-// The countdown is a line of light along the bottom edge that drains as the toast runs out, ending in a bright spark;
-// its colours are fixed along its full length, so it seems to retreat and reveal them rather than to recolour.
+// The countdown is a line of light along the bottom edge that drains as the toast runs out, ending in a bright spark.
+// Full, it is as long as the card's straight bottom edge (from where the left corner ends to where the right one begins),
+// so a fresh toast has a line the card's whole width; its colours are fixed along that full length, so it seems to
+// retreat and reveal them rather than to recolour.
 // `remaining` is the fraction of the toast's life left; negative means no countdown (critical toasts never expire).
 //
 // Rebuild with tools/build-shaders.sh after editing.
@@ -94,13 +96,13 @@ void main() {
         rgb += icol * (ring * 0.85 + core * 0.9 + fill + ringHalo);
     }
 
-    // The countdown: a line just inside the bottom edge, from 14 px in, shrinking from the right.
+    // The countdown: a line just inside the bottom edge, as long as the straight part of that edge, shrinking from the right.
     if (ubuf.remaining >= 0.0) {
         float lineY = ubuf.card.y + ubuf.card.w - 3.2;
-        float x0 = ubuf.card.x + 14.0;
-        float full = max(ubuf.card.z - 28.0, 1.0);
+        float x0 = ubuf.card.x + ubuf.radius + 1.0;
+        float full = max(ubuf.card.z - 2.0 * (ubuf.radius + 1.0), 1.0);
         float x1 = x0 + clamp(ubuf.remaining, 0.0, 1.0) * full;
-        float seg = smoothstep(x0 - 1.0, x0 + 6.0, px.x) * (1.0 - smoothstep(x1 - 6.0, x1, px.x));
+        float seg = smoothstep(x0 - 0.5, x0 + 2.0, px.x) * (1.0 - smoothstep(x1 - 6.0, x1, px.x));
         float life = smoothstep(0.0, 0.08, ubuf.remaining);          // it fades out at the very end
         float dy = px.y - lineY;
         float line = exp(-pow(dy / 0.8, 2.0)) * seg;

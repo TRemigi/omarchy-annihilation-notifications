@@ -80,7 +80,8 @@ check "the colour drifts with time, but only slowly (brightness within 30%)" yes
 check "and the hue does change" yes "$([[ "$(px base 200 30)" != "$(px later 200 30)" ]] && echo yes || echo no)"
 render faded U_qt_Opacity=0.5; check "qt_Opacity scales the light" yes "$([[ $(lum "$(px faded 400 30)") -lt $(( $(lum "$(px base 400 30)") * 6 / 10 )) ]] && echo yes || echo no)"
 
-# the countdown: a line of light along the bottom edge (y = 30 + 90 - 3.2), from x = 44, 352 px long when full
+# the countdown: a line of light along the bottom edge (y = 30 + 90 - 3.2), as long as the straight part of that edge
+# (x = 36 to 404 for the 380 px card at x = 30 with radius 5) when full
 render none U_remaining=-1; render full U_remaining=1; render half U_remaining=0.5; render quarter U_remaining=0.25; render almost U_remaining=0.9; render gone U_remaining=0
 y=117
 # Row 117 already has a little light without a countdown (the bottom rim's spill), so "lit" means above that.
@@ -91,6 +92,12 @@ check "at half, the first half of the line is lit" yes "$([[ $(over half 130) -g
 check "at half, the second half is exactly as without a countdown" "$(px none 308 $y)" "$(px half 308 $y)"
 check "the spark at the end of the line is brighter than the line" yes "$([[ $(lum "$(px half 220 $y)") -gt $(( $(lum "$(px half 130 $y)") + 15 )) ]] && echo yes || echo no)"
 lit() { local n=0 x; for x in $(seq 40 4 420); do [[ $(over $1 $x) -gt 30 ]] && n=$((n + 1)); done; echo $n; }
+extent() { local lo=0 hi=0 x; for x in $(seq 30 1 410); do if [[ $(over $1 $x) -gt 25 ]]; then (( lo == 0 )) && lo=$x; hi=$x; fi; done; echo "$lo $hi"; }
+read -r flo fhi <<<"$(extent full)"
+check "a full line starts within 8 px of the card's left edge (x = 30)" yes "$([[ $flo -ge 30 && $flo -le 38 ]] && echo yes || echo no)"
+check "and ends within 8 px of the card's right edge (x = 410): the line fits the card's length" yes "$([[ $fhi -ge 402 && $fhi -le 410 ]] && echo yes || echo no)"
+read -r hlo hhi <<<"$(extent half)"
+check "at half, it still starts at the left and ends in the middle of the card (spark near x = 220)" yes "$([[ $hlo -le 38 && $hhi -ge 215 && $hhi -le 232 ]] && echo yes || echo no)"
 check "the line only ever gets shorter as time runs out (lit samples: 0.9 > 0.5 > 0.25)" yes "$([[ $(lit almost) -gt $(lit half) && $(lit half) -gt $(lit quarter) && $(lit quarter) -gt 0 ]] && echo yes || echo no)"
 check "an empty countdown draws nothing" yes "$([[ $(lit gone) -eq 0 ]] && echo yes || echo no)"
 read -r fr fg fb _ <<<"$(px full 100 $y)"; read -r hr hg hb _ <<<"$(px half 100 $y)"
