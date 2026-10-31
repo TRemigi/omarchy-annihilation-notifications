@@ -97,8 +97,8 @@ yes_if "at growth 0 there are no veins in the free space on the left" "$([[ $(( 
 yes_if "at growth 1 there are, reaching out to the left of the card" "$(gt "$(left base)" $(( $(left g0) + 3000 )))"
 yes_if "at growth 0.5 there are some, fewer than at 1" "$([[ $(left g5) -gt $(left g0) && $(left g5) -lt $(left base) ]] && echo yes || echo no)"
 yes_if "they also reach into the card from its right corners (growth 1 against 0)" "$(gt "$(rsum base 360 31 409 60)" $(( $(rsum g0 360 31 409 60) + 1500 )))"
-yes_if "they fade toward their tips: brighter 9 to 18 px out than 0 to 9 px out" "$(gt "$(rsum base 9 0 18 150)" "$(rsum base 0 0 9 150)")"
-yes_if "and none run along the bottom outside the card (growth 1, 18 px below the lower edge)" "$([[ $(rsum base 100 138 400 150) -lt 600 ]] && echo yes || echo no)"
+# (how far the roots reach, how many there are and how they grow over the toast's life: see test/growth-roots-test.sh)
+# (the roots below the card are in test/growth-roots-test.sh)
 
 # the seed: every toast grows differently, and the same seed grows the same
 render s2 U_seed=41; render s1b U_seed=7

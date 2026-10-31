@@ -64,7 +64,9 @@ changes nothing.
 bash test/tools-test.sh          # import-upstream and check-upstream, against a scratch Omarchy (47 checks)
 node test/logic-test.js          # NotificationLogic.js (35 checks)
 bash test/motion-test.sh         # components/SlotMotion.qml, offscreen with the real Qt Quick runtime (22 checks)
-bash test/growth-test.sh         # shaders/toastgrowth.frag through the harness (44 checks, stale for the roots: see below)
+bash test/growth-test.sh         # shaders/toastgrowth.frag through the harness: rim, veins, lichen, ring, countdown (35 checks, a few minutes)
+bash test/growth-roots-test.sh   # the roots: reach, count, no pop at the start, staggered starts, still growing late, done at the end (25 checks, ~1 min)
+$TMPDIR/venv/bin/python3 test/growth-activity.py FRAG   # not a pass/fail test: the per-second visible root ink, as measured on a recording
 bash test/service-probe.sh       # the REAL Service.qml in an offscreen Quickshell (26 checks, ~30 s): the theme gate on,
                                  # off and switched live, motion_slowdown, the setting parser. Only the layer-shell
                                  # window type is swapped for a plain one in a copy; everything else is as shipped.
@@ -75,7 +77,7 @@ T=$(mktemp -d); ln -s /usr/share/omarchy/shell "$T/qs"
 /usr/lib/qt6/bin/qmllint -I "$T" -I /usr/lib/qt6/qml Service.qml components/NotificationCard.qml
 ```
 
-qmllint baseline on Omarchy 4.0.4-1: `Service.qml` 17 warnings (15 in stock; P2 slice 1 added two more
+qmllint on the fork now (2026-10-31): `Service.qml` 29, `NotificationCard.qml` 14, `ToastRim.qml` 2 (`igniteAnim` / `growAnim` used inside a function: the same "unqualified access" class). The original baseline on Omarchy 4.0.4-1 was: `Service.qml` 17 warnings (15 in stock; P2 slice 1 added two more
 "unqualified access", `service.` used inside the delegate and the settings `FileView`, the same class the file already has)
 (unqualified access x12, `PanelWindow` not creatable, `QProcess::ExitStatus` not found x2, `sizeVertical` /
 `sizeHorizontal` not found on `QObject`), `components/NotificationCard.qml` 12 (members not found on
@@ -253,8 +255,8 @@ instead of `toastrim.frag`; same overlay, same added-light output, same uniforms
 set** (the blend's `seed` and `growth` are unused) so `ToastRim`'s ShaderEffect feeds either; `shader-test.sh` and
 `growth-test.sh` both check that. What the design does and why (the mock-up's wavy outline and ragged strip read as glitches, so
 the outline stays straight and is alive instead; lichen is jittered dots; veins are curves with branches that cannot reach the
-toast below) is in `docs/design/README.md`. Verified: `test/growth-test.sh` (44 checks; every deliberate break caught but one equivalent: removing the veins' distance early-out, since no vein is longer than it); `test/service-probe.sh` (86: the
-parser and that `look` reaches the rim). **Not verified, needs the user** (checklist section G): how it looks next to the
+toast below) is in `docs/design/README.md`. Verified: `test/growth-test.sh` (35 checks) and `test/growth-roots-test.sh` (25 checks), every deliberate break caught but one equivalent (removing the veins' distance early-out, since no vein is longer than it); `test/service-probe.sh` (86: the
+parser and that `look` reaches the rim). All suites were run and passed on 2026-10-31 after the roots work (the roots were built without running them, at the user's request). **Not verified, needs the user** (checklist section G): how it looks next to the
 blend. The preview needs numpy and pillow, which this sandbox lacks: `python3 -m venv $TMPDIR/v && $TMPDIR/v/bin/pip install numpy pillow`
 works (the network is open to PyPI).
 **After the user's live test (2026-10-31, recording in ~/Videos):** the user liked it, asked for the countdown to lie *exactly on* the bottom
@@ -266,9 +268,7 @@ growths (the veins) coming out of the card. So: the lichen is back to its first 
 element is meant before multiplying it. Test lessons from that round: the alignment check first used the brightest row, which let both
 a 3 px offset and a missing sway through (the border outshines the line); it now compares centroids column by column against a growth-0
 render where the border is alone. And dots larger than the 3x3 cell search are cut flat, which only showed in a zoomed preview: look at
-previews zoomed. **The roots change was committed without running the growth tests** (the user asked not to run the full path every
-time): the vein checks in `test/growth-test.sh` were written for four veins and may need their thresholds revisited; run it and
-fix before releasing.
+previews zoomed. (The roots were committed without running the growth tests, at the user's request; they were run and fixed afterwards: see below.)
 
 **Roots, round 3 (2026-10-31):** left roots cut to one per 18 px, longer (scale 1.0 to 1.5), and the roots grow over the toast's life as above. Also
 committed **without running the tests** at the user's request: `test/growth-test.sh` treats `growth` as an arrival animation (growth 0.5 = half
@@ -294,7 +294,9 @@ The fix kept the trunk curve and added **four shoots per root on later schedules
 97 to 99.5%); `vein()` is now one loop that draws the trunk and spawns the shoots (no `walkTo`). Lesson: judge "appears finished" by
 visible *ink* over time (video or harness), not by the trunk's length curve; and when two requests pull against each other (a strongly
 decelerating curve vs growth to the very end) look for a way to give the eye something moving instead of bending the curve.
-Untested apart from renders and the ink measurement.
+Untested apart from renders and the ink measurement (tests added afterwards).
+
+**Tests for the roots (2026-10-31):** running the old `test/growth-test.sh` after the roots work found two stale checks only (that veins fade within 18 px of the card, and that nothing hangs below it), which were removed. The roots got their own file, `test/growth-roots-test.sh`, with a 440x240 overlay and the card at (130,30) (room for 80 to 95 px roots). Thresholds come from measured values across four seeds (left reach 80 to 94 px, below 68 to 75, 4 to 6 roots crossing a line beside the card). 11 deliberate breaks: 9 were caught at once; "no stagger" and "roots stop at 80%" got through and led to two sharper checks (the count of bottom roots out at 9% of the life, which is 0 to 1 of 16 to 17 with the stagger and 8 without; and reach at least 70 and 58 px). Lesson: a stagger shows in *how many* roots are out early, not in how far the farthest has got.
 
 **Roots, round 9 (2026-10-31): tuning "apparent activity".** The user wants the roots alone to be able to show the toast's timing (the
 countdown line could then go), and said the activity lessened too soon. `test/growth-activity.py` measures the per-second visible ink on
