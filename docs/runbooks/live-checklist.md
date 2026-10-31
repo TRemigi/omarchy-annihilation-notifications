@@ -167,9 +167,9 @@ Direction is a design choice to judge: they drift left (away from the screen edg
 toast below) because a toast in the top-right corner has no room above it, as the first mock-up assumed. Say if you would
 rather they went another way.
 
-## G. Growth (P2 slice 6, an experiment; branch `p2/growth`, annihilation theme only)
+## G. Growth (P2 slice 6; released as 0.5.0, opt-in; annihilation theme only)
 
-Not released. Run it from the branch (`omarchy plugin add` the checkout, or switch to `p2/growth`), then restart the shell.
+Needs 0.5.0 or later, which is on `main`; restart the shell after updating.
 The new look is **off until you ask for it**: put `look=growth` in `~/.config/omarchy/annihilation-notifications-fork.conf`
 (it is read live; `look=blend` or removing the line goes back to the rim of 0.3.0 and 0.4.0). Judge it **against the blend**, by
 flipping between the two with the same notifications. The design is `docs/design/growth-settled.png` and `growth-arriving.png`.
@@ -208,6 +208,7 @@ Say which you prefer, and what to take from the other: this is the experiment th
 
 | Date | Omarchy | Fork | A | B | C | Notes |
 |------|---------|------|---|---|---|-------|
+| 2026-10-31 | 4.0.4-1 | 0.5.0 = `p2/growth` @ 231c4d0 (section G, Growth) | | | | G: the user reported "looking good now" after many rounds from screen recordings (countdown aligned on the border, roots denser and longer with a Bezier-then-exponential pace and late shoots, activity tuned to a recording), and asked to release. Per-item notes were not given beyond that. All suites passed on this commit (growth 35, roots 25, shader 51, spores 21, motion 22, logic 35, tools 47, service probe 86, validate, check-upstream). Released as 0.5.0. |
 | 2026-10-30 | 4.0.4-1 | 0.4.0 = `p2/spores` @ 2653217 (section F, spores) | | | | F: the user reported "the spores look good" and asked to release. Per-item notes (direction, brightness, the faint drift, the window staying up, clicks) were not given, so only that is recorded. Released as 0.4.0. |
 | 2026-10-30 | 4.0.4-1 | 0.3.0 = `p2/look` @ b35037e (section E, the look and the countdown) | | | | E: the user reported "looks good" for the look, and for the countdown after two fixes found from their screenshots (the line was inset 14 px, then stopped at the corners leaving a gap; now border to border). Per-item notes were not given beyond that. Released as 0.3.0. |
 | 2026-10-30 | 4.0.4-1 | 0.2.0 = `p2/motion` @ e1d10ef (section D only) | | | | D: all items confirmed by the user ("all of those are good"): the fold, stacking several toasts, hover, border crispness, restart with a live toast, switching theme and back, DND; and the 480/300 ms timing feels right. Seen only after the entry was slowed: the first version (340 ms) was too quick to notice. Released as 0.2.0. |

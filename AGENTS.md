@@ -131,7 +131,7 @@ repo only works with the SSH URL. Public means the git history, including the au
 ## P2: the experience (in slices, each judged live before the next)
 
 The look was chosen from mock-ups on 2026-10-30 (`docs/design/`): a blend of A (Refraction, the base, toned down),
-B's Cinzel small-caps header and C's spores; the full C "Growth" direction is a tracked follow-up experiment. Slices
+B's Cinzel small-caps header and C's spores; the full C "Growth" direction was a follow-up experiment, now released (0.5.0) as an opt-in look. Slices
 (renumbered): **1 Motion** (released as 0.2.0), **2 The look** and **3 The countdown** (released as 0.3.0; the user confirmed both live, the countdown after two fixes from their screenshots): toasts unfold into the stack
 and fold away (expiry and right-click; click and IPC dismissals stay instant). **2 The look** (iridescent rim, typography, ring
 icon; branch `p2/look`), **3** the countdown (a line of light that drains), **4** spores on exit, **5** a switch for
@@ -247,7 +247,7 @@ Plan: the exit dissolves into spores, and a faint drift off a card. Both are bui
 - **Not verified, needs the user** (checklist section F): how the spores look and feel (taste: size, count, brightness, direction),
   that nothing flickers when the last toast goes, and that the layer never intercepts input.
 
-## P2 slice 6: Growth (experiment, branch `p2/growth`, not released)
+## P2 slice 6: Growth (released as 0.5.0 on 2026-10-31, opt-in with `look=growth`)
 
 `look=growth` in the fork's conf file (parsed by `parseLook`, `blend` otherwise) makes `ToastRim` load `shaders/toastgrowth.frag`
 instead of `toastrim.frag`; same overlay, same added-light output, same uniforms plus `seed` (random per toast) and `growth`
