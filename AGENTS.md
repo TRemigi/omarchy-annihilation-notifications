@@ -127,7 +127,8 @@ repo only works with the SSH URL. Public means the git history, including the au
 
 ## P2: the experience (in slices, each judged live before the next)
 
-Slices: **1 Motion** (built, on branch `p2/motion`, awaiting the user's live check): toasts unfold into the stack
+Slices: **1 Motion** (built, on branch `p2/motion`; the user confirmed on 2026-10-30 that the fold works as
+expected, but has not itemised the rest of checklist section D, so it is not yet merged to `main`): toasts unfold into the stack
 and fold away (expiry and right-click; click and IPC dismissals stay instant). **2** a countdown that is part of the
 border, and hover. **3** the exit dissolving into a few spores. **4** an accent per app or urgency from the Shimmer
 palette, and a setting to turn the motion off. Do not build the next slice before the user has seen the last.

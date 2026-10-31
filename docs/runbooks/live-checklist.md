@@ -104,4 +104,5 @@ the wrong direction, too much scale, or anything that flickers. Those are single
 
 | Date | Omarchy | Fork | A | B | C | Notes |
 |------|---------|------|---|---|---|-------|
+| 2026-10-30 | 4.0.4-1 | `p2/motion` @ e1d10ef (section D only) | | | | D: the user reports the fold works as expected, seen after the entry was slowed (the first version, 340 ms, was too quick to notice). The other D items (stacking several toasts, hover, border crispness, restart with a live toast, theme switch back to stock, DND) were not itemised: still to confirm before merging to `main`. |
 | 2026-10-30 | 4.0.4-1 | 0.1.0 (`omarchy plugin add` from the pushed repo) | pass | pass | pass | Reported by the user as all items passing; no per-item notes were given, so whether the disable-and-restore needed `omarchy restart shell` is not recorded. Add a row with details next time. |
