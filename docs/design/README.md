@@ -93,10 +93,14 @@ mock-up C, whose wavy outline and ragged strip read as glitches:
   settled on a trunk of 65% exponential (rate 3.5) and 35% gentle ease-out, with shoots starting from 16% of the life in steps of 16% and
   a more linear ease (power 1.5): gains of 34, 25, 13, 11, 8, 6 and 2 points per second (cumulative 34, 59, 72, 83, 91, 97 and 100).
   Fainter veins grow across the card from its right corners.
-- **The countdown is the bottom border itself, lit**: drawn from the same distance field and sway as the outline, so it lies
-  exactly on it and the two read as one line (the first version ran 3 px above the border, which the user saw as two lines).
-  Where there is time left the border is brighter and thicker, its thickness undulating along it like a vein; the part that has run
-  out is the plain border. It retreats from the right and ends in a bud.
+  **Roots as lit 3D tubes** (after 0.5.0, `growth-roots-3d.png`): each segment is a round tube with a soft edge, a little thicker than the
+  first lines (radius about 0.8 to 0.9 px at the base, tapering to about half), shaded as a cylinder lit from the top right (the
+  direction of the card's own light): a diffuse term, a soft specular highlight and a darker side away from the light, and a soft
+  shadow they cast down and to the left (a little alpha, the only part that darkens; the roots inside the card cast none).
+- **No countdown line** (removed after 0.5.0, at the user's request): the roots grow over the toast's whole life and are the timer.
+  (Until then the countdown was the card's own bottom border, lit: drawn from the same distance field and sway as the outline so it lay
+  exactly on it and read as one line, thicker and brighter where there was time left, ending in a bud. The blend look keeps its own
+  countdown line.)
 - Palettes: moss and teal; ember for critical; dark moss for low. Everything is added light, as in the blend, and the spores
   (exit burst and faint drift) are shared.
 

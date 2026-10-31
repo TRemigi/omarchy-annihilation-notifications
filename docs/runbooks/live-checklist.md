@@ -193,8 +193,11 @@ flipping between the two with the same notifications. The design is `docs/design
 - [ ] on the left edge, inside the card, a **scatter of tiny dots (lichen)** in patches, thinning inward and kept clear of
       the icon; some toasts have none, which is intended
 - [ ] the icon ring is very slightly irregular (it should read as organic, not as a lumpy circle)
-- [ ] the countdown is **the bottom border itself, lit**: it lies exactly on the border (one line, not two), is brighter and
-      thicker where there is time left with its thickness undulating, retreats from the right and ends in a bud
+- [ ] **there is no countdown line** with this look: the bottom border is a plain border, and the roots are the timer (they are
+      still growing until just before the toast goes)
+- [ ] the roots are **a little thicker** and look **3D**: round tubes with a lit side towards the top right, a highlight and a soft shadow
+      down and to the left on the card and the wallpaper (say if they are too thick, the shading is too strong or too weak, or the
+      shadow looks dirty)
 - [ ] a **critical** toast is ember (amber to rose), a **low** one a dark moss
 - [ ] two toasts do not look alike (each has its own seed), and an updated toast keeps its look
 - [ ] it does **not** read as dirt, glitches or hair on the card (say which part if it does: the veins, the lichen, the
