@@ -64,7 +64,7 @@ changes nothing.
 bash test/tools-test.sh          # import-upstream and check-upstream, against a scratch Omarchy (47 checks)
 node test/logic-test.js          # NotificationLogic.js (35 checks)
 bash test/motion-test.sh         # components/SlotMotion.qml, offscreen with the real Qt Quick runtime (22 checks)
-bash test/growth-test.sh         # shaders/toastgrowth.frag through the harness (32 checks)
+bash test/growth-test.sh         # shaders/toastgrowth.frag through the harness (44 checks)
 bash test/service-probe.sh       # the REAL Service.qml in an offscreen Quickshell (26 checks, ~30 s): the theme gate on,
                                  # off and switched live, motion_slowdown, the setting parser. Only the layer-shell
                                  # window type is swapped for a plain one in a copy; everything else is as shipped.
@@ -253,11 +253,16 @@ instead of `toastrim.frag`; same overlay, same added-light output, same uniforms
 set** (the blend's `seed` and `growth` are unused) so `ToastRim`'s ShaderEffect feeds either; `shader-test.sh` and
 `growth-test.sh` both check that. What the design does and why (the mock-up's wavy outline and ragged strip read as glitches, so
 the outline stays straight and is alive instead; lichen is jittered dots; veins are curves with branches that cannot reach the
-toast below) is in `docs/design/README.md`. Verified: `test/growth-test.sh` (32 checks; 13 deliberate breaks: 12 caught (one only after adding a check on the ring itself), the
-last, removing the veins' distance early-out, is equivalent since no vein is longer than it); `test/service-probe.sh` (86: the
+toast below) is in `docs/design/README.md`. Verified: `test/growth-test.sh` (44 checks; every deliberate break caught but one equivalent: removing the veins' distance early-out, since no vein is longer than it); `test/service-probe.sh` (86: the
 parser and that `look` reaches the rim). **Not verified, needs the user** (checklist section G): how it looks next to the
 blend. The preview needs numpy and pillow, which this sandbox lacks: `python3 -m venv $TMPDIR/v && $TMPDIR/v/bin/pip install numpy pillow`
 works (the network is open to PyPI).
+**After the user's live test (2026-10-31, recording in ~/Videos):** the user liked it, asked for the countdown to lie *exactly on* the bottom
+border (it ran 3 px above and read as two lines; now it is the rim's own distance field plus sway, lit and undulating in thickness,
+so it cannot drift off the border) and for a lot more lichen (now deep on the left, along the top and bottom, creeping in with
+`growth`). Two test lessons: the alignment check first used the brightest row, which let both a 3 px offset and a missing sway
+through (the border outshines the line); it now compares centroids column by column, against a growth-0 render where the border is
+alone. And dots larger than the 3x3 cell search are cut flat, which only showed in a zoomed preview: look at previews zoomed.
 
 ## Conventions
 

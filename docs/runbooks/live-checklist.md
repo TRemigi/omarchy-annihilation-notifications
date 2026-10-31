@@ -179,11 +179,12 @@ flipping between the two with the same notifications. The design is `docs/design
 - [ ] fine **veins with side branches grow out of the four corners** when a toast arrives (over about a second and a half),
       outward to the left on the left corners, across the card on the right ones, and then stay faint; none cross onto the
       toast below
-- [ ] on the left edge, inside the card, a **scatter of tiny dots (lichen)** in patches, thinning inward and kept clear of
-      the icon; some toasts have none, which is intended
+- [ ] **lichen** (tiny dots in colonies) is thick along the left edge, about 30 px deep, and hugs the top and bottom
+      borders; it creeps in as the toast arrives, and keeps clear of the icon and of the text (say if it gets in the way of
+      reading, or if it is still not enough)
 - [ ] the icon ring is very slightly irregular (it should read as organic, not as a lumpy circle)
-- [ ] the countdown is **a vein**: it wavers a little along the bottom, still runs from border to border, retreats from
-      the right and ends in a bud
+- [ ] the countdown is **the bottom border itself, lit**: it lies exactly on the border (one line, not two), is brighter and
+      thicker where there is time left with its thickness undulating, retreats from the right and ends in a bud
 - [ ] a **critical** toast is ember (amber to rose), a **low** one a dark moss
 - [ ] two toasts do not look alike (each has its own seed), and an updated toast keeps its look
 - [ ] it does **not** read as dirt, glitches or hair on the card (say which part if it does: the veins, the lichen, the

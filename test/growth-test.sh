@@ -53,6 +53,27 @@ for y in range(y0, y1):
 print(m)
 PY
 }
+lit() { python3 - "$tmp/$1.pam" "$2" "$3" "$4" "$5" "$6" <<'PY'
+import sys
+d = open(sys.argv[1], "rb").read(); e = d.index(b"ENDHDR\n") + 7
+x0, y0, x1, y1, thr = map(int, sys.argv[2:7]); n = 0
+for y in range(y0, y1):
+    for x in range(x0, x1):
+        o = e + (y * 440 + x) * 4
+        if (299 * d[o] + 587 * d[o + 1] + 114 * d[o + 2]) // 1000 > thr: n += 1
+print(n)
+PY
+}
+peakrow() { python3 - "$tmp/$1.pam" "$2" "$3" "$4" <<'PY'   # FILE X Y0 Y1: the row of the brightest pixel in column X, rows Y0 to Y1-1
+import sys
+d = open(sys.argv[1], "rb").read(); e = d.index(b"ENDHDR\n") + 7
+x, y0, y1 = map(int, sys.argv[2:5]); best = (-1, 0)
+for y in range(y0, y1):
+    o = e + (y * 440 + x) * 4; l = d[o] + d[o + 1] + d[o + 2]
+    if l > best[0]: best = (l, y)
+print(best[1])
+PY
+}
 maxalpha() { python3 - "$tmp/$1.pam" <<'PY'
 import sys
 d = open(sys.argv[1], "rb").read(); e = d.index(b"ENDHDR\n") + 7; print(max(d[e + 3::4]))
@@ -84,10 +105,22 @@ render s2 U_seed=41; render s1b U_seed=7
 check "the same seed draws exactly the same" "$(px base 20 40) $(px base 12 118)" "$(px s1b 20 40) $(px s1b 12 118)"
 yes_if "another seed draws different veins" "$([[ $(left base) != $(left s2) ]] && echo yes || echo no)"
 
-# lichen: dots on the left, inside the card, thinning inward; none further in
-render lich U_growth=0 U_icon=0,0,0
-yes_if "lichen: some dot just inside the left edge (x 34 to 46) is bright" "$(gt "$(maxlum lich 34 34 46 116)" 60)"
-yes_if "but the band further in (x 60 to 120) has nothing as bright" "$([[ $(maxlum lich 60 40 120 110) -lt 30 ]] && echo yes || echo no)"
+# lichen: lots of dots on the left, inside the card, thinning inward, and hugging the top and bottom borders; creeping in as
+# the toast grows. (The first version had 49 to 125 lit pixels in this strip, depending on the seed, and was asked for "a lot more".)
+render lich U_icon=0,0,0
+render lich41 U_icon=0,0,0 U_seed=41; render lich3 U_icon=0,0,0 U_seed=3
+render lich0 U_icon=0,0,0 U_growth=0; render lich5 U_icon=0,0,0 U_growth=0.5
+strip() { lit "$1" 34 36 62 114 15; }
+for n in lich lich41 lich3; do
+  yes_if "lichen: the left strip is thick with dots ($n: at least 250 lit pixels, more than twice the first version's best)" "$([[ $(strip $n) -ge 250 ]] && echo yes || echo no)"
+done
+yes_if "lichen also hugs the top border (growth 1 has at least 100 more lit pixels than growth 0 in the 8 rows under it)" "$([[ $(( $(lit lich 100 33 400 41 15) - $(lit lich0 100 33 400 41 15) )) -ge 100 ]] && echo yes || echo no)"
+yes_if "and the bottom border" "$([[ $(( $(lit lich 100 110 400 118 15) - $(lit lich0 100 110 400 118 15) )) -ge 100 ]] && echo yes || echo no)"
+yes_if "it creeps in: none (under 30 lit pixels) at growth 0, some at 0.5, most at 1" "$([[ $(strip lich0) -lt 30 && $(strip lich5) -gt $(strip lich0) && $(strip lich5) -lt $(strip lich) ]] && echo yes || echo no)"
+yes_if "it is deepest at the left edge: more lit pixels in x 34 to 46 than in x 50 to 62" "$(gt "$(lit lich 34 36 46 114 15)" "$(lit lich 50 36 62 114 15)")"
+yes_if "but not further in than about 30 px: the band x 75 to 120 (clear of the top and bottom rows) has nothing lit" "$([[ $(lit lich 75 44 120 106 15) -eq 0 ]] && echo yes || echo no)"
+render lichicon U_seed=3 U_growth=1
+yes_if "lichen keeps clear of the icon: nothing lit just inside the ring's left side (x 47 to 51 at the icon's height) beyond the ring itself" "$([[ $(lit lichicon 40 70 44 80 15) -le $(lit lichicon 36 70 40 80 15) ]] && echo yes || echo no)"
 
 # the ignition and the roll-off
 render hot U_energy=2.2; render blaze U_energy=6
@@ -110,14 +143,48 @@ yes_if "and so is the ring itself, at its radius (within a pixel of it, to the r
 yes_if "and not at all when the radius is 0" "$([[ $(lum "$(px noicon 62 75)") -lt 6 ]] && echo yes || echo no)"
 yes_if "the ring is a ring: dark between the spore and the ring" "$([[ $(lum "$(px base 62 66)") -lt $(lum "$(px base 62 75)") ]] && echo yes || echo no)"
 
-# the countdown: a vein along the bottom, border to border, retreating from the right; none when negative
-render cfull U_remaining=1; render chalf U_remaining=0.5; render cnone U_remaining=-1
-bottom() { rsum "$1" 31 114 409 118; }
-yes_if "a fresh toast has a line along the bottom, from edge to edge (the far right is lit)" "$(gt "$(rsum cfull 380 114 409 118)" $(( $(rsum cnone 380 114 409 118) + 800 )))"
-yes_if "at half life the right half is gone and the left half still lit" "$([[ $(rsum chalf 300 114 409 118) -lt $(( $(rsum cnone 300 114 409 118) + 400 )) && $(rsum chalf 40 114 200 118) -gt $(( $(rsum cnone 40 114 200 118) + 800 )) ]] && echo yes || echo no)"
-yes_if "the line ends in a bud: the brightest pixel near its end is whiter than the line" "$(gt "$(rsum chalf 218 113 224 119)" "$(rsum chalf 150 113 156 119)")"
-render cdone U_remaining=0
-yes_if "at 0 it has gone" "$([[ $(bottom cdone) -le $(( $(bottom cnone) + 200 )) ]] && echo yes || echo no)"
+# the countdown: the card's own bottom border, lit. The card's bottom edge is at y 120 (30 + 90), the rim's centre 0.9 px above it.
+# It must lie on the border (an earlier version ran 3 px above it, as a second line), retreat from the right, and end in a bud.
+render cfull U_remaining=1; render chalf U_remaining=0.5; render cnone U_remaining=-1; render cdone U_remaining=0
+edge() { rsum "$1" "$2" 116 "$3" 123; }
+yes_if "a fresh toast's bottom border is brighter than the plain border, from end to end (left, middle and right thirds)" "$([[ $(edge cfull 50 150) -gt $(( $(edge cnone 50 150) + 400 )) && $(edge cfull 150 280) -gt $(( $(edge cnone 150 280) + 400 )) && $(edge cfull 280 390) -gt $(( $(edge cnone 280 390) + 400 )) ]] && echo yes || echo no)"
+# Alignment, measured on a toast with no lichen or veins yet (growth 0), where the border is the only thing on the bottom edge:
+# the centroid row of the light the countdown adds, column by column, against the centroid row of the border itself.
+render a0 U_growth=0 U_remaining=-1; render a1 U_growth=0 U_remaining=1
+offset=$(python3 - "$tmp/a0.pam" "$tmp/a1.pam" <<'PY'
+import sys
+def load(f):
+    d = open(f, "rb").read(); return d, d.index(b"ENDHDR\n") + 7
+(a, ea), (b, eb) = load(sys.argv[1]), load(sys.argv[2])
+def lum(d, e, x, y): o = e + (y * 440 + x) * 4; return (299 * d[o] + 587 * d[o + 1] + 114 * d[o + 2]) / 1000
+diffs = []
+for x in range(80, 340, 4):
+    rim = [lum(a, ea, x, y) for y in range(112, 124)]
+    add = [max(lum(b, eb, x, y) - lum(a, ea, x, y), 0) for y in range(112, 124)]
+    if sum(add) < 20: continue
+    c_rim = sum(r * y for r, y in zip(rim, range(112, 124))) / sum(rim)
+    c_add = sum(r * y for r, y in zip(add, range(112, 124))) / sum(add)
+    diffs.append(c_add - c_rim)
+n = len(diffs); mean = sum(diffs) / max(n, 1)
+print(f"{abs(mean):.3f} {sum(abs(x - mean) for x in diffs) / max(n, 1):.3f} {n}")
+PY
+)
+read -r bias spread n <<<"$offset"
+yes_if "the line lies on the border: on average the light it adds is centred within 0.35 px of the border's (the border's own spill and halo are lopsided, so not 0; measured $bias px over $n columns)" "$(python3 -c "print('yes' if $n > 40 and $bias < 0.35 else 'no')")"
+yes_if "and it follows the border's sway: that offset varies by under 0.1 px from column to column (measured $spread)" "$(python3 -c "print('yes' if $n > 40 and $spread < 0.1 else 'no')")"
+yes_if "it is not a second line: what it adds 5 to 10 px above the border (rows 110 to 115) is under a tenth of what it adds on the border" "$([[ $(( ( $(rsum cfull 100 110 300 115) - $(rsum cnone 100 110 300 115) ) * 10 )) -lt $(( $(edge cfull 100 300) - $(edge cnone 100 300) )) ]] && echo yes || echo no)"
+yes_if "at half life the right half is the plain border again and the left half is still lit" "$([[ $(edge chalf 260 390) -lt $(( $(edge cnone 260 390) + 300 )) && $(edge chalf 40 200) -gt $(( $(edge cnone 40 200) + 800 )) ]] && echo yes || echo no)"
+yes_if "the line ends in a bud: more light in the 6 px round its end than 70 px before it" "$(gt "$(rsum chalf 217 114 223 124)" "$(( $(rsum chalf 147 114 153 124) + 600 ))")"
+yes_if "at 0 it has gone" "$([[ $(edge cdone 30 410) -le $(( $(edge cnone 30 410) + 300 )) ]] && echo yes || echo no)"
+yes_if "and it is the bottom edge only: nothing is added along the top edge" "$([[ $(rsum cfull 100 27 400 34) -le $(( $(rsum cnone 100 27 400 34) + 100 )) ]] && echo yes || echo no)"
+yes_if "the line undulates: its brightness varies along the border (the brightest and dimmest 20 px stretches differ by 20%)" "$(python3 - "$tmp/cfull.pam" <<'PY'
+import sys
+d = open(sys.argv[1], "rb").read(); e = d.index(b"ENDHDR\n") + 7
+def col(x): return sum(sum(d[e + (y * 440 + x) * 4:e + (y * 440 + x) * 4 + 3]) for y in range(117, 122))
+w = [sum(col(x) for x in range(a, a + 20)) for a in range(50, 380, 20)]
+print("yes" if max(w) >= 1.2 * min(w) else "no")
+PY
+)"
 
 # the spores off the left edge scale with `spores`
 render sp1 U_spores=1

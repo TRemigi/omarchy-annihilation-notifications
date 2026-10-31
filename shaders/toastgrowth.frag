@@ -9,7 +9,7 @@
 // round it. Lichen is a scatter of tiny dots clustered in patches on the left edge inside the card (not a strip), thinning
 // as it goes in. Veins are fine curves with side branches that reach from the four corners: out into the free space on the
 // left, in across the card on the right; they grow out when the toast arrives (`growth`, 0 to 1) and then stay faint.
-// The countdown is a vein that wavers along the bottom edge and retreats, ending in a bud.
+// The countdown is the bottom border itself, lit as a vein whose thickness undulates, retreating to a bud.
 //
 // `energy`, `vividness`, `urgency`, `remaining` and `spores` mean what they mean in toastrim.frag. `seed` makes every toast
 // grow differently; `growth` is how far the veins have reached (the arrival animates it 0 to 1).
@@ -139,26 +139,33 @@ float vein(vec2 px, vec2 org, float ang, float seed, float reach) {
     return v;
 }
 
-// Lichen: tiny dots in patches along the left edge inside the card, dense at the edge and thinning in, kept clear of the icon.
+// Lichen creeping over the card from its edges: tiny dots in colonies, dense and deep along the left edge (about 30 px in,
+// thinning inward), and hugging the top and bottom borders (a few px in, thicker toward the left, where it came from). Each
+// cell holds one dot at a random place and of a random size; a few are bigger. It creeps in as the toast arrives (`growth`):
+// nearest the edge first, each dot at its own moment. Kept clear of the icon.
 float lichen(vec2 px, float d, float nearIcon) {
-    float x = px.x - ubuf.card.x, y = px.y - ubuf.card.y;
-    if (x < 1.2 || x > 16.0 || d > 0.0) return 0.0;
-    vec2 g = vec2(x, y) / 3.0;
-    vec2 cell = floor(g);
-    float colony = smoothstep(0.18, 0.5, vnoise(vec2(y * 0.045, ubuf.seed * 0.37)));
+    float fromLeft = px.x - ubuf.card.x;
+    if (d > 0.0 || -d > 34.0 || (-d > 10.0 && fromLeft > 40.0)) return 0.0;
+    vec2 hs = 0.5 * ubuf.card.zw, mid = ubuf.card.xy + hs;
+    vec2 cell = floor(px / 2.6);
     float acc = 0.0;
-    // each cell holds one dot at a random place in it, so the scatter does not look like a grid; check the cell and its neighbours
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
             vec2 c = cell + vec2(float(i), float(j));
             float h = hash2(c + ubuf.seed), h2 = hash2(c * 1.7 + ubuf.seed + 4.0), h3 = hash2(c * 2.3 + ubuf.seed + 9.0);
-            vec2 centre = (c + vec2(0.2 + 0.6 * h2, 0.2 + 0.6 * h3)) * 3.0;
-            float dens = exp(-(centre.x - 1.2) / 5.0) * colony;
-            float on = step(1.0 - dens * 0.9, h);
-            acc = max(acc, on * exp(-pow(length(vec2(x, y) - centre) / (0.55 + 0.5 * h2), 2.0)));
+            vec2 at = (c + vec2(0.15 + 0.7 * h2, 0.15 + 0.7 * h3)) * 2.6;
+            float edge = -roundBox(at - mid, hs, ubuf.radius);
+            if (edge < 0.6) continue;
+            float fl = at.x - ubuf.card.x;
+            float dens = max(exp(-(fl - 1.2) / 9.0), exp(-(edge - 0.6) / 2.8) * (0.4 + 0.6 * exp(-fl / 110.0)));
+            float colony = smoothstep(0.08, 0.34, vnoise(at * 0.04 + ubuf.seed * 0.37));
+            float appear = smoothstep(0.0, 0.25, ubuf.growth * 1.4 - 0.15 - edge / 45.0 + (h3 - 0.5) * 0.4);
+            float on = step(1.0 - clamp(dens * colony * 1.15, 0.0, 0.97), h) * appear;
+            float size = (0.45 + 0.4 * h2) * (h > 0.93 ? 1.5 : 1.0);   // at most 1.3 px: past the 3x3 cells searched, a dot would be cut flat
+            acc = max(acc, on * exp(-pow(length(px - at) / size, 2.0)));
         }
     }
-    return acc * smoothstep(2.0, 14.0, nearIcon);
+    return acc * smoothstep(2.0, 12.0, nearIcon);
 }
 
 void main() {
@@ -188,8 +195,8 @@ void main() {
     float halo = exp(-max(d, 0.0) / 4.0) * (1.0 - inside) * 0.13;
     vec3 rgb = col * (rim * (0.95 + sap) + spill + halo);
 
-    // Lichen, in a moss colour.
-    rgb += desaturate(palette(0.0, ubuf.urgency)) * lichen(px, d, nearIcon) * 0.7;
+    // Lichen, in a moss colour (an ember for a critical toast).
+    rgb += desaturate(palette(0.0, ubuf.urgency)) * lichen(px, d, nearIcon) * 0.8;
 
     // Veins: out into the free space on the left, in across the card on the right; grown from the corners.
     float g = ubuf.growth;
@@ -214,28 +221,28 @@ void main() {
         rgb += icol * (ring * 0.8 + core * 0.9 + fill + ringHalo);
     }
 
-    // The countdown: a vein along the bottom edge, border to border, wavering a little, retreating from the right and ending in
-    // a bud. Geometry as in toastrim.frag: it meets the border at both ends.
+    // The countdown: the card's own bottom border, lit. It is drawn from the same distance field and the same sway as the
+    // outline above, so it lies exactly on the border and the two read as one line (an earlier version ran 3 px above the
+    // border, as a second line). Where the toast has time left, the border is thicker and brighter, its thickness undulating
+    // along it like a vein; the part that has run out is the plain border. It retreats from the right and ends in a bud.
+    // It covers the bottom edge and a little way up each corner, not the top or the sides.
     if (ubuf.remaining >= 0.0) {
-        float lineHeight = 3.2;
-        float ex = lineHeight < ubuf.radius ? ubuf.radius - sqrt(max(ubuf.radius * ubuf.radius - (ubuf.radius - lineHeight) * (ubuf.radius - lineHeight), 0.0)) : 0.0;
-        float x0 = ubuf.card.x + 0.9 + ex;
-        float full = max(ubuf.card.z - 2.0 * (0.9 + ex), 1.0);
-        float x1 = x0 + clamp(ubuf.remaining, 0.0, 1.0) * full;
-        float wob = 0.7 * sin((px.x - x0) * 0.11 - ubuf.time * 1.6 + seed) * smoothstep(x0, x0 + 20.0, px.x);
-        float lineY = ubuf.card.y + ubuf.card.w - lineHeight + wob;
-        float seg = smoothstep(x0 - 0.5, x0 + 2.0, px.x) * (1.0 - smoothstep(x1 - 6.0, x1, px.x));
+        float bottom = ubuf.card.y + ubuf.card.w;
+        float x0 = ubuf.card.x;
+        float x1 = x0 + clamp(ubuf.remaining, 0.0, 1.0) * ubuf.card.z;
+        float onBottom = smoothstep(bottom - 7.0, bottom - 3.0, px.y);
+        float seg = smoothstep(x0 - 0.5, x0 + 2.0, px.x) * (1.0 - smoothstep(x1 - 4.0, x1, px.x)) * onBottom;
         float life = smoothstep(0.0, 0.08, ubuf.remaining);
-        float dy = px.y - lineY;
-        float thickLine = 0.55 + 0.35 * vnoise(vec2(px.x * 0.08, seed)); // a vein is not an even line
-        float line = exp(-pow(dy / thickLine, 2.0)) * seg;
-        float glow = exp(-pow(dy / 2.6, 2.0)) * seg * 0.14;
-        vec3 lcol = desaturate(palette((px.x - x0) / full, ubuf.urgency));
-        vec2 bud = vec2(x1, ubuf.card.y + ubuf.card.w - lineHeight + 0.7 * sin((x1 - x0) * 0.11 - ubuf.time * 1.6 + seed));
+        float wave = 0.5 + 0.5 * sin((px.x - x0) * 0.11 - ubuf.time * 1.6 + seed);
+        float off = d + 0.9 + sway;                                         // distance from the outline's own centre line
+        float line = exp(-pow(off / (0.7 + 0.5 * wave), 2.0)) * seg * (0.55 + 0.45 * wave);
+        float glow = exp(-pow(off / 2.6, 2.0)) * seg * 0.14;
+        vec3 lcol = desaturate(palette((px.x - x0) / ubuf.card.z, ubuf.urgency));
+        vec2 bud = vec2(x1, bottom - 0.9 - (vnoise(vec2(x1, bottom - 0.9) * 0.11 + seed * 5.0) - 0.5) * 0.9);
         float sd = length(px - bud);
         float spark = exp(-pow(sd / 1.9, 2.0)) * 0.8;
         float sparkHalo = exp(-pow(sd / 6.0, 2.0)) * 0.22;
-        rgb += (lcol * (line * 0.95 + glow + sparkHalo) + vec3(0.95, 1.0, 0.85) * spark) * life;
+        rgb += (lcol * (line * 0.85 + glow + sparkHalo) + vec3(0.95, 1.0, 0.85) * spark) * life;
     }
 
     rgb *= (0.7 + 0.3 * ubuf.vividness) * ubuf.energy;
