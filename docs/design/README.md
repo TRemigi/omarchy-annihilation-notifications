@@ -48,6 +48,9 @@ spark, here with 62% of the toast's life left (`shader-countdown-full.png`: a fr
 300, 600, 950 and 1400 ms (`test/spores-preview.py`). They drift **left**, not up as in mock-up C, because a toast in
 the top-right corner of the screen has no room above it, and drifting down would cross the toast below.
 
+`shader-ambient.png` is the faint drift (slice 4b) at two moments: a few small spores leaving a card's left edge and drifting
+away over several seconds, deliberately barely there (`test/rim-preview.py ... 1 <time>`).
+
 ## Decision (2026-10-30)
 The user chose the blend below. **Follow-up to try later: the full C "Growth" direction** (organic outline,
 lichen strip, veins, wavering countdown), on its own branch, judged against the blend.

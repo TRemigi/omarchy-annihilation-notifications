@@ -16,10 +16,12 @@ Item {
   property real vividness: 0.75
   // The fraction of the toast's life left, 1 down to 0, or negative for none (critical toasts never expire).
   property real remaining: -1
+  // 0 to 1: the faint spores off the card's left edge (the user's spore_amount); 0 for none.
+  property real spores: 1
 
   property real energy: 1
   property real time: 0
-  readonly property real margin: 20
+  readonly property real margin: 56    // the halo needs 20, the faint spores drifting off the left edge need 56
 
   anchors.fill: target
   anchors.margins: -margin
@@ -66,6 +68,7 @@ Item {
     property vector4d card: Qt.vector4d(root.margin, root.margin, root.target.width, root.target.height)
     property vector3d icon: root.icon
     property real remaining: root.remaining
+    property real spores: root.spores
 
     fragmentShader: Qt.resolvedUrl("../shaders/toastrim.frag.qsb")
   }

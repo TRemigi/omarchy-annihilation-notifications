@@ -1139,6 +1139,7 @@ Item {
               vividness: service.rimVividness
               // annihilation: the countdown follows the toast's own clock, so it freezes while hovered and restarts on an update.
               remaining: cardSlot.lifetime > 0 ? cardSlot.remainingLifetime : -1
+              spores: service.sporeAmount
               Component.onCompleted: ignite()
             }
           }

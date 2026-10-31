@@ -16,6 +16,10 @@
 // that full length, so it seems to retreat and reveal them rather than to recolour.
 // `remaining` is the fraction of the toast's life left; negative means no countdown (critical toasts never expire).
 //
+// A few faint spores leave the card's left edge now and then and drift away from the screen's edge into the free space to
+// the left (the same direction as the spores a toast leaves when it goes, see toastspores.frag), over a few seconds each.
+// `spores` scales them (0 for none).
+//
 // Rebuild with tools/build-shaders.sh after editing.
 
 layout(location = 0) in vec2 qt_TexCoord0;
@@ -33,6 +37,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 card;         // the card inside it: x, y, width, height, px
     vec3 icon;         // the icon ring: centre x, centre y, radius; radius <= 0 for none
     float remaining;   // 0 to 1: the toast's life left; negative for none
+    float spores;      // 0 to 1: the faint spores off the left edge (the user's spore_amount); 0 for none
 } ubuf;
 
 // Light colours, as in the theme's shaders. Normal runs teal to blue to violet to pink, critical amber to peach to
@@ -52,6 +57,31 @@ vec3 spectrum(float t, float urgency) {
     return mix(c, d, t - 2.0);
 }
 
+float hash(float n) { return fract(sin(n * 127.1 + 311.7) * 43758.5453); }
+
+// Six spores, each with its own period of 5 to 8.5 s: it leaves the left edge, drifts about 46 px away, swaying a little,
+// and fades in and out over that time. Drawn only to the left of the card, so they seem to come from its edge.
+vec3 ambientSpores(vec2 px) {
+    float left = ubuf.card.x;
+    if (px.x > left + 1.0 || px.x < left - 56.0) return vec3(0.0);
+    if (px.y < ubuf.card.y - 10.0 || px.y > ubuf.card.y + ubuf.card.w + 10.0) return vec3(0.0);
+    vec3 acc = vec3(0.0);
+    for (int i = 0; i < 6; i++) {
+        float k = float(i) * 3.17 + 1.3;
+        float h1 = hash(k), h2 = hash(k + 1.0), h3 = hash(k + 2.0), h4 = hash(k + 3.0);
+        float phase = fract(ubuf.time / (5.0 + 3.5 * h2) + h3);
+        float y0 = ubuf.card.y + (0.12 + 0.76 * h1) * ubuf.card.w;
+        float travel = 46.0 * (1.0 - (1.0 - phase) * (1.0 - phase));
+        vec2 p = vec2(left + 1.0 - travel, y0 + (3.0 + 3.0 * h4) * sin(6.2832 * (phase * 1.5 + h1)) + 4.0 * phase);
+        float r = length(px - p);
+        float s = 0.8 + 0.6 * h4;
+        float env = pow(sin(3.14159 * phase), 1.5);
+        vec3 col = h4 < 0.5 ? vec3(0.96, 0.62, 0.18) : spectrum(0.1, ubuf.urgency);
+        acc += col * (exp(-pow(r / s, 2.0)) * 0.9 + exp(-pow(r / (3.4 * s), 2.0)) * 0.15) * env;
+    }
+    return acc * smoothstep(left + 1.0, left - 3.0, px.x);
+}
+
 float roundBox(vec2 p, vec2 halfSize, float r) {
     vec2 q = abs(p) - (halfSize - vec2(r));
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
@@ -64,7 +94,7 @@ void main() {
 
     // Everything is within a few dozen pixels of the card's edge or its icon.
     float nearIcon = ubuf.icon.z > 0.0 ? length(px - ubuf.icon.xy) - ubuf.icon.z : 1e3;
-    if (d > 40.0 && nearIcon > 40.0) { fragColor = vec4(0.0); return; }
+    if (d > 60.0 && nearIcon > 40.0) { fragColor = vec4(0.0); return; }
 
     // How far across the card (0 left, 1 right), with a slow drift and a little waviness down the height.
     float across = clamp((px.x - ubuf.card.x) / ubuf.card.z, 0.0, 1.0);
@@ -120,6 +150,7 @@ void main() {
     }
 
     rgb *= (0.7 + 0.3 * ubuf.vividness) * ubuf.energy;
+    rgb += ambientSpores(px) * 0.55 * ubuf.spores;
     rgb = 1.0 - exp(-rgb * 1.7);
     fragColor = vec4(rgb, 0.0) * ubuf.qt_Opacity;
 }

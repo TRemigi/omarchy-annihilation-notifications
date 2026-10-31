@@ -113,6 +113,72 @@ render fading U_remaining=0.04
 check "the line fades out over the last 8% of the toast's life" yes "$([[ $(over fading 60) -lt $(( $(over half 60) * 8 / 10 )) && $(over fading 60) -gt 0 ]] && echo yes || echo no)"
 check "the countdown is added light too: alpha stays 0" 0 "$(read -r _ _ a <<<"$(stat full)"; echo $a)"
 
+# the faint spores off the card's left edge: a 500x150 overlay with the card at (70,30), so there is room to its left
+aren() { # out [VAR=value ...]
+  local out=$1; shift
+  env EGL_PLATFORM=surfaceless LIBGL_ALWAYS_SOFTWARE=1 U_time=3 U_energy=1 U_vividness=0.75 U_urgency=1 U_radius=5 U_remaining=-1 \
+    U_size=500,150 U_card=70,30,380,90 U_icon=0,0,0 U_spores=1 "$@" "$tmp/harness" "$tmp/s.frag" 500 150 "$tmp/$out.pam" 2>/dev/null
+}
+# diffstat A B -> "sum minx maxx miny maxy maxchannel count" of what B has that A lacks (light added, per pixel)
+diffstat() {
+  python3 - "$tmp/$1.pam" "$tmp/$2.pam" <<'PY'
+import sys
+def load(p):
+    d = open(p, "rb").read(); e = d.index(b"ENDHDR\n") + 7; w = int(d.split(b"WIDTH ")[1].split()[0]); return d[e:], w
+a, W = load(sys.argv[1]); b, _ = load(sys.argv[2]); H = len(a) // 4 // W
+tot = cnt = mx = 0; minx = miny = 10**9; maxx = maxy = -1
+for y in range(H):
+    for x in range(W):
+        o = (y * W + x) * 4
+        dl = max(0, (b[o] - a[o]) + (b[o + 1] - a[o + 1]) + (b[o + 2] - a[o + 2]))
+        if dl > 6:
+            tot += dl; cnt += 1; minx = min(minx, x); maxx = max(maxx, x); miny = min(miny, y); maxy = max(maxy, y)
+            mx = max(mx, max(b[o] - a[o], b[o + 1] - a[o + 1], b[o + 2] - a[o + 2]))
+print(tot, minx if cnt else -1, maxx, miny if cnt else -1, maxy, mx, cnt)
+PY
+}
+aren off U_spores=0; aren on; aren off6 U_spores=0 U_time=6; aren later U_time=6; aren half U_spores=0.5
+read -r st sminx smaxx sminy smaxy smax scnt <<<"$(diffstat off on)"
+check "with spore_amount > 0 there are spores" yes "$([[ $st -gt 200 && $scnt -gt 10 ]] && echo yes || echo no)"
+check "they are all to the left of the card (the card's left edge is x = 70)" yes "$([[ $smaxx -le 71 ]] && echo yes || echo no)"
+check "and within 56 px of it: none farther left than x = 12" yes "$([[ $sminx -ge 12 ]] && echo yes || echo no)"
+check "and level with the card, not above or below it (card rows 30 to 120)" yes "$([[ $sminy -ge 18 && $smaxy -le 132 ]] && echo yes || echo no)"
+check "they are faint: no spore brighter than 170 in any channel" yes "$([[ $smax -lt 170 ]] && echo yes || echo no)"
+check "and few: a handful of dots, not a haze (fewer than 700 lit pixels)" yes "$([[ $scnt -lt 700 ]] && echo yes || echo no)"
+# (compared like for like: the spores at time 6 against the card at time 6 without them, since the rim's colour drifts too)
+read -r lt _ _ _ _ _ _ <<<"$(diffstat off6 later)"
+check "they move: six seconds later there are different spores (and still some)" yes "$([[ "$(diffstat off on)" != "$(diffstat off6 later)" && $lt -gt 200 ]] && echo yes || echo no)"
+# over a stretch of time: how far left they reach, that nothing is clipped hard at the edge of their area, and where they sit
+for t in 0.5 1.7 2.9 4.1 5.3 6.5 7.7 8.9; do aren "off_$t" U_spores=0 U_time=$t; aren "on_$t" U_time=$t; done
+agg=$(python3 - "$tmp" <<'PY'
+import sys
+tmp = sys.argv[1]
+def load(p):
+    d = open(p, "rb").read(); e = d.index(b"ENDHDR\n") + 7; return d[e:]
+W, H = 500, 150
+minx = 10**9; edge = 0; wy = tot = 0
+for t in ["0.5", "1.7", "2.9", "4.1", "5.3", "6.5", "7.7", "8.9"]:
+    a = load(f"{tmp}/off_{t}.pam"); b = load(f"{tmp}/on_{t}.pam")
+    for y in range(H):
+        for x in range(W):
+            o = (y * W + x) * 4
+            dl = max(0, (b[o] - a[o]) + (b[o + 1] - a[o + 1]) + (b[o + 2] - a[o + 2]))
+            if dl > 6:
+                minx = min(minx, x); wy += dl * y; tot += dl
+                if x <= 16: edge = max(edge, dl)
+print(minx, edge, round(wy / tot) if tot else -1)
+PY
+)
+read -r aggmin aggedge aggy <<<"$agg"
+check "over time they reach well away from the edge (the farthest left light is by x = 26, ie 44+ px from the card; it is 21)" yes "$([[ $aggmin -le 26 && $aggmin -ge 14 ]] && echo yes || echo no)"
+check "and fade out before the edge of their area: nothing bright at x <= 16 (no hard cut)" yes "$([[ $aggedge -lt 10 ]] && echo yes || echo no)"
+check "and they come off the whole height of the card: the light's vertical centre is mid-card (y about 75, within 15)" yes "$([[ $aggy -ge 60 && $aggy -le 90 ]] && echo yes || echo no)"
+read -r ht _ _ _ _ _ _ <<<"$(diffstat off half)"
+check "spore_amount 0.5 gives less light than 1, and more than none" yes "$([[ $ht -lt $st && $ht -gt 0 ]] && echo yes || echo no)"
+check "spore_amount 0 gives exactly the card without them" "0 -1 -1 -1 -1 0 0" "$(diffstat off off)"
+aren crit U_urgency=2; read -r ct _ _ _ _ _ _ <<<"$(diffstat off crit)"
+check "a critical toast has them too" yes "$([[ $ct -gt 0 ]] && echo yes || echo no)"
+
 # the contract with the QML: every uniform the shader declares has a property of the same name on ToastRim's
 # ShaderEffect, and every property there is a uniform (the offscreen tests cannot see a mismatch: nothing renders)
 uniforms=$(/usr/lib/qt6/bin/qsb --dump "$HERE/shaders/toastrim.frag.qsb" | sed -n 's/^ *"name": "\(.*\)",\{0,1\}$/\1/p' | grep -vx -e qt_TexCoord0 -e fragColor -e qt_Matrix -e qt_Opacity | sort -u | tr '\n' ' ')

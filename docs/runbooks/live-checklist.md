@@ -154,6 +154,15 @@ look, not only that it works; the design is `docs/design/spores-exit.png`.
 - [ ] **switch to another theme**: toasts vanish with no spores, as stock
 - [ ] `spore_amount=0` in `~/.config/omarchy/annihilation-notifications-fork.conf` turns them off; `0.5` halves them
 
+**The faint drift (slice 4b, same branch).** While a toast is up, a few very faint spores leave its **left edge** now and
+then and drift away from it, over several seconds each.
+
+- [ ] you can see them, but only if you look: they are **faint and few** (six at most per toast, each lasting 5 to 8 s)
+- [ ] they come off the card's **left edge** and drift left, swaying a little; none appear over the card itself
+- [ ] they do not look like dirt or dead pixels on the screen behind the toast (say if they do: it may be too bright
+      for a light wallpaper, or too many)
+- [ ] `spore_amount` turns them down and off with the same setting as the exit burst
+
 Direction is a design choice to judge: they drift left (away from the screen edge, into free space, never across the
 toast below) because a toast in the top-right corner has no room above it, as the first mock-up assumed. Say if you would
 rather they went another way.

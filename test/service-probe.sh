@@ -41,7 +41,7 @@ m = m.replace("  property var pendingDone: null",
   "  Component.onCompleted: console.log('PROBE motion created fx=' + fx + ' slowdown=' + slowdown + ' enterMs=' + enterMs)", 1)
 open(d + "components/SlotMotion.qml", "w").write(m)
 r = open(d + "components/ToastRim.qml").read()
-r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency) }\n", 1)
+r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores) }\n", 1)
 open(d + "components/ToastRim.qml", "w").write(r)
 sp = open(d + "components/SporeLayer.qml").read()
 sp = sp.replace("    if (!(amount > 0)) return\n", "    if (!(amount > 0)) return\n    console.log('PROBE burst urgency=' + urgency + ' size=' + Math.round(w) + 'x' + Math.round(h) + ' amount=' + amount)\n", 1)
@@ -175,6 +175,13 @@ check "countdown: a critical toast never expires, so it has no countdown" -1.000
 check "countdown: a low toast has one" yes "$(awk -v v="$(rimval "$(rimline 'from mail')" remaining)" 'BEGIN{print (v > 0 && v < 1) ? "yes" : "no"}')"
 check "countdown: the urgency reaches the shader (critical is 2)" 2 "$(rimval "$(rimline 'from power')" urgency)"
 check "countdown: a low toast's life is shorter (5 s, not 8), so it has used up more of it" yes "$(awk -v a="$sigrem" -v b="$(rimval "$(rimline 'from mail')" remaining)" 'BEGIN{print (b < a) ? "yes" : "no"}')"
+
+# -- the faint spores off the card follow spore_amount
+check "ambient spores: on by default (the rim gets spores=1)" 1 "$(rimval "$(rimline 'from signal')" spores)"
+out_half=$(run cards annihilation "spore_amount=0.5")
+check "ambient spores: spore_amount=0.5 reaches the rim" 0.5 "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_half" | head -n1)" spores)"
+out_none=$(run cards annihilation "spore_amount=0")
+check "ambient spores: spore_amount=0 turns them off" 0 "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_none" | head -n1)" spores)"
 
 # -- with the theme off, the card is exactly Omarchy's: the same size as the pristine upstream card, for every kind of toast
 if [[ -n $ref ]]; then

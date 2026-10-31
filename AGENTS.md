@@ -203,11 +203,11 @@ Built from the design chosen on 2026-10-30 (`docs/design/`: mock-up A toned down
   `MultiEffect` in a real shell, the ring round square app icons, several toasts' halos together, and that it does
   not feel heavier. A first lesson from section D applies: if it "looks the same", check the branch and the
   `p2/look` code is what runs before concluding anything.
-- Lint baseline now: `Service.qml` 25, `NotificationCard.qml` 14, `ToastRim.qml` 0 (the same classes as before).
+- Lint baseline now: `Service.qml` 26, `NotificationCard.qml` 14, `ToastRim.qml` 0 (the same classes as before).
 
 ## P2 slice 4: spores (branch `p2/spores`, awaiting the user's live check)
 
-Plan: the exit dissolves into spores, and a faint drift off a card (the drift is the second commit on the branch). Built so far, **the exit burst**:
+Plan: the exit dissolves into spores, and a faint drift off a card. Both are built (the drift is the second commit on the branch). **The exit burst**:
 - `shaders/toastspores.frag` (+ `.qsb`): up to four bursts of 22 spores each, computed from a hash of the burst's seed (no
   particle objects): they lift off the card's body over 0.28 s, drift **left** 28 to 102 px (ease-out, with a little sway), and
   fade over 0.9 to 1.7 s; amber and the toast's own colour (teal, pink for critical, green for low). Additive, rolled off with
@@ -224,12 +224,23 @@ Plan: the exit dissolves into spores, and a faint drift off a card (the drift is
   spores (CONTRACT.md notes it); `spore_amount` (0 to 1, default 1) in the fork's conf file, with `parseSpores`.
 - Verified: `test/spores-test.sh` (21 checks on the shader through the harness, including a one-spore variant that proves each
   spore eases in and out; 10 deliberate breaks caught, one equivalent: the burst-level 2.2 s cutoff is redundant with each
-  spore's own end); `test/service-probe.sh` (73 checks; its spore scenarios run in a config root where toasts last 0.7 s, and
+  spore's own end); `test/service-probe.sh` (76 checks; its spore scenarios run in a config root where toasts last 0.7 s, and
   cover expiry, click, another theme, `spore_amount` 0 and 0.5, the window staying up for the spores and then going, and the
   parser; 6 deliberate breaks caught); `test/spores-preview.py` renders `docs/design/spores-exit.png`.
 - Two test pitfalls hit here, worth knowing: `VAR=1 out=$(run ...)` does **not** export `VAR` into the substitution (it is two
   shell assignments), which made a click scenario silently not click and two mutations survive; write `out=$(VAR=1 run ...)`.
   And shortening toast lifetimes must be done in its own config root, or it breaks every other scenario.
+- **The faint drift** is in `shaders/toastrim.frag` (not a new component): six spores per toast, each with its own period (5 to
+  8.5 s), leaving the card's **left** edge and drifting 46 px away with a little sway and a fade in and out, only ever drawn to the
+  left of the card (a mask at the edge), scaled by the `spores` uniform (`spore_amount`) and by 0.55 so they stay faint. `ToastRim`'s
+  overlay margin went from 20 to 56 px to hold them, and the shader's early-out from 40 to 60 px. `shader-test.sh` now has 51 checks:
+  the spores' presence, that they stay left of the card and within 56 px, level with it, faint and few, that they move, how far
+  they reach and that nothing is hard-clipped at the edge of their area, where they sit vertically, that `spore_amount` scales
+  them to nothing (aggregated over eight moments, and compared like for like: **the rim's own colour drifts with time too**, so
+  comparing a frame at one time with a frame at another measures the rim, not the spores). `test/rim-preview.py` takes
+  `[spores] [time]`: `docs/design/shader-ambient.png`. The service probe is at 76 checks (the `spores` property reaches the rim for
+  1, 0.5 and 0). One mutation is near-equivalent: removing the mask that hides spores over the card only trims 1 to 4 px of glow
+  tail at the edge.
 - **Not verified, needs the user** (checklist section F): how the spores look and feel (taste: size, count, brightness, direction),
   that nothing flickers when the last toast goes, and that the layer never intercepts input.
 
