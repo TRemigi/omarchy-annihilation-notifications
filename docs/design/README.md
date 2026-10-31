@@ -75,7 +75,16 @@ mock-up C, whose wavy outline and ragged strip read as glitches:
   life); 50% ease-out plus 50% linear (popped at the start, too linear); a cubic Bezier (eased in well, "still pretty linear": its
   speed fell only fivefold from 1 s to 5 s); a pure exponential (liked: fast, hard slowdown, but it moved by under 2 px/s after four
   seconds, so it "mostly stopped growing well before the countdown finished"; the 25% gentle part fixed that at the cost of a body a
-  few points slower: 28% after a second instead of 35%). Fainter veins grow across the card from its right corners.
+  few points slower: 28% after a second instead of 35%).
+  **"Still finishes, or appears to finish, well before the countdown"** (from a screen recording, 2026-10-31): the trunk curve was
+  right, but measuring the recording and the shader's output showed the roots' visible ink was 96% complete after 3 s of an 8 s toast
+  and 99% after 5 s, because the branches near a root's base fill in early and the trunk's last tenth is only a few pixels. Slowing
+  the trunk further would have lost the curve the user liked, so **each root now has four side shoots** (at trunk steps 4, 7, 10 and
+  13, alternating sides) **that sprout on their own, later schedule**: they start at about 10%, 30%, 50% and 70% of the life (each
+  jittered), once the trunk has reached their step, grow with a gentler ease-out, and are full at 97 to 99.5%. So something is always
+  still sprouting or extending to the end of the countdown. Net root ink (excluding the rim's constant halo), as a share of the final,
+  after 1, 2, 3, 4, 5, 6, 7 s of an 8 s toast: was 21, 77, 92, 96, 98, 99, 99; now 17, 55, 68, 79, 88, 93, 98. The roots end up
+  branchier (four shoots instead of two). Fainter veins grow across the card from its right corners.
 - **The countdown is the bottom border itself, lit**: drawn from the same distance field and sway as the outline, so it lies
   exactly on it and the two read as one line (the first version ran 3 px above the border, which the user saw as two lines).
   Where there is time left the border is brighter and thicker, its thickness undulating along it like a vein; the part that has run

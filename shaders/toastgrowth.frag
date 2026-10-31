@@ -113,19 +113,6 @@ float curve(vec2 px, vec2 org, float ang, float stepLen, int n, float seed, floa
     return best;
 }
 
-// Where the same walk is after k steps, and which way it is heading, for the branches to start from.
-vec3 walkTo(vec2 org, float ang, float stepLen, int k, float seed) {
-    vec2 p = org;
-    float a = ang;
-    for (int i = 0; i < 16; i++) {
-        if (i >= k) break;
-        float fi = float(i);
-        a += 0.30 * sin(seed * 3.1 + fi * 0.9) + 0.12 * sin(seed * 1.7 + fi * 2.3);
-        p += vec2(cos(a), sin(a)) * stepLen;
-    }
-    return vec3(p, a);
-}
-
 // The shape of a root's growth, over its own window from 0 to 1: three parts exponential slowdown, 1 - exp(-5t) normalised (the speed
 // falls by the same ratio in each equal stretch of time: a hard but natural slowdown), and one part a gentle ease-out, 1 - (1-t)^1.5
 // (it keeps going and slows to a stop exactly at the end), under a short smoothstep ramp over the first 15% so it eases in instead
@@ -148,17 +135,50 @@ float rootReach(float g, float h1, float h3) {
     return easeGrowth(clamp((g - start) / (end - start), 0.0, 1.0));
 }
 
-// A vein (a root) with two side branches. `scale` (about 1 to 2) makes it shorter or longer. Nothing is drawn far from it.
-float vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale) {
+// How far a shoot has grown, from `g` (how far through the toast's life it is): it sprouts at `startAt` (a fraction of the life) and
+// is full at its own moment between 97% and 99.5% of it, an ease-out of power 1.8 under a short ease-in. The shoots of a root start
+// at different times through the first 75% of the life, so something is always still sprouting or extending, up to the end of the
+// countdown: the trunks alone slow down so much that the roots looked finished at about 40% of the life.
+float shootReach(float g, float startAt, float h) {
+    float end = 0.97 + 0.025 * h;
+    float t = clamp((g - startAt) / (end - startAt), 0.0, 1.0);
+    return smoothstep(0.0, 0.12, t) * (1.0 - pow(1.0 - t, 1.8));
+}
+
+// A vein (a root): a trunk of 16 steps (which follows `reach`, from rootReach) and four shoots from it, at steps 4, 7, 10 and 13,
+// alternating sides, which sprout on their own schedule (see shootReach) once the trunk has got there. `scale` (about 1 to 2) makes
+// it shorter or longer. Nothing is drawn far from it.
+float vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, float g) {
     if (reach <= 0.0) return 0.0;
     float stepLen = 3.0 * scale;
-    if (length(px - org) > stepLen * (16.0 * min(reach, 1.0) + 7.0) + 4.0) return 0.0;
-    float v = curve(px, org, ang, stepLen, 16, seed, reach, 0.62);
-    vec3 b1 = walkTo(org, ang, stepLen, 5, seed);
-    vec3 b2 = walkTo(org, ang, stepLen, 10, seed);
+    if (length(px - org) > stepLen * (16.0 * min(reach, 1.0) + 8.0) + 4.0) return 0.0;
+    vec2 p = org;
+    float a = ang, v = 0.0;
     float side = hash(seed + 5.0) < 0.5 ? 1.0 : -1.0;
-    v = max(v, 0.8 * curve(px, b1.xy, b1.z + side * 0.9, 2.7 * scale, 7, seed + 1.3, clamp((reach - 5.0 / 16.0) * 2.2, 0.0, 1.0), 0.5));
-    v = max(v, 0.7 * curve(px, b2.xy, b2.z - side * 0.8, 2.5 * scale, 6, seed + 2.6, clamp((reach - 10.0 / 16.0) * 2.6, 0.0, 1.0), 0.45));
+    for (int i = 0; i < 16; i++) {
+        float fi = float(i);
+        a += 0.30 * sin(seed * 3.1 + fi * 0.9) + 0.12 * sin(seed * 1.7 + fi * 2.3);
+        float grown = clamp(reach * 16.0 - fi, 0.0, 1.0);
+        vec2 e = vec2(cos(a), sin(a)) * stepLen;
+        if (grown > 0.0) {
+            vec2 se = e * grown, pa = px - p;
+            float h = clamp(dot(pa, se) / max(dot(se, se), 1e-4), 0.0, 1.0);
+            float dist = length(pa - se * h);
+            float along = fi / 16.0;
+            v = max(v, exp(-pow(dist / (0.62 * (1.0 - 0.55 * along)), 2.0)) * (1.0 - 0.8 * along));
+        }
+        p += e;
+        // a shoot leaves the trunk after steps 3, 6, 9 and 12 (the 4th, 7th, 10th and 13th), once the trunk has grown to there
+        if (i == 3 || i == 6 || i == 9 || i == 12) {
+            float j = float((i - 3) / 3);
+            float k = float(i + 1);
+            float sr = shootReach(g, 0.10 + 0.20 * j + 0.06 * hash(seed + j * 3.3), hash(seed + j * 5.1 + 1.0)) * smoothstep(k / 16.0, k / 16.0 + 0.06, reach);
+            if (sr > 0.0) {
+                float sgn = mod(j, 2.0) < 0.5 ? side : -side;
+                v = max(v, (0.82 - 0.06 * j) * curve(px, p, a + sgn * (0.9 - 0.05 * j), (3.0 - 0.15 * j) * scale, 7 - int(j > 0.5) - int(j > 1.5) - int(j > 2.5), seed + 1.3 + j * 1.1, sr, 0.5 - 0.03 * j));
+            }
+        }
+    }
     return v;
 }
 
@@ -231,7 +251,7 @@ void main() {
         if (px.x > org.x + 1.0 || org.x - px.x > 112.0 || abs(px.y - org.y) > 92.0) continue;
         float ang = 3.14159 + (h2 - 0.5) * 0.9 - (0.5 - u) * 0.9;
         float reach = rootReach(g, h1, h3);
-        outer = max(outer, vein(px, org, ang, seed + fi * 13.0, reach, 1.4 + 0.6 * h3) * (1.0 + 0.5 * (1.0 - reach)));
+        outer = max(outer, vein(px, org, ang, seed + fi * 13.0, reach, 1.4 + 0.6 * h3, g) * (1.0 + 0.5 * (1.0 - reach)));
     }
     // The same along the bottom edge (about one per 20 px of its width): down and leaning left, shorter, since the gap to the
     // toast below is small (they pass behind it) and, under the last toast, the screen is free.
@@ -248,12 +268,12 @@ void main() {
             if (abs(px.x - org.x) > 100.0) continue;
             float ang = 1.5708 + 0.35 + (h2 - 0.5) * 0.9;
             float reach = rootReach(g, h1, h3);
-            under = max(under, vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 1.1 + 0.6 * h3) * (1.0 + 0.5 * (1.0 - reach)));
+            under = max(under, vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 1.1 + 0.6 * h3, g) * (1.0 + 0.5 * (1.0 - reach)));
         }
     }
     outer = max(outer, 0.85 * under);
     // And, fainter, across the card from its right corners.
-    float inner = vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0) + vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0);
+    float inner = vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0, g) + vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0, g);
     vec3 vcol = desaturate(palette(0.55, ubuf.urgency));
     rgb += vcol * (outer * 0.7 + inner * 0.36 * (0.5 + 0.5 * inside));
 

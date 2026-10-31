@@ -183,6 +183,9 @@ flipping between the two with the same notifications. The design is `docs/design
       after two, over four fifths after four, still creeping at six); it does not look linear; roots start a little apart; the last
       finish just before the countdown line does (the growth freezes with the countdown while you hover; an update that restarts
       the countdown does not shrink them; a critical toast, which has no countdown, grows them over about eight seconds)
+- [ ] **the second half of a toast's life still shows growth**: after the trunks have slowed, side shoots keep sprouting and
+      extending from the roots (the roots get branchier), right up to the end of the countdown line, with nothing that looks
+      finished long before it (say if the final look is too bushy, and whether a toast still looks "done" early)
 - [ ] they are **long** (left ones up to about 95 px, bottom ones up to about 80 px) and do not look cut off at the end; with
       several toasts at once nothing stutters (the roots are the most expensive part of the shader: say if it does)
 - [ ] fainter veins grow across the card from its right corners; none cross onto the toast below. Under a toast with another

@@ -286,6 +286,16 @@ body a few points slower than the ideal curve); a linear component makes the cur
 rescues a dead tail; and an ease-in is what stops a pop. The lengths: the roots are 1.4 to 2.0 times the old length on the left and 1.1 to 1.7 on the bottom, with 16 steps per trunk. Cost
 went up (a vein is now ~45 loop iterations; `vein()` returns early beyond its grown radius). Untested apart from renders.
 
+**Roots, round 8 (2026-10-31, from a screen recording):** the user said the roots "still finish (or appear to finish) well before the
+countdown" even with the curve they liked. Measured from the recording (a high-pass filter to find thin bright lines, per band below and
+left of the card) and from the shader (lit pixels outside the card, minus the g=0 baseline, at several `U_growth`), the visible ink was
+96% complete at 3 s of 8 and 99% at 5 s: the trunk curve is fine but the eye reads a root as finished once what is left is a few pixels.
+The fix kept the trunk curve and added **four shoots per root on later schedules** (`shootReach`: starts ~10/30/50/70% of the life, full at
+97 to 99.5%); `vein()` is now one loop that draws the trunk and spawns the shoots (no `walkTo`). Lesson: judge "appears finished" by
+visible *ink* over time (video or harness), not by the trunk's length curve; and when two requests pull against each other (a strongly
+decelerating curve vs growth to the very end) look for a way to give the eye something moving instead of bending the curve.
+Untested apart from renders and the ink measurement.
+
 ## Conventions
 
 - Match the surrounding (Omarchy's) QML style in vendored files: terse comments that explain why, no tutorials.
