@@ -42,8 +42,7 @@ gleam it starts from when the toast arrives and cools from over about a second. 
 mock A (vividness 0.75).
 
 `shader-countdown.png` adds the countdown (slice 3): a line of light along the bottom edge that drains, ending in a
-spark, here with 62% of the toast's life left (`shader-countdown-full.png`: a fresh toast, the line the card's whole
-length); the critical toast below it has none, because it never expires.
+spark, here with 62% of the toast's life left (`shader-countdown-full.png`: a fresh toast, the line from border to border); the critical toast below it has none, because it never expires.
 
 ## Decision (2026-10-30)
 The user chose the blend below. **Follow-up to try later: the full C "Growth" direction** (organic outline,

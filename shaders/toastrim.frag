@@ -11,9 +11,9 @@
 // rolled off with 1 - exp(-x) so a bright ignition never clips flat.
 //
 // The countdown is a line of light along the bottom edge that drains as the toast runs out, ending in a bright spark.
-// Full, it is as long as the card's straight bottom edge (from where the left corner ends to where the right one begins),
-// so a fresh toast has a line the card's whole width; its colours are fixed along that full length, so it seems to
-// retreat and reveal them rather than to recolour.
+// Full, it runs from the card's left border to its right border, meeting both (a first version stopped at the corners
+// and left a small dark gap at each end), so a fresh toast has a line the card's whole width; its colours are fixed along
+// that full length, so it seems to retreat and reveal them rather than to recolour.
 // `remaining` is the fraction of the toast's life left; negative means no countdown (critical toasts never expire).
 //
 // Rebuild with tools/build-shaders.sh after editing.
@@ -96,11 +96,15 @@ void main() {
         rgb += icol * (ring * 0.85 + core * 0.9 + fill + ringHalo);
     }
 
-    // The countdown: a line just inside the bottom edge, as long as the straight part of that edge, shrinking from the right.
+    // The countdown: a line just inside the bottom edge, border to border, shrinking from the right. It sits 3.2 px above
+    // the edge, where a rounded corner has pulled the border in by `ex`; the rim is centred 0.9 px inside the edge. Starting
+    // there makes the line meet the border instead of leaving a gap.
     if (ubuf.remaining >= 0.0) {
-        float lineY = ubuf.card.y + ubuf.card.w - 3.2;
-        float x0 = ubuf.card.x + ubuf.radius + 1.0;
-        float full = max(ubuf.card.z - 2.0 * (ubuf.radius + 1.0), 1.0);
+        float lineHeight = 3.2;
+        float lineY = ubuf.card.y + ubuf.card.w - lineHeight;
+        float ex = lineHeight < ubuf.radius ? ubuf.radius - sqrt(max(ubuf.radius * ubuf.radius - (ubuf.radius - lineHeight) * (ubuf.radius - lineHeight), 0.0)) : 0.0;
+        float x0 = ubuf.card.x + 0.9 + ex;
+        float full = max(ubuf.card.z - 2.0 * (0.9 + ex), 1.0);
         float x1 = x0 + clamp(ubuf.remaining, 0.0, 1.0) * full;
         float seg = smoothstep(x0 - 0.5, x0 + 2.0, px.x) * (1.0 - smoothstep(x1 - 6.0, x1, px.x));
         float life = smoothstep(0.0, 0.08, ubuf.remaining);          // it fades out at the very end

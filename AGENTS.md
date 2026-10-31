@@ -177,19 +177,23 @@ Built from the design chosen on 2026-10-30 (`docs/design/`: mock-up A toned down
   `iconRing` says where the icon is (centre x = border + 12 + 20, centre y = half the height; radius 26 around an app
   icon, 17 round a glyph, none when the icon slot is hidden). With `themed` false none of it applies.
 - **Slice 3, the countdown (same branch):** the shader's `remaining` uniform (0 to 1; negative for none) draws a line
-  along the bottom edge (3.2 px up; as long as the **straight part of that edge** when full, i.e. from the corner radius
-  + 1 px in to the same from the right, times `remaining`) with a glow and a
+  along the bottom edge (3.2 px up; **border to border** when full: from the left rim (0.9 px in, plus the little a rounded
+  corner pulls the border in at that height) to the same on the right, times `remaining`) with a glow and a
   bright spark at its right end; its colours are fixed along the full length, so it retreats instead of recolouring, and it
   fades over the last 8%. The delegate passes `cardSlot.remainingLifetime` (the toast's own clock, so it freezes on hover
   and restarts on an update) or -1 when the toast never expires (critical). Previews: `docs/design/shader-countdown.png` (62% left) and
-  `shader-countdown-full.png` (a fresh toast). **The first version was inset 14 px at each end**, so even a fresh toast's line
+  `shader-countdown-full.png` (a fresh toast). **Two earlier versions fell short, and both were reported by the user from screenshots:** the first was inset 14 px at each
+  end; the second ran from corner to corner (radius + 1 px in), which still left a dark gap of about 5 px at each end
+  between the line and the border: "it should go all the way to the left border". Lesson: a line meant to fit a rounded
+  card has to meet the *border*, not stop where the corner starts. The tests now check the ends at three corner radii
+  (0, 4, 10). The first version was inset 14 px at each end, so even a fresh toast's line
   stopped short of the card and a half-drained one looked arbitrary; the user reported "the line at the bottom doesn't fit the
   length of the card". Measured from their screenshot first: the line's start (14 px in) and its drain were exactly as coded
   (a toast under a second old was 89% drained), so it was a design miss, not a bug. Note: their screenshots are **window
   captures** that crop the toast column at the window's right edge, so toasts look cut off in them; that is not a layout bug.
 - `fonts/`: Jost and Cinzel (SIL OFL) copied from the theme repo.
 - Setting `rim_vividness` (0 to 1, default 0.75) next to `motion_slowdown` in the fork's conf file.
-- Verified: `test/shader-test.sh` (35 checks on the compiled shader through the harness: where it draws, the light's
+- Verified: `test/shader-test.sh` (38 checks on the compiled shader through the harness: where it draws, the light's
   direction, ignition, palettes, ring, additive, no flat clipping, vividness, drift, the countdown, and that the shader's
   uniforms and ToastRim's ShaderEffect properties are the same set; 15 deliberate breaks caught, one equivalent);
   `test/service-probe.sh` (55 checks: the REAL `Service.qml` and card in an offscreen Quickshell, including that with the
