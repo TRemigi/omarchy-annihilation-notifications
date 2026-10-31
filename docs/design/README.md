@@ -65,16 +65,17 @@ mock-up C, whose wavy outline and ragged strip read as glitches:
   bottom edge (about one per 20 px of its width, 53 to 82 px; under a toast with another below they pass behind it, and under the
   last toast the screen is free). Those near the top lean down and those near the bottom lean up, so they stay in the card's band.
   **Growth runs over the toast's whole life**: each root starts at its own moment in the first 8% of it and finishes at its own
-  between 94% and 99%, so the last is done just before the countdown completes. Its shape is an exponential slowdown
-  (1 - exp(-5t), normalised) with a short ease-in over the first 15% of its window: fast for most of the growth (the speed holds
-  through the first second or so), then falling by the same ratio in each stretch of time, a hard but natural slowdown, to a creep
-  at the end. Measured on the compiled shader for an 8 s toast, the left roots' reach is 0% after 0.25 s, 9% after 0.5, 35% after 1,
-  52% after 1.5, 62% after 2, 82% after 3, 92% after 4 and 99% after 6. `growth-stages.png`: 4%, 8%, 14%, 25%, 50% and 92% of the
-  life. Earlier versions, each judged wrong live: one root per corner in 1.5 s; ease-out of power 2 (not dramatic); power 3.5 (fine, but
-  it then froze); a burst of 74% in a second plus a creep (snapped into place, and done by 80 to 94% of the life); 50% ease-out plus
-  50% linear (popped at the start, too linear); a cubic Bezier (0.09,0.10 / 0.20,0.96: eased in well, but "still pretty linear":
-  its speed fell only fivefold from 1 s to 5 s, and no cubic Bezier could be both faster in the body and harder at the end).
-  Fainter veins grow across the card from its right corners.
+  between 97% and 99.5%, so the last is done just before the countdown completes. Its shape is three parts exponential slowdown
+  (1 - exp(-5t), normalised: the speed falls by the same ratio in each stretch of time, a hard but natural slowdown) and one part a
+  gentle ease-out (1 - (1-t)^1.5: it keeps going and stops exactly at the end), with a short ease-in over the first 15% of its window.
+  Measured on the compiled shader for an 8 s toast, the left roots' reach is 0% after 0.5 s (staggered starts), 28% after 1 s,
+  54% after 2, 72% after 3, 84% after 4, 91% after 5, 96% after 6 and 99% after 7. `growth-stages.png`: 6%, 12.5%, 25%, 50%, 75%
+  and 97% of the life. Earlier versions, each judged wrong live: one root per corner in 1.5 s; ease-out of power 2 (not dramatic);
+  power 3.5 (fine, but it then froze); a burst of 74% in a second plus a creep (snapped into place, and done by 80 to 94% of the
+  life); 50% ease-out plus 50% linear (popped at the start, too linear); a cubic Bezier (eased in well, "still pretty linear": its
+  speed fell only fivefold from 1 s to 5 s); a pure exponential (liked: fast, hard slowdown, but it moved by under 2 px/s after four
+  seconds, so it "mostly stopped growing well before the countdown finished"; the 25% gentle part fixed that at the cost of a body a
+  few points slower: 28% after a second instead of 35%). Fainter veins grow across the card from its right corners.
 - **The countdown is the bottom border itself, lit**: drawn from the same distance field and sway as the outline, so it lies
   exactly on it and the two read as one line (the first version ran 3 px above the border, which the user saw as two lines).
   Where there is time left the border is brighter and thicker, its thickness undulating along it like a vein; the part that has run

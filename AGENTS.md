@@ -249,7 +249,7 @@ Plan: the exit dissolves into spores, and a faint drift off a card. Both are bui
 
 `look=growth` in the fork's conf file (parsed by `parseLook`, `blend` otherwise) makes `ToastRim` load `shaders/toastgrowth.frag`
 instead of `toastrim.frag`; same overlay, same added-light output, same uniforms plus `seed` (random per toast) and `growth`
-(0 to 1: how far through its life the toast is, from `1 - remaining` and never decreasing, so the roots grow over the whole life, each with its own start and finish, the last by 94%, via `rootReach` in the shader: a burst over the first ~1 s with a slow creep after; a toast without a countdown, i.e. critical, animates it over 8 s times `motion_slowdown`). `ToastRim`'s margin is 110 px for the roots. Both shaders declare the **same uniform
+(0 to 1: how far through its life the toast is, from `1 - remaining` and never decreasing, so the roots grow over the whole life, each with its own start and finish, the last by 99.5%, via `rootReach` in the shader: a burst over the first ~1 s with a slow creep after; a toast without a countdown, i.e. critical, animates it over 8 s times `motion_slowdown`). `ToastRim`'s margin is 110 px for the roots. Both shaders declare the **same uniform
 set** (the blend's `seed` and `growth` are unused) so `ToastRim`'s ShaderEffect feeds either; `shader-test.sh` and
 `growth-test.sh` both check that. What the design does and why (the mock-up's wavy outline and ragged strip read as glitches, so
 the outline stays straight and is alive instead; lichen is jittered dots; veins are curves with branches that cannot reach the
@@ -274,13 +274,16 @@ fix before releasing.
 committed **without running the tests** at the user's request: `test/growth-test.sh` treats `growth` as an arrival animation (growth 0.5 = half
 grown) and the vein regions assume the old lengths and the 30 px left margin of its overlay; expect to revisit it.
 
-**Roots, rounds 4 to 6:** the growth curve was judged wrong five times live (see `docs/design/README.md` for the list), most recently
-for "still pretty linear". It is now `easeGrowth` in the shader: `smoothstep(0, 0.15, t) * (1 - exp(-5t)) / (1 - exp(-5))` per root between
-its start (first 8% of the life) and its finish (94 to 99%). A cubic Bezier (what it was) cannot be both fast in the body and decisive
-at the end; an exponential slowdown has a constant speed ratio per unit time, which is what reads as natural. Lessons: prototype curves
-numerically against target samples (1, 2, 3, 4, 6 s of an 8 s toast) *and the speed at 1 s against the speed at 5 s* before touching the
-shader, then measure the compiled shader's reach at the same points (render at `U_growth=g` with the card at x=130 in `test/shader-harness.c` and take the leftmost lit pixel); a linear component makes the curve look
-linear whatever the rest does; and an ease-in is what stops a pop. The lengths: the roots are 1.4 to 2.0 times the old length on the left and 1.1 to 1.7 on the bottom, with 16 steps per trunk. Cost
+**Roots, rounds 4 to 7:** the growth curve was judged wrong six times live (see `docs/design/README.md` for the list). It is now `easeGrowth`
+in the shader: `smoothstep(0, 0.15, t) * (0.75 * (1 - exp(-5t)) / (1 - exp(-5)) + 0.25 * (1 - (1-t)^1.5))` per root between its start
+(first 8% of the life) and its finish (97 to 99.5%). A cubic Bezier cannot be both fast in the body and decisive at the end; an
+exponential slowdown has a constant speed ratio per unit time, which is what reads as natural, but alone it is *visually finished* after
+about four seconds (speed under 2 px/s), so a quarter of the curve is a gentle ease-out that keeps moving to the end. Lessons: prototype
+curves numerically against target samples (1, 2, 3, 4, 6 s of an 8 s toast) *and the speed in px/s at 1, 2, 3, 5 and 7 s* (a speed under
+about 2 px/s does not read as growth) before touching the shader, then measure the compiled shader's reach at the same points (render at
+`U_growth=g` with the card at x=130 in `test/shader-harness.c` and take the leftmost lit pixel; the stagger of starts makes the measured
+body a few points slower than the ideal curve); a linear component makes the curve look linear whatever the rest does, but a small one
+rescues a dead tail; and an ease-in is what stops a pop. The lengths: the roots are 1.4 to 2.0 times the old length on the left and 1.1 to 1.7 on the bottom, with 16 steps per trunk. Cost
 went up (a vein is now ~45 loop iterations; `vein()` returns early beyond its grown radius). Untested apart from renders.
 
 ## Conventions

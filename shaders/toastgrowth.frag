@@ -126,21 +126,25 @@ vec3 walkTo(vec2 org, float ang, float stepLen, int k, float seed) {
     return vec3(p, a);
 }
 
-// The shape of a root's growth, over its own window from 0 to 1: an exponential slowdown, 1 - exp(-5t) normalised, so the speed falls
-// by the same ratio in each equal stretch of time (a hard but natural slowdown, not a straight line and not a sudden stop), with
-// a short smoothstep ramp over the first 15% so it eases in instead of popping. On an 8 s toast (window about 7.5 s): 12% grown after
-// half a second, 47% after one, 64% after one and a half, 74% after two, 87% after three, 94% after four, 97% after five, and it is
-// moving at about a fiftieth of its peak speed by then. (A cubic Bezier could not be both this fast and this decisive.)
+// The shape of a root's growth, over its own window from 0 to 1: three parts exponential slowdown, 1 - exp(-5t) normalised (the speed
+// falls by the same ratio in each equal stretch of time: a hard but natural slowdown), and one part a gentle ease-out, 1 - (1-t)^1.5
+// (it keeps going and slows to a stop exactly at the end), under a short smoothstep ramp over the first 15% so it eases in instead
+// of popping. The exponential alone moved by under 2 px/s after four seconds and so looked finished long before the countdown was;
+// the gentle part keeps real movement to the end. On an 8 s toast: 10% grown after half a second, 39% after one, 64% after two, 78%
+// after three, 87% after four, 92% after five, 96% after six, 99% after seven; at its peak it moves at about 50% of its length a
+// second, at five seconds at 5%, at seven at 2%.
 float easeGrowth(float t) {
-    return smoothstep(0.0, 0.15, t) * (1.0 - exp(-5.0 * t)) / (1.0 - exp(-5.0));
+    float e = (1.0 - exp(-5.0 * t)) / (1.0 - exp(-5.0));
+    float l = 1.0 - pow(1.0 - t, 1.5);
+    return smoothstep(0.0, 0.15, t) * (0.75 * e + 0.25 * l);
 }
 
 // How far a root has grown, from `g`, how far through the toast's life it is. Each root starts at its own moment in the first 8% of
-// the life and finishes at its own between 94% and 99% of it, so the last is done just before the countdown ends; between, it
+// the life and finishes at its own between 97% and 99.5% of it, so the last is done just before the countdown ends; between, it
 // follows easeGrowth.
 float rootReach(float g, float h1, float h3) {
     float start = 0.08 * h1;
-    float end = 0.94 + 0.05 * h3;
+    float end = 0.97 + 0.025 * h3;
     return easeGrowth(clamp((g - start) / (end - start), 0.0, 1.0));
 }
 
