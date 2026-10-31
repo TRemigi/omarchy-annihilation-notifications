@@ -178,7 +178,8 @@ flipping between the two with the same notifications. The design is `docs/design
       and teal, and a slow pulse of light travels round it; the outline is **straight**, not wavy
 - [ ] **many roots** (about one per 10 px of the card's height, each with side branches) grow out of the left edge when a toast
       arrives (over about a second and a half), reaching into the free space; fainter veins grow across the card from its
-      right corners; none cross onto the toast below
+      right corners; **roots also hang from the bottom edge** (shorter, leaning left): under the last toast they hang free, and
+      under a toast with another below they should pass behind that one, not over it (say if they show on top of it)
 - [ ] on the left edge, inside the card, a **scatter of tiny dots (lichen)** in patches, thinning inward and kept clear of
       the icon; some toasts have none, which is intended
 - [ ] the icon ring is very slightly irregular (it should read as organic, not as a lumpy circle)

@@ -194,7 +194,7 @@ void main() {
     // Veins and roots: out into the free space on the left, in across the card on the right.
     float g = ubuf.growth;
     vec2 tr = ubuf.card.xy + vec2(ubuf.card.z, 1.0), br = ubuf.card.xy + vec2(ubuf.card.z, ubuf.card.w - 1.0);
-    // Roots: many, all along the left edge (about one per 10 px of the card's height), reaching out into the free space. Each
+    // Roots: many, along the left edge (about one per 10 px of the card's height), reaching out into the free space. Each
     // has its own place, direction, length and moment of starting to grow. Those near the top lean down and those near the
     // bottom lean up, so they stay in the card's own band (above and below is the screen's edge and the next toast).
     float outer = 0.0;
@@ -209,6 +209,24 @@ void main() {
         float ang = 3.14159 + (h2 - 0.5) * 0.9 - (0.5 - u) * 0.9;
         outer = max(outer, vein(px, org, ang, seed + fi * 13.0, clamp(g * 1.35 - h1 * 0.35, 0.0, 1.0), 0.75 + 0.45 * h3));
     }
+    // The same along the bottom edge (about one per 20 px of its width): down and leaning left, shorter, since the gap to the
+    // toast below is small (they pass behind it) and, under the last toast, the screen is free.
+    float bottomRoots = clamp(floor(ubuf.card.z / 20.0), 6.0, 24.0);
+    float belowEdge = ubuf.card.y + ubuf.card.w;
+    float under = 0.0;
+    if (px.y > belowEdge - 1.0 && px.y < belowEdge + 50.0) {
+        for (int i = 0; i < 24; i++) {
+            float fi = float(i);
+            if (fi >= bottomRoots) break;
+            float h1 = hash(seed + fi * 4.1 + 70.0), h2 = hash(seed + fi * 2.9 + 71.0), h3 = hash(seed + fi * 6.3 + 72.0);
+            float u = (fi + 0.5 + (h1 - 0.5) * 0.6) / bottomRoots;
+            vec2 org = vec2(ubuf.card.x + u * ubuf.card.z, belowEdge - 1.0);
+            if (abs(px.x - org.x) > 50.0) continue;
+            float ang = 1.5708 + 0.35 + (h2 - 0.5) * 0.9;
+            under = max(under, vein(px, org, ang, seed + fi * 17.0 + 100.0, clamp(g * 1.35 - h1 * 0.35, 0.0, 1.0), 0.55 + 0.4 * h3));
+        }
+    }
+    outer = max(outer, 0.85 * under);
     // And, fainter, across the card from its right corners.
     float inner = vein(px, tr, 3.14159 - 0.55, seed + 23.0, g, 1.0) + vein(px, br, 4.71239 - 0.55, seed + 37.0, g, 1.0);
     float tipGlow = 1.0 + 1.6 * (1.0 - smoothstep(0.7, 1.0, g)) * g; // brighter while still growing

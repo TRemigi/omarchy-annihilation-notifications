@@ -65,7 +65,9 @@ mock-up C, whose wavy outline and ragged strip read as glitches:
   height, each with its own place, direction, length and moment of starting), reaching out into the free space on the left as
   the toast arrives; those near the top lean down and those near the bottom lean up, so they stay in the card's own band and
   cannot reach the toast below or the screen's edge. Fainter ones grow across the card from its right corners (the screen's
-  edge is there). The first version had one from each corner.
+  edge is there). The first version had one from each corner. **Roots along the bottom edge too** (about one per 20 px of its
+  width): down and leaning left, shorter, since the gap to the toast below is small; they pass behind it, and under the last
+  toast the screen is free.
 - **The countdown is the bottom border itself, lit**: drawn from the same distance field and sway as the outline, so it lies
   exactly on it and the two read as one line (the first version ran 3 px above the border, which the user saw as two lines).
   Where there is time left the border is brighter and thicker, its thickness undulating along it like a vein; the part that has run
