@@ -57,18 +57,18 @@ test installation.
 
 ## D. Motion (P2, annihilation theme only)
 
-Needs the `p2/motion` branch until it is merged. Switch the installed checkout to it:
+Needs 0.2.0 or later, which is on `main`: `omarchy plugin update annihilation.notifications` and
+`omarchy restart shell`. To test a change that is not on `main` yet (a `p2/...` branch), switch the installed
+checkout to it, and go back with `checkout main` and another restart:
 
 ```bash
-git -C ~/.config/omarchy/plugins/annihilation.notifications fetch origin p2/motion
-git -C ~/.config/omarchy/plugins/annihilation.notifications checkout p2/motion
+git -C ~/.config/omarchy/plugins/annihilation.notifications fetch origin p2/<branch>
+git -C ~/.config/omarchy/plugins/annihilation.notifications checkout p2/<branch>
 omarchy restart shell
 ```
 
-(If the checkout complains about unrelated histories, the install predates the one-time history rewrite:
-`extras/install notifications remove` then `add` in the theme repo, then the commands above.)
-Go back with `git -C ... checkout main` and another restart. The theme must be `annihilation`.
-To pick up later commits on the branch: `git -C ... pull origin p2/motion` and `omarchy restart shell`.
+Later commits on the branch: `git -C ... pull origin p2/<branch>` and `omarchy restart shell`. The theme must be
+`annihilation`.
 
 **First, make it unmistakable that it is running.** The motion is designed to be subtle, and an earlier
 version was so quick (75% done in 80 ms) that it was easy to miss. Slow it down:
@@ -104,5 +104,5 @@ the wrong direction, too much scale, or anything that flickers. Those are single
 
 | Date | Omarchy | Fork | A | B | C | Notes |
 |------|---------|------|---|---|---|-------|
-| 2026-10-30 | 4.0.4-1 | `p2/motion` @ e1d10ef (section D only) | | | | D: the user reports the fold works as expected, seen after the entry was slowed (the first version, 340 ms, was too quick to notice). The other D items (stacking several toasts, hover, border crispness, restart with a live toast, theme switch back to stock, DND) were not itemised: still to confirm before merging to `main`. |
+| 2026-10-30 | 4.0.4-1 | 0.2.0 = `p2/motion` @ e1d10ef (section D only) | | | | D: all items confirmed by the user ("all of those are good"): the fold, stacking several toasts, hover, border crispness, restart with a live toast, switching theme and back, DND; and the 480/300 ms timing feels right. Seen only after the entry was slowed: the first version (340 ms) was too quick to notice. Released as 0.2.0. |
 | 2026-10-30 | 4.0.4-1 | 0.1.0 (`omarchy plugin add` from the pushed repo) | pass | pass | pass | Reported by the user as all items passing; no per-item notes were given, so whether the disable-and-restore needed `omarchy restart shell` is not recorded. Add a row with details next time. |

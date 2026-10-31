@@ -14,7 +14,7 @@ describes the notification features it already has (arrival glow, sound, missed-
 this daemon's state files.
 
 Phases (details in `docs/plan.md`): **P0** functional parity (done and live-verified);
-**P1** tooling, runbooks, fallback (partly done); **P2** the actual experience, theme-gated (slice 1, the motion, is on the `p2/motion` branch awaiting the user's live check); **P3** integration
+**P1** tooling, runbooks, fallback (partly done); **P2** the actual experience, theme-gated (slice 1, the motion, is released as 0.2.0); **P3** integration
 with the theme's plugin, automatic fallback, CI. **The live checklist has passed on a real session (2026-10-30), so P2 may start**,
 but do P1's remaining safety items first (see Open items). Parity first is the whole point: it proves install, update and fallback on a fork that
 changes nothing.
@@ -127,8 +127,7 @@ repo only works with the SSH URL. Public means the git history, including the au
 
 ## P2: the experience (in slices, each judged live before the next)
 
-Slices: **1 Motion** (built, on branch `p2/motion`; the user confirmed on 2026-10-30 that the fold works as
-expected, but has not itemised the rest of checklist section D, so it is not yet merged to `main`): toasts unfold into the stack
+Slices: **1 Motion** (done and released as 0.2.0 on 2026-10-30; the user confirmed all of checklist section D live): toasts unfold into the stack
 and fold away (expiry and right-click; click and IPC dismissals stay instant). **2** a countdown that is part of the
 border, and hover. **3** the exit dissolving into a few spores. **4** an accent per app or urgency from the Shimmer
 palette, and a setting to turn the motion off. Do not build the next slice before the user has seen the last.
