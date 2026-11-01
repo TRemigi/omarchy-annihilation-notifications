@@ -8,10 +8,11 @@ then `README.md`, `CONTRACT.md` and `docs/plan.md`, before changing anything.
 A fork of Omarchy's notification daemon (`shell/plugins/notifications` in the `omarchy` package, MIT),
 installed as a *registered clone* of `omarchy.notifications` so that Omarchy routes everything that used
 to talk to the stock daemon to this one, and switches the stock one back on when this is disabled or
-removed. It belongs to the **omarchy-annihilation-theme** project (a sibling repo, `../omarchy-annihilation-theme`),
-whose `docs/notifications-fork.md` is the same plan plus the theme-side tasks, and whose `docs/notifications.md`
-describes the notification features it already has (arrival glow, sound, missed-notification marks) that read
-this daemon's state files.
+removed. It belongs to the **omarchy-annihilation-theme** project (a sibling repo, `../omarchy-annihilation-theme`), which
+holds the code that installs and guards it (see `docs/theme-integration.md` here) and whose `docs/notifications.md` describes the
+notification features its own plugin has (arrival glow, sound, missed-notification marks) that read this daemon's state files.
+**This repo is the only home of the fork's plan and design; the theme repo does not mirror it or track its versions** (it used to; do
+not bring that back).
 
 Phases (details in `docs/plan.md`): **P0** functional parity (done and live-verified);
 **P1** tooling, runbooks, fallback (partly done); **P2** the actual experience, theme-gated (slice 1, the motion, is released as 0.2.0); **P3** integration

@@ -1,15 +1,13 @@
-> **This is the fork repo's copy of `docs/notifications-fork.md` from `omarchy-annihilation-theme`**, which
-> also tracks the theme-side tasks (the installer, hooks and README that live there). Fork phases are
-> tracked in this copy, theme-side tasks in that one: when you change one, mirror the other.
-> Copied 2026-10-30 at the end of P0. Paths such as `docs/notifications.md` and the theme's `extras/`
-> refer to the theme repo.
+> **This file is the only copy of the notification fork's plan.** It used to be mirrored by hand in the annihilation theme repo
+> (`docs/notifications-fork.md` there, which also held the theme-side tasks); that copy is gone. The theme repo's side (its installer,
+> the guard and the hooks) is described in `theme-integration.md`. Paths such as `extras/` below refer to the theme repo.
 
 # Plan: the themed notification daemon (a separate repo)
 
-Item 6 of `docs/notifications.md`. This file is the working plan; **update the
-Status table and commit it as work proceeds.** The fork itself lives in its own
-repo (not started); this repo gets the instructions and the tooling to install,
-update and fall back from it.
+This file is the working plan; **update the Status table and commit it as work proceeds.** The
+fork is this repo; the installer, guard and hooks that look after it live in the theme repo
+(see `theme-integration.md`). It began as item 6 of the theme's `docs/notifications.md`, and the
+earliest sketch of it is kept at the end of this file.
 
 ## Status
 
@@ -217,29 +215,11 @@ says why.
   (`busctl --user status org.freedesktop.Notifications`; `busctl` and `gdbus` are
   present), do the same fallback. This is the guard for the one-way failure in fact 7.
 
-## This repo's side (P1): built
+## The theme repo's side (P1): built
 
-Built as described below, with these differences: the controller is `extras/notifications-fork`
-(`extras/install notifications <command>` runs it) and has `enable` and `auto on|off` as well; the fork's own
-`status`/`fallback` tools in the fork repo are separate and still to do. See the README section "Notification fork
-(optional)" and AGENTS.md for how the guard works. The original design:
-
-- `extras/install notifications <add|update|status|fallback|remove>`: thin wrappers
-  over `omarchy plugin add/update/disable/remove` that add what the plain commands do
-  not: refuse if the shell is not running, run `check-upstream` before enabling and
-  after updating, print the Omarchy version against the fork's baseline, say who owns
-  the D-Bus name now, and clear or set the held marker. The fork's URL is one constant
-  in the script. `extras/install status` gains a line for it.
-- Hooks `extras/hooks/post-update.sh` and `post-boot.sh`, linked and unlinked by
-  `extras/install link/unlink` like `theme-set.sh`, always exiting 0. They do nothing
-  unless the fork is installed.
-- README section "Notification fork (optional)": what it adds, that it replaces the
-  stock daemon on every theme though it behaves as stock off this one, that plugins
-  run unsandboxed (the warning `omarchy plugin add` itself prints), how to get it,
-  update it, fall back, and remove it; and that the theme works the same without it.
-- AGENTS.md: a short section pointing here, plus the verified facts above that cost
-  time to find.
-- The shimmer plugin and this theme are **not** changed to require the fork.
+The installer (`extras/install notifications <command>`), the controller (`extras/notifications-fork`), the guard and its two hooks, and the
+README section are built in the theme repo, and their design is in **`theme-integration.md`** (moved there from the theme repo's
+`AGENTS.md` and from this plan's original wording).
 
 ## P0 in detail
 
@@ -336,3 +316,27 @@ the arrival ring visibly becomes the card.
 - Track only packaged Omarchy releases (recommended), or also the `dev`/`edge` channels
   (`omarchy-version-channel`)? The second means a merge on every upstream change.
 - Is automatic fallback acceptable as the default, or should the default be "tell me"?
+
+## Appendix: the earliest sketch (superseded)
+
+Written in the theme repo before the clone mechanism was found (which is what made a standalone, registered fork possible); kept so the
+reasoning is not re-derived. Where it disagrees with the plan above, the plan wins. (It was "Item 6: themed fork of the daemon
+(follow-up)" in the theme's `docs/notifications.md`.)
+
+The only route to real per-card motion: cards that bloom in like windows, a border
+that traces the countdown, an exit that dissolves into spores, per-app glyphs.
+Not started, and not recommended until 0, 1, 2 and 4 have been lived with.
+
+What it would cost, so a later session can decide:
+- Forking about 1,700 lines (`Service.qml` 1063, `NotificationLogic.js` 479,
+  `NotificationCard.qml` 196) and keeping the `notifications` IPC target working
+  (other Omarchy tools call it), plus DND, history, replay and restore.
+- It drifts from upstream with each Omarchy update; someone has to re-merge.
+- It must be active only on this theme. The upstream service has `keepLoaded:
+  true` and owns the D-Bus name, so swapping needs disable/enable through shell
+  IPC with no window where both run. Needs a careful hand-over design before any
+  code.
+- `omarchy plugin validate` and the dormant-elsewhere rule still apply.
+
+First step if picked up: ask the user whether it is wanted, then write a short
+design note here (hand-over, IPC surface, what stays identical) before coding.

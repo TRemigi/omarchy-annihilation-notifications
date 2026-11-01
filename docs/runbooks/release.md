@@ -11,4 +11,5 @@ default branch. So `main` should only ever hold something that passed the live c
 4. Commit, `git tag vX.Y.Z`, push `main`, `upstream` and the tags (`git push origin main upstream --tags`).
    The `upstream` branch has to be pushed: `tools/check-upstream --diff` in a user's clone reads it as
    `origin/upstream`.
-5. Tell the annihilation theme repo if its README or docs mention the version.
+5. Nothing to update in the annihilation theme repo for a release: it does not track this repo's versions or status. (If the
+   *contract* changed, that is different: see `CONTRACT.md`, and `update-from-upstream.md` step 5.)
