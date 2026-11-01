@@ -15,14 +15,15 @@ ShellRoot {
   Service { id: svc; shell: null }
 
   function setTheme(name) { Quickshell.execDetached(["bash", "-c", "printf '%s' \"$1\" > \"$2\"", "--", name, themeFile]) }
-  function addToast(app, glyph, summary, urgency) {
+  function addToast(app, glyph, summary, urgency, ageMs) {
     var id = nextId++
     console.log("PROBE insert " + id + " themed=" + svc.themed + " slowdown=" + svc.motionSlowdown)
-    svc.popupModel.insert(0, { id: id, originalId: id, app: app || "Signal", appIcon: "", summary: summary || ("probe " + id), body: "body", image: "", glyph: glyph || "", execArgv: "", urgency: urgency === undefined ? 1 : urgency, expireTimeout: 0, timestamp: Date.now() })
+    svc.popupModel.insert(0, { id: id, originalId: id, app: app || "Signal", appIcon: "", summary: summary || ("probe " + id), body: "body", image: "", glyph: glyph || "", execArgv: "", urgency: urgency === undefined ? 1 : urgency, expireTimeout: 0, timestamp: Date.now() - (ageMs || 0) })
   }
   function parse(label, raw) { console.log("PROBE parse " + label + " -> " + svc.parseSlowdown(raw)) }
   function parseS(label, raw) { console.log("PROBE parseS " + label + " -> " + svc.parseSpores(raw)) }
   function parseL(label, raw) { console.log("PROBE parseL " + label + " -> " + svc.parseLook(raw)) }
+  function parseA(label, raw) { console.log("PROBE parseA " + label + " -> " + svc.parseArrival(raw)) }
   function parseV(label, raw) { console.log("PROBE parseV " + label + " -> " + svc.parseVividness(raw)) }
 
   Component.onCompleted: {
@@ -34,12 +35,15 @@ ShellRoot {
     parseV("above 1", "rim_vividness=1.5"); parseV("junk", "rim_vividness=loud"); parseV("beside the other key", "motion_slowdown=2\nrim_vividness=0.9\n")
     parseV("the other key only", "motion_slowdown=2")
     parseL("empty", ""); parseL("growth", "look=growth"); parseL("blend", "look=blend"); parseL("spaced", "  look = growth  "); parseL("unknown", "look=neon")
-    parseL("beside others", "motion_slowdown=2\nlook=growth\n"); parseL("prefix only", "look=growthy"); parseL("glow", "look=glow"); parseL("later line wins", "look=blend\nlook=glow\n"); parseL("later line wins back", "look=glow\nlook=blend\n"); parseL("later unknown", "look=glow\nlook=neon\n"); parseL("glow prefix", "look=glowing"); parseL("other key", "xlook=growth")
+    parseL("beside others", "motion_slowdown=2\nlook=growth\n"); parseL("prefix only", "look=growthy"); parseL("glow", "look=glow"); parseL("later line wins", "look=blend\nlook=growth\n"); parseL("later line wins back", "look=growth\nlook=blend\n"); parseL("later unknown", "look=growth\nlook=neon\n"); parseL("glow prefix", "look=glowing"); parseL("other key", "xlook=growth")
+    parseA("empty", ""); parseA("plain", "arrival=0.5"); parseA("zero", "arrival=0"); parseA("two", "arrival=2"); parseA("above", "arrival=3"); parseA("junk", "arrival=big"); parseA("later line wins", "arrival=0.5\narrival=1.5\n")
     parseS("empty", ""); parseS("plain", "spore_amount=0.3"); parseS("zero", "spore_amount=0"); parseS("above", "spore_amount=2"); parseS("junk", "spore_amount=lots")
   }
 
   Timer { interval: 400; running: true; onTriggered: console.log("PROBE early themed=" + svc.themed) }
   Timer { interval: 900; running: true; onTriggered: {
+    if (scenario === "stale") { addToast("Signal", "", "old toast", 1, 60000); addToast("Signal", "", "new toast") }
+    if (scenario === "crit") { addToast("Power", "", "from power", 2) }
     if (scenario === "cards") { addToast("Signal", "", "from signal"); addToast("omarchy-action", "G", "from omarchy"); addToast("notify-send", "", "from notify-send"); addToast("Power", "", "from power", 2); addToast("Mail", "", "from mail", 0) }
   } }
   Timer { interval: 700; running: true; onTriggered: {

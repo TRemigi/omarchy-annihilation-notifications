@@ -20,7 +20,7 @@ has() { if [[ $3 == *"$2"* ]]; then pass=$((pass + 1)); else fail=$((fail + 1));
 cfg=$tmp/cfg; mkdir -p "$cfg/fork/components"
 for e in "$OMARCHY"/shell/*; do b=$(basename "$e"); [[ $b == shell.qml || $b == plugins ]] || ln -s "$e" "$cfg/$b"; done
 cp "$HERE/test/service-probe/shell.qml" "$cfg/shell.qml"
-cp "$HERE/Service.qml" "$HERE/NotificationLogic.js" "$HERE/GlowLogic.js" "$cfg/fork/"; cp "$HERE"/components/*.qml "$cfg/fork/components/"
+cp "$HERE/Service.qml" "$HERE/NotificationLogic.js" "$HERE/ArrivalLogic.js" "$cfg/fork/"; cp "$HERE"/components/*.qml "$cfg/fork/components/"
 cp -r "$HERE/fonts" "$cfg/fork/fonts"                       # the card loads Jost and Cinzel from ../fonts
 python3 - "$cfg/fork" <<'PY'
 import re, sys
@@ -30,7 +30,7 @@ s = s.replace("PanelWindow {", "FloatingWindow {")
 # a toast that clicks itself 300 ms after it appears, when PROBE_CLICK is set (a click removes it at once, with no fold)
 s = s.replace("            Component.onCompleted: motion.enter()\n", "            Component.onCompleted: { motion.enter(); if (Quickshell.env('PROBE_CLICK') === '1') clicker.start() }\n            Timer { id: clicker; interval: 300; onTriggered: card.cardClicked() }\n", 1)
 # a log of the window, which has to outlive its toasts
-s = s.replace("FloatingWindow {\n", "FloatingWindow {\n      Timer { interval: 400; running: true; repeat: true; onTriggered: console.log('PROBE win rows=' + popupModel.count + ' visible=' + visible + ' spores=' + sporeLayer.active) }\n", 1)
+s = s.replace("FloatingWindow {\n", "FloatingWindow {\n      Timer { interval: 400; running: true; repeat: true; onTriggered: console.log('PROBE win rows=' + popupModel.count + ' visible=' + visible + ' spores=' + sporeLayer.active + ' arrival=' + arrivalLayer.active) }\n", 1)
 for pat in [r'^\s*screen: modelData\n', r'^\s*WlrLayershell\.[a-zA-Z.]+: .*\n', r'^\s*exclusionMode: .*\n',
             r'^\s*anchors \{ top: true; bottom: true; left: true; right: true \}\n', r'^\s*mask: Region \{ item: popupColumn \}\n']:
     s = re.sub(pat, "", s, flags=re.M)
@@ -41,21 +41,21 @@ m = m.replace("  property var pendingDone: null",
   "  Component.onCompleted: console.log('PROBE motion created fx=' + fx + ' slowdown=' + slowdown + ' enterMs=' + enterMs)", 1)
 open(d + "components/SlotMotion.qml", "w").write(m)
 r = open(d + "components/ToastRim.qml").read()
-r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores + ' look=' + root.look + ' visible=' + root.visible) }\n", 1)
+r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores + ' look=' + root.look + ' visible=' + root.visible + ' gate=' + root.gate.toFixed(2) + ' calm=' + root.calm + ' opacity=' + root.opacity.toFixed(2)) }\n", 1)
 open(d + "components/ToastRim.qml", "w").write(r)
 sp = open(d + "components/SporeLayer.qml").read()
 sp = sp.replace("    if (!(amount > 0)) return\n", "    if (!(amount > 0)) return\n    console.log('PROBE burst urgency=' + urgency + ' size=' + Math.round(w) + 'x' + Math.round(h) + ' amount=' + amount)\n", 1)
 open(d + "components/SporeLayer.qml", "w").write(sp)
-g = open(d + "components/GlowRim.qml").read()
+a = open(d + "components/ArrivalFlare.qml").read()
 for ms, tag in ((150, "early"), (2300, "late")):
-    g = g.replace("  property real time: 0\n", "  property real time: 0\n  Timer { interval: " + str(ms) + "; running: true; onTriggered: console.log('PROBE glowrim " + tag + " ' + root.target.summary + ' visible=' + root.visible"
-        " + ' wave=' + root.wave.toFixed(2) + ' arriving=' + root.arriving + ' opacity=' + root.target.opacity.toFixed(2) + ' scale=' + root.target.scale.toFixed(2)"
-        " + ' layer=' + root.target.layer.enabled + ' front=' + root.front.toFixed(0) + ' time=' + root.time.toFixed(1) + ' origin=' + Math.round(root.origin.x) + ',' + Math.round(root.origin.y)"
-        " + ' seed=' + root.glow.seed + ' margin=' + root.margin) }\n", 1)
-open(d + "components/GlowRim.qml", "w").write(g)
-s2 = open(d + "Service.qml").read()
-s2 = s2.replace("    id: glowClock\n", "    id: glowClock\n    Timer { interval: 1200; running: true; onTriggered: console.log('PROBE clock shared=' + glowClock.shared + ' seed=' + glowClock.seed + ' intensity=' + glowClock.intensity + ' depth=' + glowClock.depth + ' clock=' + glowClock.clockNow().toFixed(1)) }\n", 1)
-open(d + "Service.qml", "w").write(s2)
+    a = a.replace("  readonly property real margin: 40\n", "  readonly property real margin: 40\n  Timer { interval: " + str(ms) + "; running: true; onTriggered: console.log('PROBE arrival " + tag + " ' + root.target.summary + ' armed=' + root.armed"
+        " + ' revealing=' + root.revealing + ' p=' + root.p.toFixed(2) + ' front=' + root.front.toFixed(0) + ' gate=' + root.rimGate.toFixed(2) + ' opacity=' + root.target.opacity.toFixed(2)"
+        " + ' scale=' + root.target.scale.toFixed(2) + ' layer=' + root.target.layer.enabled + ' reach=' + root.cardReach.toFixed(0) + ' visible=' + root.visible) }\n", 1)
+open(d + "components/ArrivalFlare.qml", "w").write(a)
+al = open(d + "components/ArrivalLayer.qml").read()
+al = al.replace("  enabled: false                      // click-through\n", "  enabled: false                      // click-through\n  Timer { interval: 1500; running: true; onTriggered: console.log('PROBE layer events=' + root.events.length + ' active=' + root.active + ' strength=' + root.strength"
+    " + ' amps=' + root.events.map(function(e) { return e.amp.toFixed(2) }).join(',') + ' reach=' + root.ringReach.toFixed(0) + ' first=' + (root.events.length ? root.events[0].w + 'x' + root.events[0].h + '@' + Math.round(root.events[0].x) + ',' + Math.round(root.events[0].y) + ' urg=' + root.events[0].urgency + ' amp=' + root.events[0].amp.toFixed(2) + ' dur=' + root.events[0].dur : 'none')) }\n", 1)
+open(d + "components/ArrivalLayer.qml", "w").write(al)
 c = open(d + "components/NotificationCard.qml").read()
 probe = ("  Timer { interval: 700; running: true; onTriggered: console.log('PROBE card ' + root.summary + ' themed=' + root.themed"
          " + ' family=' + root.textFamily + ' jost=' + jostFont.status + ' cinzel=' + cinzelFont.status + ' caption=' + root.captionText + ' when=' + root.whenText"
@@ -77,8 +77,12 @@ import re, sys
 p = sys.argv[1]; s = open(p).read()
 s = re.sub(r'^\s*themed: service\.themed\n', '', s, flags=re.M)
 s = re.sub(r'^\s*ToastRim \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
-s = re.sub(r'^\s*GlowRim \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
-s = re.sub(r'^\s*layer\.enabled: glowRim\.arriving\n\s*layer\.effect: ShaderEffect \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+s = re.sub(r'^\s*ArrivalFlare \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+s = re.sub(r'^\s*ArrivalLayer \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+s = re.sub(r'^\s*layer\.enabled: arrival\.revealing\n\s*layer\.effect: ShaderEffect \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+s = re.sub(r'^\s*gate: arrival\.rimGate.*\n', '', s, flags=re.M)
+s = re.sub(r'^\s*calm: arrival\.armed.*\n', '', s, flags=re.M)
+s = s.replace(" || arrivalLayer.active", "")
 open(p, "w").write(s)
 PY
   python3 - "$cfg_stock/fork/components/NotificationCard.qml" <<'PY'
@@ -96,12 +100,11 @@ sed -i 's/readonly property int lowPopupDuration: 5000/readonly property int low
 grep -q 'normalPopupDuration: 700' "$cfg_spores/fork/Service.qml" || { echo "could not shorten the lifetimes for the spore scenarios" >&2; exit 2; }
 CFGDIR=$cfg
 
-run() { # scenario initial-theme [conf-line] [glow.json text]
+run() { # scenario initial-theme [conf-line]
   local home=$tmp/home-$1-$RANDOM
   mkdir -p "$home/.local/state/omarchy/current" "$home/.config/omarchy"
   printf '%s' "$2" >"$home/.local/state/omarchy/current/theme.name"
   [[ -n ${3:-} ]] && printf '%s\n' "$3" >"$home/.config/omarchy/annihilation-notifications-fork.conf"
-  [[ -n ${4:-} ]] && { mkdir -p "$home/.local/state/annihilation-theme"; printf '%s\n' "$4" >"$home/.local/state/annihilation-theme/glow.json"; }
   (cd "$CFGDIR" && env -u DISPLAY -u WAYLAND_DISPLAY HOME="$home" XDG_RUNTIME_DIR="$tmp/xdg" QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME= \
      PROBE_SCENARIO="$1" timeout 40 quickshell -p shell.qml --no-duplicate 2>&1) | tee -a "${PROBE_RAW:-/dev/null}" | sed 's/\x1b\[[0-9;]*m//g' | grep "PROBE" | sed 's/^.*PROBE /PROBE /'
 }
@@ -133,11 +136,18 @@ check "spore_amount: junk is ignored" 1 "$(parseds junk)"
 parsedl() { sed -n "s/^PROBE parseL $1 -> //p" <<<"$out"; }
 check "look: the default is blend" blend "$(parsedl empty)"
 check "look: growth" growth "$(parsedl growth)"
-check "look: glow" glow "$(parsedl glow)"
-check "look: the last line wins (blend then glow is glow)" glow "$(parsedl 'later line wins')"
-check "look: the last line wins (glow then blend is blend)" blend "$(parsedl 'later line wins back')"
+check "look: the last line wins (blend then growth is growth)" growth "$(parsedl 'later line wins')"
+check "look: the last line wins (growth then blend is blend)" blend "$(parsedl 'later line wins back')"
 check "look: a later unknown name wins too, and means blend" blend "$(parsedl 'later unknown')"
-check "look: a value that merely starts with glow is not glow" blend "$(parsedl 'glow prefix')"
+check "look: glow is gone (an old conf line means blend)" blend "$(parsedl glow)"
+parseda() { sed -n "s/^PROBE parseA $1 -> //p" <<<"$out"; }
+check "arrival: the default is 1" 1 "$(parseda empty)"
+check "arrival: plain" 0.5 "$(parseda plain)"
+check "arrival: 0 turns it off and is allowed" 0 "$(parseda zero)"
+check "arrival: 2 is the most" 2 "$(parseda two)"
+check "arrival: above 2 is ignored" 1 "$(parseda above)"
+check "arrival: junk is ignored" 1 "$(parseda junk)"
+check "arrival: the last line wins" 1.5 "$(parseda 'later line wins')"
 check "look: blend" blend "$(parsedl blend)"
 check "look: spaces around = are fine" growth "$(parsedl spaced)"
 check "look: an unknown name falls back to blend" blend "$(parsedl unknown)"
@@ -163,7 +173,7 @@ check "other theme: presence never moves" 0 "$(grep -c 'PROBE presence=' <<<"$ou
 # -- the annihilation theme: it animates, from 0 up to 1
 out=$(run themed annihilation)
 has "annihilation: the gate is open when the toast arrives" "PROBE insert 1 themed=true" "$out"
-has "annihilation: the slot is created with fx=true" "motion created fx=true slowdown=1 enterMs=480" "$out"
+has "annihilation: the slot is created with fx=true" "motion created fx=true slowdown=1 enterMs=300" "$out"
 first=$(grep -m1 'PROBE presence=' <<<"$out" | sed 's/.*=//'); last=$(grep 'PROBE presence=' <<<"$out" | tail -n1 | sed 's/.*=//')
 check "annihilation: presence starts at 0" 0.000 "$first"
 check "annihilation: and ends at 1" 1.000 "$last"
@@ -213,33 +223,50 @@ check "ambient spores: spore_amount=0.5 reaches the rim" 0.5 "$(rimval "$(grep '
 check "look: the rim is the blend by default" blend "$(rimval "$(rimline 'from signal')" look)"
 out_growth=$(run cards annihilation "look=growth")
 check "look: look=growth reaches the rim" growth "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_growth" | head -n1)" look)"
-# -- the glow look: the window glow's own light, and the arrival
-glowline() { grep "PROBE glowrim $1 $2 " <<<"$3" | head -n1; }
-gv() { sed -n "s/.* $2=\([^ ]*\).*/\1/p" <<<"$1"; }
-state='{"seed":53,"clock":100,"at":'$(date +%s%3N)',"speed":1.29,"running":true,"intensity":0.7,"depth":0.3}'
-out_glow=$(run cards annihilation "look=glow" "$state")
-out_nofile=$(run cards annihilation "look=glow")
-check "glow: look=glow reaches the glow rim, visible" true "$(gv "$(glowline early 'from signal' "$out_glow")" visible)"
-check "glow: the card is not faded in (opacity 1 early in the arrival, where the blend look has it still rising)" "1.00" "$(gv "$(glowline early 'from signal' "$out_glow")" opacity)"
-check "glow: nor scaled in" "1.00" "$(gv "$(glowline early 'from signal' "$out_glow")" scale)"
-check "glow: the arrival is under way early on, and the card is a mask layer" "true true" "$(gv "$(glowline early 'from signal' "$out_glow")" arriving) $(gv "$(glowline early 'from signal' "$out_glow")" layer)"
-check "glow: the front has left the icon" yes "$(awk -v f="$(gv "$(glowline early 'from signal' "$out_glow")" front)" 'BEGIN{print (f > 5 && f < 400) ? "yes" : "no"}')"
-check "glow: the arrival is over after about two seconds: settled, no layer" "-1.00 false false" "$(gv "$(glowline late 'from signal' "$out_glow")" wave) $(gv "$(glowline late 'from signal' "$out_glow")" arriving) $(gv "$(glowline late 'from signal' "$out_glow")" layer)"
-check "glow: the shader has the theme's clock (published as 100 s a moment ago)" yes "$(awk -v t="$(gv "$(glowline late 'from signal' "$out_glow")" time)" 'BEGIN{print (t >= 100 && t < 120) ? "yes" : "no"}')"
-check "glow: and its seed" 53 "$(gv "$(glowline late 'from signal' "$out_glow")" seed)"
-check "glow: the clock reports it is in step with the theme" "shared=true seed=53 intensity=0.7 depth=0.3" "$(sed -n 's/^PROBE clock \(shared=[a-z]* seed=[0-9.]* intensity=[0-9.]* depth=[0-9.]*\).*/\1/p' <<<"$out_glow")"
-check "glow: the overlay is placed on the screen (its origin is read, not left at 0,0)" yes "$([[ $(gv "$(glowline late 'from signal' "$out_glow")" origin) != "0,0" ]] && echo yes || echo no)"
-check "glow: without the theme's file it runs on its own clock and says so" "shared=false" "$(sed -n 's/^PROBE clock \(shared=[a-z]*\).*/\1/p' <<<"$out_nofile")"
-check "glow: and with the theme's default settings" "intensity=0.44 depth=0.21" "$(sed -n 's/^PROBE clock shared=[a-z]* seed=[0-9.]* \(intensity=[0-9.]* depth=[0-9.]*\).*/\1/p' <<<"$out_nofile")"
-check "glow: every toast gets it, not only the first" 5 "$(grep -c 'PROBE glowrim early from' <<<"$out_glow")"
-out_blendprobe=$out_cards
-check "blend: the glow rim is hidden and no arrival runs" "false false" "$(gv "$(glowline early 'from signal' "$out_blendprobe")" visible) $(gv "$(glowline early 'from signal' "$out_blendprobe")" arriving)"
-check "blend: the card is still fading in early (opacity below 1)" yes "$(awk -v o="$(gv "$(glowline early 'from signal' "$out_blendprobe")" opacity)" 'BEGIN{print (o < 1) ? "yes" : "no"}')"
-check "blend: no mask layer on the card" false "$(gv "$(glowline early 'from signal' "$out_blendprobe")" layer)"
-out_glow_other=$(run cards other "look=glow" "$state")
-check "glow on another theme: nothing (stock)" "false false" "$(gv "$(glowline early 'from signal' "$out_glow_other")" visible) $(gv "$(glowline early 'from signal' "$out_glow_other")" arriving)"
-check "glow: the blend's rim is hidden (not drawn twice)" false "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_glow" | head -n1)" visible)"
-check "blend: the blend's rim is the one that is drawn" true "$(rimval "$(rimline 'from signal')" visible)"
+# -- the arrival: a front of light out of the icon, the card revealed by it, the ring under the cards, the rim handed over
+arrline() { grep "PROBE arrival $1 $2 " <<<"$3" | head -n1; }
+av() { sed -n "s/.* $2=\([^ ]*\).*/\1/p" <<<"$1"; }
+out_arr=$out_cards
+e=$(arrline early 'from signal' "$out_arr"); l=$(arrline late 'from signal' "$out_arr")
+check "arrival: a fresh toast is armed and under way early on" "true true" "$(av "$e" armed) $(av "$e" revealing)"
+check "arrival: the card is a mask layer while the front crosses it" true "$(av "$e" layer)"
+check "arrival: the front has left the icon but not crossed the card" yes "$(awk -v f="$(av "$e" front)" -v r="$(av "$e" reach)" 'BEGIN{print (f > 5 && f < r) ? "yes" : "no"}')"
+check "arrival: the card is not faded or scaled in (the front reveals it)" "1.00 1.00" "$(av "$e" opacity) $(av "$e" scale)"
+check "arrival: the settled rim waits for the front (gate 0 early on)" "0.00" "$(av "$e" gate)"
+check "arrival: the edge flare is drawn while the front crosses" true "$(av "$e" visible)"
+check "arrival: about two seconds in, it is over: not armed, no mask, the rim is fully in" "false false 1.00" "$(av "$l" armed) $(av "$l" layer) $(av "$l" gate)"
+check "arrival: and the flare is gone" false "$(av "$l" visible)"
+check "arrival: every toast arrives, not only the first" 5 "$(grep -c 'PROBE arrival early from' <<<"$out_arr")"
+ly=$(grep 'PROBE layer ' <<<"$out_arr" | head -n1)
+check "arrival: the ring layer is told (three at once at most)" "3 true" "$(av "$ly" events) $(av "$ly" active)"
+check "arrival: at full strength" "strength=1" "strength=$(av "$ly" strength)"
+check "arrival: a burst is thinned and urgency scales it (the last three of five toasts at once: normal 1 x 0.6, critical 1.3 x 0.6, low 0.6 x 0.6)" "amps=0.60,0.78,0.36" "amps=$(av "$ly" amps)"
+check "arrival: the ring's reach follows the screen (between 180 and 340)" yes "$(awk -v r="$(av "$ly" reach)" 'BEGIN{print (r >= 180 && r <= 340) ? "yes" : "no"}')"
+check "arrival: the ring has the card's own rectangle (a width and a height, read from the card)" yes "$([[ $(av "$ly" first) =~ ^[0-9]+x[0-9]+@ ]] && echo yes || echo no)"
+check "arrival: the first toast's duration is a normal one's, 4200 ms" "dur=4200" "dur=$(av "$ly" dur)"
+check "arrival: the rim does not also ignite (calm) while the arrival runs" true "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_arr" | head -n1)" calm)"
+out_arr0=$(run cards annihilation "arrival=0")
+e0=$(arrline early 'from signal' "$out_arr0")
+check "arrival=0: nothing is armed and no mask" "false false" "$(av "$e0" armed) $(av "$e0" layer)"
+check "arrival=0: the plain unfold is back (the card is still fading in early)" yes "$(awk -v o="$(av "$e0" opacity)" 'BEGIN{print (o < 1) ? "yes" : "no"}')"
+check "arrival=0: the rim is not gated" "1.00" "$(av "$e0" gate)"
+check "arrival=0: the ring layer has nothing" "events=0" "events=$(av "$(grep 'PROBE layer ' <<<"$out_arr0" | head -n1)" events)"
+check "arrival=0: the rim ignites as it did" false "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_arr0" | head -n1)" calm)"
+out_arr_half=$(run cards annihilation "arrival=0.5")
+check "arrival=0.5 reaches the layer" "strength=0.5" "strength=$(av "$(grep 'PROBE layer ' <<<"$out_arr_half" | head -n1)" strength)"
+out_arr_other=$(run cards other)
+check "another theme: no arrival (stock)" "false false" "$(av "$(arrline early 'from signal' "$out_arr_other")" armed) $(av "$(arrline early 'from signal' "$out_arr_other")" layer)"
+out_stale=$(run stale annihilation)
+check "a toast that is a minute old (restored after a restart) does not arrive" "false" "$(av "$(arrline early 'old toast' "$out_stale")" armed)"
+check "and a fresh one beside it does" "true" "$(av "$(arrline early 'new toast' "$out_stale")" armed)"
+out_crit=$(run crit annihilation)
+check "a critical toast's arrival lasts 6000 ms" "dur=6000" "dur=$(av "$(grep 'PROBE layer ' <<<"$out_crit" | head -n1)" dur)"
+out_slow=$(run cards annihilation "motion_slowdown=2")
+check "motion_slowdown=2 doubles the arrival too" "dur=8400" "dur=$(av "$(grep 'PROBE layer ' <<<"$out_slow" | head -n1)" dur)"
+check "arrival: the settled rim's own gate is closed while the front crosses (slowed, so at 0.9 s it has barely started)" "0.00" "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_slow" | head -n1)" gate)"
+check "arrival=0: and the rim's gate is open" "1.00" "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_arr0" | head -n1)" gate)"
+check "arrival: the rim is not drawn while gated (its own opacity is 0 early in a slowed arrival)" "0.00" "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_slow" | head -n1)" opacity)"
+check "arrival=0: and it is drawn (opacity 1)" "1.00" "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_arr0" | head -n1)" opacity)"
 out_none=$(run cards annihilation "spore_amount=0")
 check "ambient spores: spore_amount=0 turns them off" 0 "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_none" | head -n1)" spores)"
 
@@ -263,6 +290,8 @@ check "spores: it is a normal toast's burst, from a card of some size, at full a
 check "spores: the window stays up after the toast is gone, while the spores drift" yes "$([[ -n $(grep 'PROBE win rows=0 visible=true spores=true' <<<"$out") ]] && echo yes || echo no)"
 check "spores: and goes away once they have faded" yes "$([[ -n $(grep 'PROBE win rows=0 visible=false spores=false' <<<"$out") ]] && echo yes || echo no)"
 check "spores: the window was never hidden while spores were active" 0 "$(grep -c 'PROBE win rows=0 visible=false spores=true' <<<"$out")"
+check "arrival: the window stays up for the ring after the toast and its spores are gone" yes "$([[ -n $(grep 'PROBE win rows=0 visible=true spores=false arrival=true' <<<"$out") ]] && echo yes || echo no)"
+check "arrival: the window was never hidden while the ring was active" 0 "$(grep -c 'PROBE win rows=0 visible=false .*arrival=true' <<<"$out")"
 out=$(PROBE_CLICK=1 run spores annihilation)
 check "spores: a toast that is clicked dissolves too, exactly once" 1 "$(grep -c 'PROBE burst' <<<"$out")"
 check "spores: and its row goes at once, with the window kept up for the spores" yes "$([[ -n $(grep 'PROBE win rows=0 visible=true spores=true' <<<"$out") ]] && echo yes || echo no)"
@@ -281,7 +310,7 @@ CFGDIR=$cfg     # back to the normal lifetimes for the rest
 
 # -- slowdown from the file
 out=$(run themed annihilation "motion_slowdown=3")
-has "slowdown 3: the slot sees it" "slowdown=3 enterMs=1440" "$out"
+has "slowdown 3: the slot sees it" "slowdown=3 enterMs=900" "$out"
 fast=$(run themed annihilation | grep -c 'PROBE presence='); slow=$(grep -c 'PROBE presence=' <<<"$out")
 check "slowdown 3: the entry has more frames than the designed one" yes "$([[ $slow -gt $fast ]] && echo yes || echo no)"
 
