@@ -195,6 +195,9 @@ flipping between the two with the same notifications. The design is `docs/design
 - [ ] the icon ring is very slightly irregular (it should read as organic, not as a lumpy circle)
 - [ ] **there is no countdown line** with this look: the bottom border is a plain border, and the roots are the timer (they are
       still growing until just before the toast goes)
+- [ ] the roots look **real**: solid, matte, bark-coloured (brown; rust for a critical toast), with a rough edge, grain, knots and
+      swellings, drooping a little, branching at acute angles, and paler at the young tips; they cover what is behind them rather than
+      glowing (say if the colour is wrong on your wallpaper, if they are too dark or too pale, or if they still look artificial and how)
 - [ ] the roots are **thick at the base** (about five times the first version: about 8 px across), **thinning quickly** and ending in fine points, with slender side shoots (not stubby); fewer of them: about one per 24 px of height on the left, 40 px of width below) and look **3D** and smooth (no visible joins or beading): round tubes with a lit side towards the top right, a highlight and a soft shadow
       down and to the left on the card and the wallpaper (say if they are too thick, the shading is too strong or too weak, or the
       shadow looks dirty)

@@ -101,30 +101,49 @@ struct Tube { float cover; float lit; float spec; float shadow; float key; };
 //   key     how far from its axis the pixel is, in radii (0 at the centre, 1 at the edge): of two tubes that overlap, the pixel
 //           is shaded by the one it is nearer the middle of, so the joins between pieces do not show.
 // `p` is where the piece starts, `se` its vector (so its length is how much of it has grown), `r0` and `r1` its radius at each end.
-Tube tube(vec2 px, vec2 p, vec2 se, float r0, float r1, float fade) {
+Tube tube(vec2 px, vec2 p, vec2 se, float r0, float r1, float fade, float arc0, float sd) {
     vec2 pa = px - p;
     float inv = 1.0 / max(dot(se, se), 1e-4);
     float h = clamp(dot(pa, se) * inv, 0.0, 1.0);
     vec2 c = pa - se * h;
     float dist = length(c);
     float r = mix(r0, r1, h);
-    vec2 pb = pa - vec2(-0.8 - 0.5 * r, 0.9 + 0.55 * r);                                    // away from the light: down and to the left
+    vec2 pb = pa - vec2(-0.8 - 0.5 * r, 0.9 + 0.55 * r);               // away from the light: down and to the left
     float ds = length(pb - se * clamp(dot(pb, se) * inv, 0.0, 1.0));
     float shadow = 1.0 - smoothstep(0.4 * r, r + 3.0, ds);
-    float cover = 1.0 - smoothstep(r - 0.6, r + 0.6, dist);
+    if (dist > r * 1.25 + 1.0) return Tube(0.0, 0.0, 0.0, shadow, 9.0);
+    float arc = arc0 + h * length(se);                                 // how far along the root this is, in px
+    float rr = r * (1.0 + 0.30 * (vnoise(vec2(arc * 0.9, sd)) - 0.5)); // a rough edge, not a ruled one
+    float cover = 1.0 - smoothstep(rr - 0.6, rr + 0.6, dist);
     if (cover <= 0.0) return Tube(0.0, 0.0, 0.0, shadow, 9.0);
-    vec2 q = c / max(r, 0.35);                                         // from the tube's axis to this pixel, in radii: its sideways lean
+    vec2 t = se * inversesqrt(max(dot(se, se), 1e-6));
+    vec2 perp = vec2(-t.y, t.x);
+    float lateral = dot(c, perp);
+    float fibre = vnoise(vec2(arc * 0.22, lateral * 1.1 + sd * 3.0));    // lengthwise grain
+    float mottle = vnoise(vec2(arc * 0.07 + sd, lateral * 0.25));        // lighter and darker patches
+    vec2 q = c / max(rr, 0.35);                                        // from the tube's axis to this pixel, in radii: its sideways lean
+    q += perp * (fibre - 0.5) * 0.45;                                  // the surface is not smooth: the grain tilts the normal
     q *= min(1.0, inversesqrt(max(dot(q, q), 1e-6)));
     vec3 n = vec3(q, sqrt(max(1.0 - dot(q, q), 0.0)));                 // the surface's normal there (seamless through bends and at the ends)
     float diff = clamp(dot(n, vec3(0.553, -0.553, 0.623)), 0.0, 1.0);
-    float spec = pow(clamp(dot(n, vec3(0.307, -0.307, 0.901)), 0.0, 1.0), 18.0);
-    return Tube(cover, (0.16 + 1.0 * diff) * fade, spec * fade, shadow, dist / max(r, 0.35));
+    float spec = pow(clamp(dot(n, vec3(0.307, -0.307, 0.901)), 0.0, 1.0), 10.0);
+    float tex = (0.78 + 0.44 * fibre) * (0.82 + 0.36 * mottle);
+    return Tube(cover, (0.16 + 1.0 * diff) * fade * tex, spec * fade * fibre, shadow, dist / max(rr, 0.35));
 }
 
 // How thick a root is, as a share of its base, a fraction `a` of the way along it (0 at the base, 1 at the tip): it thins fast after the
 // base and ends in a fine point (10% of the base), a concave taper rather than a straight one: 100%, 65%, 46%, 31%, 19% and 10% at 0, 20, 40,
 // 60, 80 and 100% of the way.
 float taper(float a) { return 0.10 + 0.90 * pow(max(1.0 - a, 0.0), 1.3); }
+
+// How much thicker or thinner than its taper a root is at its `i`th step: knots and necks, not a smooth cone. Joins up from step to step.
+float knob(float i, float seed) { return 1.0 + 0.20 * sin(i * 1.7 + seed * 2.1) + 0.10 * sin(i * 3.9 + seed * 5.3); }
+
+// The heading after one more step: it turns a little by itself (two slow waves, different for each root), a little at random, and
+// is pulled a little towards hanging straight down, as a root hangs.
+float turn(float a, float fi, float seed) {
+    return a + 0.26 * sin(seed * 3.1 + fi * 0.9) + 0.10 * sin(seed * 1.7 + fi * 2.3) + 0.20 * (hash(seed + fi * 7.7) - 0.5) + 0.035 * sin(1.5708 - a);
+}
 
 // Two tubes together: the silhouettes join, the shading is the one the pixel is nearer the middle of, the shadows add up to the strongest.
 Tube over(Tube a, Tube b) {
@@ -136,21 +155,22 @@ Tube over(Tube a, Tube b) {
 
 // A shoot: a curve of up to 7 short steps whose heading turns smoothly (two slow sine waves, different for each), thinning and
 // dimming toward its tip. `reach` (0 to 1) is how much of it has grown; the step being grown is drawn part way.
-Tube shoot(vec2 px, vec2 org, float ang, float stepLen, int n, float seed, float reach, float r0) {
+Tube shoot(vec2 px, vec2 org, float ang, float stepLen, int n, float seed, float reach, float r0, float arc0) {
     vec2 p = org;
-    float a = ang;
+    float a = ang, arc = arc0;
     Tube best = Tube(0.0, 0.0, 0.0, 0.0, 9.0);
     for (int i = 0; i < 8; i++) {
         if (i >= n) break;
         float fi = float(i);
-        a += 0.30 * sin(seed * 3.1 + fi * 0.9) + 0.12 * sin(seed * 1.7 + fi * 2.3);
+        a = turn(a, fi, seed);
         float grown = clamp(reach * float(n) - fi, 0.0, 1.0);
         vec2 e = vec2(cos(a), sin(a)) * stepLen;
         if (grown > 0.0) {
-            float along = fi / float(n);
-            best = over(best, tube(px, p, e * grown, max(r0 * taper(along), 0.4), max(r0 * taper(along + 1.0 / float(n)), 0.4), 1.0 - 0.45 * along));
+            float along = fi / float(n), along1 = (fi + 1.0) / float(n);
+            best = over(best, tube(px, p, e * grown, max(r0 * taper(along) * knob(fi, seed), 0.4), max(r0 * taper(along1) * knob(fi + 1.0, seed), 0.4), 0.8 + 0.3 * along, arc, seed * 0.37));
         }
         p += e;
+        arc += stepLen;
     }
     return best;
 }
@@ -194,19 +214,21 @@ Tube vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, fl
     if (length(px - org) > stepLen * (16.0 * min(reach, 1.0) + 8.0) + 8.0) return Tube(0.0, 0.0, 0.0, 0.0, 9.0);
     float rt = (0.60 + 0.16 * scale) * thick;                          // the trunk's radius at its base, in px (five times that for the roots, 1 for the faint veins in the card)
     vec2 p = org;
-    float a = ang;
+    float a = ang, arc = 0.0;
     Tube v = Tube(0.0, 0.0, 0.0, 0.0, 9.0);
     float side = hash(seed + 5.0) < 0.5 ? 1.0 : -1.0;
     for (int i = 0; i < 16; i++) {
         float fi = float(i);
-        a += 0.30 * sin(seed * 3.1 + fi * 0.9) + 0.12 * sin(seed * 1.7 + fi * 2.3);
+        a = turn(a, fi, seed);
         float grown = clamp(reach * 16.0 - fi, 0.0, 1.0);
         vec2 e = vec2(cos(a), sin(a)) * stepLen;
         if (grown > 0.0) {
             float along = fi / 16.0;
-            v = over(v, tube(px, p, e * grown, max(rt * taper(along), 0.4), max(rt * taper(along + 1.0 / 16.0), 0.4), 1.0 - 0.45 * along));
+            float swell = 1.0 + 0.14 * (float(i == 3 || i == 6 || i == 9 || i == 12) + float(i == 4 || i == 7 || i == 10 || i == 13));   // a thickening where a shoot leaves
+            v = over(v, tube(px, p, e * grown, max(rt * taper(along) * knob(fi, seed) * swell, 0.4), max(rt * taper(along + 1.0 / 16.0) * knob(fi + 1.0, seed), 0.4), 0.8 + 0.3 * along, arc, seed * 0.37));
         }
         p += e;
+        arc += stepLen;
         // a shoot leaves the trunk after steps 3, 6, 9 and 12 (the 4th, 7th, 10th and 13th), once the trunk has grown to there
         if (i == 3 || i == 6 || i == 9 || i == 12) {
             float j = float((i - 3) / 3);
@@ -214,7 +236,7 @@ Tube vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, fl
             float sr = shootReach(g, 0.16 + 0.16 * j + 0.06 * hash(seed + j * 3.3), hash(seed + j * 5.1 + 1.0)) * smoothstep(k / 16.0, k / 16.0 + 0.06, reach);
             if (sr > 0.0) {
                 float sgn = mod(j, 2.0) < 0.5 ? side : -side;
-                Tube sh = shoot(px, p, a + sgn * (0.9 - 0.05 * j), (3.0 - 0.15 * j) * scale, 7 - int(j > 0.5) - int(j > 1.5) - int(j > 2.5), seed + 1.3 + j * 1.1, sr, rt * (0.50 - 0.04 * j));
+                Tube sh = shoot(px, p, a + sgn * (0.62 - 0.03 * j), (3.0 - 0.15 * j) * scale, 7 - int(j > 0.5) - int(j > 1.5) - int(j > 2.5), seed + 1.3 + j * 1.1, sr, rt * (0.50 - 0.04 * j), arc);
                 sh.lit *= 0.9 - 0.06 * j;
                 sh.spec *= 0.9 - 0.06 * j;
                 v = over(v, sh);
@@ -325,9 +347,12 @@ void main() {
     // And, fainter, across the card from its right corners (no shadow: it would darken the card).
     Tube inner = over(vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0, g, 1.0), vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0, g, 1.0));
     vec3 vcol = desaturate(palette(0.55, ubuf.urgency));
-    vec3 glint = mix(vcol, vec3(1.0, 0.97, 0.9), 0.7);
-    rgb += vcol * outer.cover * outer.lit * 0.72 + glint * outer.cover * outer.spec * 0.5;
-    rgb += (vcol * inner.cover * inner.lit * 0.4 + glint * inner.cover * inner.spec * 0.2) * (0.5 + 0.5 * inside);
+    // Roots are solid and earth-coloured, not light like the rim: a bark brown (rust for a critical toast, olive for a low one) with a little
+    // of the toast's own colour in it, matte, drawn over what is behind them (below, once the light is done), so they look like bark on any wallpaper.
+    vec3 bark = ubuf.urgency > 1.5 ? vec3(0.56, 0.34, 0.23) : (ubuf.urgency < 0.5 ? vec3(0.40, 0.45, 0.27) : vec3(0.52, 0.40, 0.27));
+    vec3 rootCol = mix(bark, vcol * 0.55, 0.18);
+    vec3 glint = mix(rootCol, vec3(1.0, 0.95, 0.85), 0.5);
+    rgb += (rootCol * inner.cover * inner.lit * 0.5 + glint * inner.cover * inner.spec * 0.1) * (0.5 + 0.5 * inside);
     // Where the roots are not, they darken what is behind them a little: the shadow they cast, down and to the left.
     float shade = outer.shadow * (1.0 - outer.cover) * 0.36;
 
@@ -347,5 +372,11 @@ void main() {
     rgb *= (0.7 + 0.3 * ubuf.vividness) * ubuf.energy;
     rgb += ambientSpores(px) * 0.55 * ubuf.spores;
     rgb = 1.0 - exp(-rgb * 1.7);
-    fragColor = vec4(rgb, shade) * ubuf.qt_Opacity;
+    // The roots themselves: a real colour, not added light. Where one covers the pixel it hides the rim's glow behind it and the wallpaper
+    // (premultiplied: its colour times its cover in rgb, its cover in alpha; the shadow darkens what is left).
+    vec3 rootRgb = min(rootCol * outer.lit * 0.95 + glint * outer.spec * 0.25, vec3(1.0));
+    float cov = outer.cover;
+    rgb = rgb * (1.0 - cov) + rootRgb * cov;
+    float alpha = cov + (1.0 - cov) * shade;
+    fragColor = vec4(rgb, alpha) * ubuf.qt_Opacity;
 }
