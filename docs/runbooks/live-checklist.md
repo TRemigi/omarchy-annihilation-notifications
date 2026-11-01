@@ -209,6 +209,32 @@ flipping between the two with the same notifications. The design is `docs/design
 
 Say which you prefer, and what to take from the other: this is the experiment the plan left open.
 
+## H. Glow (P2, unreleased on `main`; opt-in; annihilation theme only)
+
+Needs the theme with `glow.json` (its `Service.qml` publishes `~/.local/state/annihilation-theme/glow.json`; check it exists after the
+shell has run for a minute: `cat ~/.local/state/annihilation-theme/glow.json`). Restart the shell after updating either repo
+(new files). Put `look=glow` in `~/.config/omarchy/annihilation-notifications-fork.conf` (read live). Judge it against the blend by flipping.
+Slow the arrival down to see it: `motion_slowdown=4` in the same file.
+
+- [ ] a toast's rim is **the same light as the window edges near it** (the same colours, in the same places, drifting together): a toast
+      over a window whose top edge is violet has a violet top edge; this is what the whole look is for. If the colours are plainly
+      unrelated to the windows', check `glow.json` exists and is recent; without it the toast uses its own clock and seed (that is
+      the fallback, not a bug)
+- [ ] the band is a **thin line of light with a short fade inward**, like the windows', not a bevelled frame; say if it is too thin or
+      too thick (it is 62% of a window's depth)
+- [ ] **the arrival**: a front of light leaves the icon and the card appears only inside it, with its edges flaring as the front
+      crosses them; nothing flashes, and the text is never half-drawn on a bare background in a way that looks like a glitch.
+      Look for: a hard or flickering edge on the card's content (the card is rendered into a layer during the arrival and the mask is applied
+      to it), text that shifts at the end of the arrival when the layer goes away, the stack below making room smoothly (300 ms)
+- [ ] it still **ends**: after about a second and a half the toast is exactly its settled self
+- [ ] critical toasts lean **amber**, low ones moss, and normal ones are the glow's own colour
+- [ ] there is **no countdown** (the toast still leaves on its own after its usual time); nothing missing you would want back
+- [ ] with the theme's own arrival ring still going from the corner at the same time, the two do not fight (say if they do: the ring
+      could start from the icon instead, or be turned off while this look is on)
+- [ ] several toasts at once: each lit by the field at its own place, no flicker; and it does not feel heavy (the overlay re-reads its
+      position and the clock 30 times a second per toast)
+- [ ] `look=blend` and a different theme are exactly as before
+
 ## Results
 
 | Date | Omarchy | Fork | A | B | C | Notes |

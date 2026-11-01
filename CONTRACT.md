@@ -81,6 +81,18 @@ this fork.
 - `history/` is trimmed to the newest 10. `images/` holds copies of avatars and images that the
   files reference. `../notifications.json` holds `{ "version": 3, "dnd": bool }`.
 
+## What the fork reads from the theme (optional)
+
+- `~/.local/state/annihilation-theme/glow.json`, written by the theme's `annihilation.shimmer` plugin (`Service.qml`,
+  `publishGlowState`): `{"seed", "clock", "at", "speed", "running", "intensity", "depth"}`, one JSON line. `clock` is the shader clock of
+  the window glow at `at` (epoch ms), `speed` its seconds per second, `running` whether it advances; `seed` is the glow's random seed,
+  `intensity` its `layerIntensity` and `depth` its `windowGlowDepth`. The fork's `look=glow` reads it (`components/GlowClock.qml`,
+  `GlowLogic.parseGlowState`) so that a toast is lit by the same light as the windows: the glow's colour is a field over the screen that
+  depends on the seed and the clock. It is written on a change of any of them and every 30 s; the fork extrapolates the clock between.
+  **Optional**: without it (an older theme, or none) `look=glow` runs on its own clock and seed with the theme's default settings, so it
+  still works, just not in step with the windows. A change to this file's name or fields is a change to both repos.
+- `~/.config/omarchy/annihilation-notifications-fork.conf` (the fork's own settings; the theme does not read it).
+
 ## Shared code this fork imports (a change here can break it without touching our files)
 
 `qs.Commons` (`Style`, `Color`, `Border`, `Util`) and `qs.Ui` (`BorderSurface`). They are in the

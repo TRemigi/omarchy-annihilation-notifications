@@ -127,3 +127,42 @@ Take **A as the base**, tuned down in saturation and with the rim ignited bright
 second (light becoming matter, tying the ring to the card), **B's typographic header** (the Cinzel small-caps app
 name and the quiet time) because it is the cheapest big step away from "a normal toast", and **C's spores** for
 the exit and as a faint drift above a card (already planned as slice 3). Leave out the wavy outline and the ragged strip.
+
+## Rethink: toasts as part of the glow (mock-ups, 2026-10-31, `docs/design/glow/`)
+The toasts were still cards sitting on top of the glow: their own rim, their own palette, and an arrival ring that started from a
+fixed box in the corner instead of from the card. These mock-ups light the toast with **the window glow's own light** instead.
+`glow/glow-mock.frag` copies the colour field (`fanField`, `lightSpectrum`, `glints`) and the band's profile unchanged from the theme's
+`windowglow.frag`, so a toast and the window beside it are lit by one light; the windows in the scene are lit by the theme's real shader.
+Seed 53, time 40, the author's glow settings (intensity 0.44; the toast band is depth 0.13 against the windows' 0.21, because a 78 px
+card with the windows' band reads as a bevelled frame). Regenerate: `python3 docs/design/glow/glow-mock.py OUTDIR [seed] [time]`
+(`SCAN=3,8,13` makes a contact sheet of seeds; `TDEPTH=` sets the toast band).
+
+| File | What it shows |
+|------|---------------|
+| `glow-0-today.png` | Today's card (the blend look) in the same scene, for comparison. |
+| `glow-1-windowed.png` | Each toast is a window: same light, band and colour as the window it overlaps; its colour follows the field at its place, urgency only leans it (amber for critical, moss for low). |
+| `glow-2-one-body.png` | The stack as one shape: the cards smoothly merged, the gaps become necks, the seams hairlines, the glow only on the outer outline. |
+| `glow-3-docked.png` | The same body flush with the screen edge, as if it grew out of it. |
+| `glow-arrival.png` | The arrival as one event: a front leaves the icon; the card is solid inside it and nothing beyond; the edge flares as the front crosses it; the ring goes on out into the screen. |
+| `scene.png` | The window glow alone. |
+
+Not designed yet: what the countdown becomes (the toast's own light dimming over its life is the candidate), the exit (the card
+dissolving back into the light, with or without the spores), and critical/low colouring without a fixed palette.
+
+### As built: `look=glow` (unreleased; chosen from the mock-ups above: "windowed" plus the arrival)
+`glow-4-shipped.png` and `glow-arrival-shipped.png` are the real `shaders/toastglow.frag` (the same scene and settings as the mock-ups, a
+dark body drawn by the script, no text from the card's own QML). The shipped shader agrees with the mock-up. Per toast it is an overlay
+like `ToastRim`'s (`components/GlowRim.qml`, margin 48 px) plus a mask on the card itself (`shaders/cardreveal.frag`, used as the card's
+`layer.effect` only while the toast is arriving), so the card is solid only inside the front of light.
+- **Same light as the windows**: `fanField`, `lightSpectrum` and `glints` are copied unchanged from the theme's `windowglow.frag`, and the
+  band's profile is the same arithmetic. The field needs the glow's clock and seed (published by the theme, see CONTRACT.md) and the
+  toast's place on the screen (the overlay window is the screen; `GlowRim` re-reads its position with the clock at 30 Hz). The band is
+  62% as deep as a window's (depth 0.13 against 0.21): a 78 px card with a window's band read as a bevelled frame.
+- **Urgency leans the hue**, it does not set it: critical towards amber (65%), low towards moss (50%); the field still shows through.
+- **The arrival**: `wave` runs 0 to 1 over 1.5 s (ease-out quad, times `motion_slowdown`); the front is `wave * reach` px from the icon, where
+  reach is the distance to the farthest corner plus 30. Nothing is lit beyond the front, the edge flares as it crosses, and a soft ring
+  hugs the card (not the whole screen: the theme's own arrival ring, from the corner, is still there; see "Not done").
+  `SlotMotion` with `reveal` opens the slot in 300 ms and does not fade or scale the card in (the front does that); leaving is unchanged.
+- **No countdown, no roots, no ambient spores** in this look (the exit's spores still happen).
+- Not done: the theme's arrival ring still starts from the corner, not the icon (it could take the icon's position from the fork); what
+  the toast's own light could do over its life; the exit as light going out; "one body" and "docked" (mock-ups 2 and 3).

@@ -81,3 +81,7 @@ as well, and the fork's own `status`/`fallback` tools in this repo are separate 
   theme, that plugins run unsandboxed (the warning `omarchy plugin add` itself prints), how to get it, update it, fall back and
   remove it, and that the theme works the same without it.
 - The shimmer plugin and the theme are **not** changed to require the fork.
+
+- **The glow state (optional, for `look=glow`).** The theme's shimmer plugin publishes `~/.local/state/annihilation-theme/glow.json` (its
+  window glow's clock, seed, intensity and depth); the fork reads it so a toast is lit by the same light as the windows. See
+  CONTRACT.md. The fork works without it; the theme does not read anything back.

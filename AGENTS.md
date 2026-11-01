@@ -68,6 +68,8 @@ bash test/motion-test.sh         # components/SlotMotion.qml, offscreen with the
 bash test/growth-test.sh         # shaders/toastgrowth.frag through the harness: rim, veins, lichen, ring, the shadow, no countdown line (30 checks, a few minutes)
 bash test/growth-roots-test.sh   # the roots: reach, count, no pop at the start, staggered starts, still growing late, done at the end (25 checks, ~1 min)
 $TMPDIR/venv/bin/python3 test/growth-activity.py FRAG   # not a pass/fail test: the per-second visible root ink, as measured on a recording
+python3 test/glow-test.py        # toastglow.frag and cardreveal.frag through the harness (36 checks, ~10 s; needs the theme repo next door for the same-light check)
+node test/glow-logic-test.js     # GlowLogic.js (31 checks)
 bash test/service-probe.sh       # the REAL Service.qml in an offscreen Quickshell (26 checks, ~30 s): the theme gate on,
                                  # off and switched live, motion_slowdown, the setting parser. Only the layer-shell
                                  # window type is swapped for a plain one in a copy; everything else is as shipped.
@@ -330,6 +332,39 @@ and the five countdown-line checks became "the `remaining` value changes nothing
 counted on a line 40 px out over the whole height (4 to 7 stretches, between 3 and 9 allowed), there are about 7 roots below (at least 5), and the "nothing yet at 4%" check
 allows 25 pixels of ink. Five deliberate breaks (no bottom roots, one left root, no stagger, roots stop at 80%, roots shrink back) were all caught. **The ink and activity
 measurements (`test/growth-activity.py`) were not redone on the textured, thicker roots**; the pacing was tuned on thin ones.
+
+## P2: Glow, toasts lit by the window glow's own light (2026-10-31, unreleased, opt-in with `look=glow`)
+
+Why: the user said the toasts, even with all the customising, were still cards on top of the theme's glow, not aligned with its size
+and shape, and wanted them to blend into one visual unit with it, even if that meant they stopped being cards. Ideas were pitched, three
+mock-ups were rendered over a scene lit by the theme's real window glow (`docs/design/glow/`), and the user chose **"windowed" plus the
+arrival** ("don't worry about a countdown for now"). "One body" (the stack as one merged shape) and "docked" (grown out of the screen
+edge) are mocked up and **not built**; they are the follow-ups.
+- `shaders/toastglow.frag` (+ `.qsb`): `fanField`, `lightSpectrum` and `glints` copied **unchanged** from the theme's `windowglow.frag`, and
+  the band's arithmetic the same, so toast and window are lit by one light. It needs the glow's clock and seed (the theme publishes
+  `~/.local/state/annihilation-theme/glow.json`, written by `publishGlowState` in the theme's `Service.qml`; **that is a cross-repo
+  interface, see CONTRACT.md**) and the toast's place on the screen (`GlowRim` reads `mapToItem(null, 0, 0)` with the clock, 30 Hz).
+  Without the file it runs on its own clock and seed (`components/GlowClock.qml`, `GlowLogic.js`): still the same kind of light, not in step.
+- `components/GlowRim.qml` is the overlay per card (margin 48), `components/GlowClock.qml` reads the theme's file (one per service),
+  `shaders/cardreveal.frag` masks the card while it arrives (`layer.effect` on the card in the delegate, enabled only while `glowRim.arriving`).
+  `SlotMotion.reveal` (true in this look) opens the slot in 300 ms and leaves the card's opacity and scale at 1 on entry; leaving is unchanged.
+  In this look the blend's `ToastRim` is hidden; there is no countdown, no roots, no ambient spores.
+- The band's depth is 0.62 of the window's (0.13 against 0.21): with a window's band a 78 px card read as a bevelled frame (seen in
+  the first mock-up, fixed before building). The first mock-up also smeared light into the gaps of the merged stack and clipped the arrival
+  ring to a box at the overlay's edge; both are fixed in the shaders (the ring now fades with distance from the card).
+- Verified here: `python3 test/glow-test.py` (36 checks on the compiled shaders through the harness, including that a toast's edge has
+  the same colour as the theme's real `windowglow.frag` at the same screen place, when the theme repo is next door; 18 deliberate breaks, all
+  caught); `node test/glow-logic-test.js` (31 checks; 9 of 10 breaks caught, the tenth is equivalent); `bash test/service-probe.sh` (107
+  checks: the real `Service.qml` with `look=glow` with and without the theme's file, under the blend look and on another theme: the front,
+  the layer only while arriving, no fade and scale on entry, the clock and seed reaching the overlay; breaks of the wiring caught).
+  `docs/design/glow/glow-mock.py` renders the shipped shader over the scene: `glow-4-shipped.png`, `glow-arrival-shipped.png`.
+- **Not verified, needs the user** (checklist section H): how it looks in the real shell (taste: is the band too thin or too thick, is it
+  the same light as the windows to the eye); **the `layer.effect` reveal, which no test here renders** (Qt's offscreen platform cannot run a
+  ShaderEffect, so only the shaders on Mesa and the wiring in the probe are checked): look for a hard or flickering edge on the card's
+  content, text shifting when the layer goes away, and the 300 ms slot opening combined with the front; whether the theme's own arrival
+  ring (still from the corner, at the same time) fights the new arrival; cost with several toasts (30 Hz re-read per toast).
+- The probe's mutation habit: a check on a point where a glint happened to sit let "halo removed" through; look at the actual pixel values
+  of a surviving mutation before deciding the check is fine.
 
 ## Conventions
 

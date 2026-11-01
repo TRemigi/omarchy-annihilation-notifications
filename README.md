@@ -23,6 +23,12 @@ the default, is the rim above; the file is read live). In 0.6.0 the roots are th
 organic, textured shape, and the countdown line is gone: with this look the roots are the timer, still growing until just before the
 toast goes.
 
+An unreleased third look, **Glow**, is also opt-in: `look=glow` lights each toast with the same light as the windows around it (the
+theme's window glow: the same colours drifting the same way, a thin band that hugs the edge) and brings a toast in as one event with
+that light: a front of light leaves its icon, the card is solid only inside it, and the edges flare as it crosses them. There is no
+countdown in this look. For the colours to be in step with the windows it needs a theme that publishes its glow state (the current one
+does); with an older theme it still works, on its own clock.
+
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and
 > know the [fallback](#falling-back-to-stock) before you need it.
