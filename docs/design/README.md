@@ -149,20 +149,25 @@ card with the windows' band reads as a bevelled frame). Regenerate: `python3 doc
 Not designed yet: what the countdown becomes (the toast's own light dimming over its life is the candidate), the exit (the card
 dissolving back into the light, with or without the spores), and critical/low colouring without a fixed palette.
 
-### As built: `look=glow` (unreleased; chosen from the mock-ups above: "windowed" plus the arrival)
-`glow-4-shipped.png` and `glow-arrival-shipped.png` are the real `shaders/toastglow.frag` (the same scene and settings as the mock-ups, a
-dark body drawn by the script, no text from the card's own QML). The shipped shader agrees with the mock-up. Per toast it is an overlay
-like `ToastRim`'s (`components/GlowRim.qml`, margin 48 px) plus a mask on the card itself (`shaders/cardreveal.frag`, used as the card's
-`layer.effect` only while the toast is arriving), so the card is solid only inside the front of light.
-- **Same light as the windows**: `fanField`, `lightSpectrum` and `glints` are copied unchanged from the theme's `windowglow.frag`, and the
-  band's profile is the same arithmetic. The field needs the glow's clock and seed (published by the theme, see CONTRACT.md) and the
-  toast's place on the screen (the overlay window is the screen; `GlowRim` re-reads its position with the clock at 30 Hz). The band is
-  62% as deep as a window's (depth 0.13 against 0.21), capped at 0.2 (the theme's slider goes to 2.5 and the user's was 0.65): a 78 px card with a window's band read as a bevelled frame.
-- **Urgency leans the hue**, it does not set it: critical towards amber (65%), low towards moss (50%); the field still shows through.
-- **The arrival**: `wave` runs 0 to 1 over 1.5 s (ease-out quad, times `motion_slowdown`); the front is `wave * reach` px from the icon, where
-  reach is the distance to the farthest corner plus 30. Nothing is lit beyond the front, the edge flares as it crosses, and a soft ring
-  hugs the card (not the whole screen: the theme's own arrival ring, from the corner, is still there; see "Not done").
-  `SlotMotion` with `reveal` opens the slot in 300 ms and does not fade or scale the card in (the front does that); leaving is unchanged.
-- **No countdown, no roots, no ambient spores** in this look (the exit's spores still happen).
-- Not done: the theme's arrival ring still starts from the corner, not the icon (it could take the icon's position from the fork); what
-  the toast's own light could do over its life; the exit as light going out; "one body" and "docked" (mock-ups 2 and 3).
+### The settled glow look was built and then dropped
+`look=glow` (a toast lit by the window glow's own light, with the arrival) was built, tested and judged on 2026-10-31; the user then said they
+cared about the arrival, not the settled glow, and the look was removed. What it left: the window-lit settled look is in this repo's git
+history (`p2/glow`), the mock-ups above stay as a record, and its arrival became the arrival below.
+
+## The arrival (2026-10-31, `docs/design/arrival/`; moved here from the theme)
+`arrival-one.png` (one toast, 60 ms to 3.3 s), `arrival-critical.png`, `arrival-low.png` and `arrival-burst.png` (three at once) are the real
+shaders through the harness over a scene lit by the theme's real window glow (`arrival-mock.py`; the text is masked by the same front).
+Why it is in this repo: the old ring came from a fixed 100x30 box near the corner of the screen because the theme cannot know where a card
+is; the fork can, so the arrival is drawn from each card's real rectangle, corner radius and icon.
+- **One wave, one timeline.** `p` runs 0 to 1 over 3.2 s (low), 4.2 s (normal) or 6 s (critical), times `motion_slowdown`; the front's radius from the
+  icon is `(card reach + ring reach) * (1 - (1 - p)^3)`: quick off the icon, slowing. It crosses the card in about a fifth of the arrival (about a
+  second for a normal toast); the ring reach is 26% of the screen's height, 180 to 340 px.
+- **In the card** (`toastflare.frag`, `cardreveal.frag`): the card is shown only inside the front (a soft edge, `layer.effect` on the card while
+  it arrives), its edge flares where the front crosses it and cools behind it (an afterglow), and the icon's spore is lit as the front leaves it.
+- **Outside the card** (`toastring.frag`, one layer under the column): a pixel is reached by the front at `F = d + |icon - q|`, d its distance from the
+  card's outline and q the nearest point of the outline, so the ring hugs the outline near the card (bulging where the icon is closest) and
+  tends to a circle far away; the halo is a function of d alone, the lamp-glow in the card's shape, rising behind the front.
+- **The hand-over**: the settled rim (the look's own, `ToastRim`) is held back until the front has crossed, then fades in as the flare falls
+  (`rimGate`), and does not also ignite. Colours and amplitudes are the theme's old ring's (normal teal to blue, critical amber to pink, low moss to
+  teal; critical 1.3, low 0.6, Omarchy's own toasts 0.7, a burst 0.6). A toast restored after a shell restart does not arrive.
+- Not verified live: see checklist section H.

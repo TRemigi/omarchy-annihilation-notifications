@@ -82,6 +82,4 @@ as well, and the fork's own `status`/`fallback` tools in this repo are separate 
   remove it, and that the theme works the same without it.
 - The shimmer plugin and the theme are **not** changed to require the fork.
 
-- **The glow state (optional, for `look=glow`).** The theme's shimmer plugin publishes `~/.local/state/annihilation-theme/glow.json` (its
-  window glow's clock, seed, intensity and depth); the fork reads it so a toast is lit by the same light as the windows. See
-  CONTRACT.md. The fork works without it; the theme does not read anything back.
+- **The arrival is the fork's now.** The theme's own arrival ring and its settings were removed (theme `p2/arrival`); with the fork off there is no arrival light. The theme still reads the daemon's state files for the sound and the missed marks. See CONTRACT.md.

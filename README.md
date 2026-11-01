@@ -23,11 +23,12 @@ the default, is the rim above; the file is read live). In 0.6.0 the roots are th
 organic, textured shape, and the countdown line is gone: with this look the roots are the timer, still growing until just before the
 toast goes.
 
-An unreleased third look, **Glow**, is also opt-in: `look=glow` lights each toast with the same light as the windows around it (the
-theme's window glow: the same colours drifting the same way, a thin band that hugs the edge) and brings a toast in as one event with
-that light: a front of light leaves its icon, the card is solid only inside it, and the edges flare as it crosses them. There is no
-countdown in this look. For the colours to be in step with the windows it needs a theme that publishes its glow state (the current one
-does); with an older theme it still works, on its own clock.
+0.7.0 (unreleased) moves the **arrival** here from the theme and makes it one event with the card. A new toast does not pop in: a front of light
+leaves its icon and crosses the card, which is shown only inside the front; the card's edge flares as the front crosses it; the front carries
+on past the card as a ring and a halo that follow **the card's own outline** (the theme's old ring came from a fixed box near the corner and
+never lined up with the card, which is why it was moved). Teal and blue normally, amber and pink for critical, moss for low; the settled rim
+(whichever look is chosen) fades in as the arrival's edge light falls. `arrival` (0 to 2, default 1) in the same file sets its strength, 0
+turns it off. The theme no longer draws an arrival ring; without this fork there is none.
 
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and

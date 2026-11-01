@@ -62,7 +62,8 @@ All return a string; keep the names and the argument lists.
   cannot know this; the only effect is that a toast dismissed in roughly the last second of its lifetime can be
   counted as expired (a false "missed").
 - **With the annihilation theme active, the popup window can stay up, empty and click-through, for up to about 2.2 s after
-  the last toast has gone**, to finish drawing the spores it left (`components/SporeLayer.qml`). It never covers or
+  the last toast has gone**, to finish drawing the spores it left (`components/SporeLayer.qml`) and, after an arrival, the ring and halo that
+  leave a new toast's outline (`components/ArrivalLayer.qml`, up to the arrival's 3 to 6 s, times `motion_slowdown`). It never covers or
   intercepts anything: its input region is the toast column, which is empty by then. The layer namespace is unchanged.
 - Click runs the toast's default action (`omarchy-exec-argv`, else the sender's `default` action) and
   dismisses; right click dismisses; hovering pauses the countdown.
@@ -81,17 +82,12 @@ this fork.
 - `history/` is trimmed to the newest 10. `images/` holds copies of avatars and images that the
   files reference. `../notifications.json` holds `{ "version": 3, "dnd": bool }`.
 
-## What the fork reads from the theme (optional)
+## What the theme no longer does (2026-10-31)
 
-- `~/.local/state/annihilation-theme/glow.json`, written by the theme's `annihilation.shimmer` plugin (`Service.qml`,
-  `publishGlowState`): `{"seed", "clock", "at", "speed", "running", "intensity", "depth"}`, one JSON line. `clock` is the shader clock of
-  the window glow at `at` (epoch ms), `speed` its seconds per second, `running` whether it advances; `seed` is the glow's random seed,
-  `intensity` its `layerIntensity` and `depth` its `windowGlowDepth`. The fork's `look=glow` reads it (`components/GlowClock.qml`,
-  `GlowLogic.parseGlowState`) so that a toast is lit by the same light as the windows: the glow's colour is a field over the screen that
-  depends on the seed and the clock. It is written on a change of any of them and every 30 s; the fork extrapolates the clock between.
-  **Optional**: without it (an older theme, or none) `look=glow` runs on its own clock and seed with the theme's default settings, so it
-  still works, just not in step with the windows. A change to this file's name or fields is a change to both repos.
-- `~/.config/omarchy/annihilation-notifications-fork.conf` (the fork's own settings; the theme does not read it).
+The theme used to draw an arrival ring (`ArrivalGlow.qml`, `shaders/arrival.frag`, settings `notifyGlow` and `notifyGlowStrength`) from a fixed
+box near the corner of the screen. That is gone from the theme: the arrival is the fork's now (`components/ArrivalFlare.qml`,
+`ArrivalLayer.qml`, the setting `arrival` in `~/.config/omarchy/annihilation-notifications-fork.conf`), drawn from each card's own outline and
+icon. Without the fork there is no arrival light. The theme still reads this daemon's state files for the sound and the missed marks.
 
 ## Shared code this fork imports (a change here can break it without touching our files)
 

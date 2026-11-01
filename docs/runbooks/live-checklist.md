@@ -209,31 +209,27 @@ flipping between the two with the same notifications. The design is `docs/design
 
 Say which you prefer, and what to take from the other: this is the experiment the plan left open.
 
-## H. Glow (P2, unreleased on `main`; opt-in; annihilation theme only)
+## H. The arrival (P2, unreleased on `p2/arrival`; annihilation theme only)
 
-Needs the theme with `glow.json` (its `Service.qml` publishes `~/.local/state/annihilation-theme/glow.json`; check it exists after the
-shell has run for a minute: `cat ~/.local/state/annihilation-theme/glow.json`). Restart the shell after updating either repo
-(new files). Put `look=glow` in `~/.config/omarchy/annihilation-notifications-fork.conf` (read live; the last line for a key wins, so appending with `echo >>` works; **before 0.7.0's fix the first line won**, and a file with `look=blend` above `look=glow` silently stayed on the blend). Judge it against the blend by flipping.
-Slow the arrival down to see it: `motion_slowdown=4` in the same file.
+The arrival moved here from the theme. Needs the theme's `p2/arrival` too (it removes the theme's own ring; otherwise two rings run).
+Restart the shell after updating either repo (new files). The setting is `arrival` (0 to 2, default 1; 0 turns it off) in
+`~/.config/omarchy/annihilation-notifications-fork.conf` (read live; the last line for a key wins). Slow it down to judge it:
+`motion_slowdown=4`, then remove the line. It works with any look. The design is `docs/design/arrival/`.
 
-- [ ] a toast's rim is **the same light as the window edges near it** (the same colours, in the same places, drifting together): a toast
-      over a window whose top edge is violet has a violet top edge; this is what the whole look is for. If the colours are plainly
-      unrelated to the windows', check `glow.json` exists and is recent; without it the toast uses its own clock and seed (that is
-      the fallback, not a bug)
-- [ ] the band is a **thin line of light with a short fade inward**, like the windows', not a bevelled frame; say if it is too thin or
-      too thick (it is 62% of a window's depth, and never more than 0.2 whatever the theme's depth slider says: the slider goes to 2.5)
-- [ ] **the arrival**: a front of light leaves the icon and the card appears only inside it, with its edges flaring as the front
-      crosses them; nothing flashes, and the text is never half-drawn on a bare background in a way that looks like a glitch.
-      Look for: a hard or flickering edge on the card's content (the card is rendered into a layer during the arrival and the mask is applied
-      to it), text that shifts at the end of the arrival when the layer goes away, the stack below making room smoothly (300 ms)
-- [ ] it still **ends**: after about a second and a half the toast is exactly its settled self
-- [ ] critical toasts lean **amber**, low ones moss, and normal ones are the glow's own colour
-- [ ] there is **no countdown** (the toast still leaves on its own after its usual time); nothing missing you would want back
-- [ ] with the theme's own arrival ring still going from the corner at the same time, the two do not fight (say if they do: the ring
-      could start from the icon instead, or be turned off while this look is on)
-- [ ] several toasts at once: each lit by the field at its own place, no flicker; and it does not feel heavy (the overlay re-reads its
-      position and the clock 30 times a second per toast)
-- [ ] `look=blend` and a different theme are exactly as before
+- [ ] a new toast does **not pop in**: a front of light leaves its **icon** and the card is shown only inside it, round, growing across the card
+- [ ] the card's **edge flares** where the front crosses it and cools behind it; nothing flashes, and the text is never half-drawn in a way that
+      looks like a glitch. Look for a hard or flickering edge on the card's content (the card is rendered into a layer while it arrives), text
+      that shifts when the arrival ends, and the stack below making room smoothly (300 ms)
+- [ ] the front carries on past the card as a **ring and halo that follow the card's outline**: they hug it near the card and round off further out;
+      they start from the card's own place (the old ring came from the corner), and do not look like a rectangle clipped at some edge of the screen
+- [ ] it still **ends**: after about a second the card is fully there and the settled rim has faded in without a jump; the ring is gone after the
+      arrival's few seconds and the toast is exactly the settled one
+- [ ] critical toasts are amber to pink, low ones moss, normal ones teal to blue, and they are as strong as the theme's old ring was (say if not)
+- [ ] a **burst** of several toasts at once is not a flash (later ones are fainter, at most three rings at a time)
+- [ ] **no second ring**: the theme's own is gone (if you see one from the screen's corner too, the theme is not on `p2/arrival`)
+- [ ] a toast restored after `omarchy restart shell` appears at once, with no arrival; `notify-send -a Omarchy ...` (an own-action toast) is fainter
+- [ ] `arrival=0` is the plain unfold of 0.2 to 0.6; with `look=growth` the roots and rim arrive in step; a **different theme** is exactly as before
+- [ ] it does not feel heavy (the ring layer renders at half resolution while an arrival runs, and not at all otherwise)
 
 ## Results
 

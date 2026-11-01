@@ -74,8 +74,8 @@ bash test/motion-test.sh         # components/SlotMotion.qml, offscreen with the
 bash test/growth-test.sh         # shaders/toastgrowth.frag through the harness: rim, veins, lichen, ring, the shadow, no countdown line (30 checks, a few minutes)
 bash test/growth-roots-test.sh   # the roots: reach, count, no pop at the start, staggered starts, still growing late, done at the end (25 checks, ~1 min)
 $TMPDIR/venv/bin/python3 test/growth-activity.py FRAG   # not a pass/fail test: the per-second visible root ink, as measured on a recording
-python3 test/glow-test.py        # toastglow.frag and cardreveal.frag through the harness (36 checks, ~10 s; needs the theme repo next door for the same-light check)
-node test/glow-logic-test.js     # GlowLogic.js (31 checks)
+python3 test/arrival-test.py     # toastring.frag, toastflare.frag and cardreveal.frag through the harness (47 checks, ~10 s)
+node test/arrival-logic-test.js  # ArrivalLogic.js (32 checks)
 bash test/service-probe.sh       # the REAL Service.qml in an offscreen Quickshell (26 checks, ~30 s): the theme gate on,
                                  # off and switched live, motion_slowdown, the setting parser. Only the layer-shell
                                  # window type is swapped for a plain one in a copy; everything else is as shipped.
@@ -339,43 +339,46 @@ counted on a line 40 px out over the whole height (4 to 7 stretches, between 3 a
 allows 25 pixels of ink. Five deliberate breaks (no bottom roots, one left root, no stagger, roots stop at 80%, roots shrink back) were all caught. **The ink and activity
 measurements (`test/growth-activity.py`) were not redone on the textured, thicker roots**; the pacing was tuned on thin ones.
 
-## P2: Glow, toasts lit by the window glow's own light (2026-10-31, unreleased, opt-in with `look=glow`)
+## P2: the arrival (2026-10-31, unreleased, branch `p2/arrival`, here and in the theme repo)
 
-Why: the user said the toasts, even with all the customising, were still cards on top of the theme's glow, not aligned with its size
-and shape, and wanted them to blend into one visual unit with it, even if that meant they stopped being cards. Ideas were pitched, three
-mock-ups were rendered over a scene lit by the theme's real window glow (`docs/design/glow/`), and the user chose **"windowed" plus the
-arrival** ("don't worry about a countdown for now"). "One body" (the stack as one merged shape) and "docked" (grown out of the screen
-edge) are mocked up and **not built**; they are the follow-ups.
-- `shaders/toastglow.frag` (+ `.qsb`): `fanField`, `lightSpectrum` and `glints` copied **unchanged** from the theme's `windowglow.frag`, and
-  the band's arithmetic the same, so toast and window are lit by one light. It needs the glow's clock and seed (the theme publishes
-  `~/.local/state/annihilation-theme/glow.json`, written by `publishGlowState` in the theme's `Service.qml`; **that is a cross-repo
-  interface, see CONTRACT.md**) and the toast's place on the screen (`GlowRim` reads `mapToItem(null, 0, 0)` with the clock, 30 Hz).
-  Without the file it runs on its own clock and seed (`components/GlowClock.qml`, `GlowLogic.js`): still the same kind of light, not in step.
-- `components/GlowRim.qml` is the overlay per card (margin 48), `components/GlowClock.qml` reads the theme's file (one per service),
-  `shaders/cardreveal.frag` masks the card while it arrives (`layer.effect` on the card in the delegate, enabled only while `glowRim.arriving`).
-  `SlotMotion.reveal` (true in this look) opens the slot in 300 ms and leaves the card's opacity and scale at 1 on entry; leaving is unchanged.
-  In this look the blend's `ToastRim` is hidden; there is no countdown, no roots, no ambient spores.
-- The band's depth is 0.62 of the window's (0.13 against 0.21): with a window's band a 78 px card read as a bevelled frame (seen in
-  the first mock-up, fixed before building). The first mock-up also smeared light into the gaps of the merged stack and clipped the arrival
-  ring to a box at the overlay's edge; both are fixed in the shaders (the ring now fades with distance from the card).
-- **Found live (2026-10-31, from a recording):** the conf parser took the *first* `look=` line, so `echo look=glow >> file` under an earlier `look=blend`
-  did nothing and the user saw the blend and said the look did not match the checklist. Now the last line for a key wins (`lastValue`). Lesson: when
-  a live report says it "doesn't behave as described", look at the conf and the recording for which look is actually on (the blend's countdown
-  line at the bottom edge gave it away) before suspecting the new code. The same recording showed the theme's depth slider at 0.65, which
-  would have made toast bands five times the mock-up's; the toast depth is now capped (`GlowLogic.toastDepth`).
-- Verified here: `python3 test/glow-test.py` (36 checks on the compiled shaders through the harness, including that a toast's edge has
-  the same colour as the theme's real `windowglow.frag` at the same screen place, when the theme repo is next door; 18 deliberate breaks, all
-  caught); `node test/glow-logic-test.js` (31 checks; 9 of 10 breaks caught, the tenth is equivalent); `bash test/service-probe.sh` (107
-  checks: the real `Service.qml` with `look=glow` with and without the theme's file, under the blend look and on another theme: the front,
-  the layer only while arriving, no fade and scale on entry, the clock and seed reaching the overlay; breaks of the wiring caught).
-  `docs/design/glow/glow-mock.py` renders the shipped shader over the scene: `glow-4-shipped.png`, `glow-arrival-shipped.png`.
-- **Not verified, needs the user** (checklist section H): how it looks in the real shell (taste: is the band too thin or too thick, is it
-  the same light as the windows to the eye); **the `layer.effect` reveal, which no test here renders** (Qt's offscreen platform cannot run a
-  ShaderEffect, so only the shaders on Mesa and the wiring in the probe are checked): look for a hard or flickering edge on the card's
-  content, text shifting when the layer goes away, and the 300 ms slot opening combined with the front; whether the theme's own arrival
-  ring (still from the corner, at the same time) fights the new arrival; cost with several toasts (30 Hz re-read per toast).
-- The probe's mutation habit: a check on a point where a glint happened to sit let "halo removed" through; look at the actual pixel values
-  of a surviving mutation before deciding the check is fine.
+**Direction, from the user (2026-10-31):** the original brief for this work (the notification toasts, even with all the customising, were still cards
+on top of the theme's glow and did not align with its size and shape; make toast and glow one visual unit, even if the toast stops being a card)
+**applies to the arrival, not to the settled look**; and "it probably makes sense to move the arrival into this project". They chose to **remove the
+theme's ring now** and to **remove the settled glow look**. So: the arrival is this repo's, it works with every look, and the theme no longer draws one.
+
+How it got here (so it is not re-derived): ideas were pitched, three mock-ups (`docs/design/glow/`) were rendered over a scene lit by the theme's real
+window glow, the user chose "windowed plus the arrival" and it was built as `look=glow` (branch `p2/glow`, still in git history: a toast lit by the window
+glow's own colour field, which needed the theme to publish its clock and seed). Judged live, the user then said they cared about the arrival and not the
+settled glow. Two live findings from that round are worth keeping: the conf parser took the *first* `look=` line, so `echo look=glow >> file` under an
+earlier `look=blend` did nothing and the user saw the blend and said it "doesn't behave as the checklist describes" (the blend's countdown line at the
+bottom edge gave it away in the recording; **the last line for a key wins now**, `lastValue` in `Service.qml`); and the theme's depth slider was at 0.65,
+five times what the mock-up assumed. Lesson: when a live report says it does not behave as described, check the conf and the recording for which look is
+actually on before suspecting the new code.
+
+What it is (`docs/design/arrival/README` section in `docs/design/README.md` has the numbers):
+- **One wave per toast, one timeline.** `ArrivalLogic.js` (pure): `p` 0 to 1 over 3.2 / 4.2 / 6 s (low / normal / critical; the theme's old ring's) times
+  `motion_slowdown`, `frontAt(p)` the front's radius from the icon, `settle` the hand-over, `isFresh` (a toast restored after a shell restart does not arrive).
+- `components/ArrivalFlare.qml` (per toast, over the card) owns the toast's clock and the flare overlay (`shaders/toastflare.frag`: the card's edge lit as the
+  front crosses it, an afterglow, the icon's spore); the delegate masks the card with `shaders/cardreveal.frag` as a `layer.effect` while `arrival.revealing`;
+  `ToastRim` gets `gate` (fades the settled rim in as the front finishes crossing) and `calm` (no ignition flash); `SlotMotion.reveal` opens the slot in 300 ms
+  and leaves the card's opacity and scale at 1 on entry. Armed from creation so the card is hidden from the first frame; the clock starts one tick later,
+  when layout has given the card its size.
+- `components/ArrivalLayer.qml` (one per popup window, under the column, like `SporeLayer`) draws `shaders/toastring.frag`: a ring and a halo that follow **each card's
+  own rounded rectangle** (a pixel is reached by the front at `d + |icon - q|`, d its distance from the outline and q the nearest outline point), at most three at a
+  time, rendered at half resolution, only while there are any; the window stays visible while it runs (`visible: ... || arrivalLayer.active`, CONTRACT.md). It follows the
+  card while it exists (the stack moves).
+- Setting: `arrival` 0 to 2, default 1, in the fork conf; 0 turns the whole arrival off (back to the plain unfold and the blend's ignition).
+- **Theme side (branch `p2/arrival` there):** `ArrivalGlow.qml`, `arrival.frag`, `notifyGlow`/`notifyGlowStrength` with their popup slider and switch, the layer rule's
+  namespace and the interim `glow.json` writer are removed; the feed, the sound and the missed marks stay. The theme alone has no arrival light now (the user's decision).
+- Verified here: `python3 test/arrival-test.py` (47 checks on the three compiled shaders through the harness; 27 of 28 deliberate breaks caught, the survivor is the
+  `p <= 0 || p >= 1` guard, redundant with the lives' own zeros); `node test/arrival-logic-test.js` (32); `bash test/service-probe.sh` (126: the real `Service.qml` and
+  components: armed and under way early, the card a mask layer and not faded or scaled, the rim gated and calm, over after two seconds, up to three at once, strength
+  and `arrival=0`, another theme, a stale toast, critical and slowed durations, the parser incl. last-line-wins); QML wiring breaks: 15 of 18 caught (run in isolated repo copies; a mutation run in the working tree while other checks ran gave flaky results, so do not do that). The survivors: ArrivalLayer's own `strength > 0` guard (redundant: a toast is never armed at 0), and two that only a real screen height can show (the ring reach's 180 px floor hides it in the probe's small window).
+  `docs/design/arrival/arrival-mock.py` renders the shipped shaders over the scene.
+- **Not verified, needs the user** (checklist section H): how it looks and feels in the real shell (speed, strength, whether the ring reads as the card's shape or
+  just a circle, the burst), **the `layer.effect` reveal, which nothing here renders** (Qt's offscreen platform cannot run a ShaderEffect, so only the shaders on Mesa
+  and the QML wiring in the probe are checked): a hard or flickering edge on the card's content, text shifting when the layer goes away, the 300 ms slot opening with the
+  front; the ring's alignment with real cards of different heights; cost.
 
 ## Conventions
 
