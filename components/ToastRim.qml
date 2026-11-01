@@ -29,13 +29,17 @@ Item {
   onRemainingChanged: if (remaining >= 0) growth = Math.max(growth, 1 - remaining)
 
   property real energy: 1
+  // annihilation: the arrival (ArrivalFlare) hands over to this rim: `gate` fades it in as the front finishes crossing the card (1 when
+  // there is no arrival), and `calm` skips the ignition flash, which the arrival's own edge light replaces.
+  property real gate: 1
+  property bool calm: false
   property real time: 0
   readonly property real margin: 110    // the halo needs 20, the faint spores 56, and the Growth look's roots up to about 100
 
   anchors.fill: target
   anchors.margins: -margin
   scale: target.scale
-  opacity: target.opacity
+  opacity: target.opacity * gate
   transformOrigin: target.transformOrigin
   enabled: false                    // click-through
 
@@ -47,8 +51,8 @@ Item {
 
   function ignite() {
     igniteAnim.stop()
-    energy = 2.2
-    igniteAnim.start()
+    energy = calm ? 1 : 2.2
+    if (!calm) igniteAnim.start()
     growth = 0
     if (remaining < 0) growAnim.restart()
   }

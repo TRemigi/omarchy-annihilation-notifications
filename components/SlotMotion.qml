@@ -19,7 +19,7 @@ Item {
   id: root
 
   property bool fx: false
-  // The glow look: the card is not faded or scaled in (a front of light reveals it, see GlowRim.qml); only the slot opens, a little
+  // The arrival: the card is not faded or scaled in (a front of light reveals it, see ArrivalFlare.qml); only the slot opens, a little
   // faster, so the stack has made room by the time the light crosses the card. Leaving is unchanged.
   property bool reveal: false
   // The column's spacing, so the gap a slot adds can be folded away with the slot.

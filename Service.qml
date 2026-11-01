@@ -38,13 +38,14 @@ Item {
   //                    makes it obvious that it is running.
   //   rim_vividness    0 to 1, default 0.75: how strong and saturated the light on the card's rim is.
   //   spore_amount     0 to 1, default 1: how many spores a toast leaves as it goes; 0 for none.
-  //   look             blend (default), growth or glow: the rim of light; the living outline, lichen and roots (an experiment); or
-  //                    the toast lit by the same light as the windows, arriving as a front of light out of its icon (needs the theme
-  //                    to publish its glow state for the colours to be in step with the windows; see components/GlowClock.qml).
+  //   look             blend (default) or growth: the rim of light, or the living outline, lichen and roots (an experiment).
+  //   arrival          0 to 2, default 1: how strong the arrival is (a front of light leaves the icon, crosses the card and goes on
+  //                    out as a ring that hugs the card's outline; see components/ArrivalFlare.qml); 0 turns it off, back to the plain unfold.
   property real motionSlowdown: 1
   property real rimVividness: 0.75
   property real sporeAmount: 1
   property string look: "blend"
+  property real arrivalStrength: 1
   // The last line for a key wins, so `echo key=value >> file` overrides an earlier line instead of being ignored.
   function lastValue(raw, key, pattern) {
     var re = new RegExp("^\\s*" + key + "\\s*=\\s*(" + pattern + ")\\s*$", "gm"), text = String(raw || ""), m, last = null
@@ -59,22 +60,18 @@ Item {
   function parseSlowdown(raw) { return parseNumber(raw, "motion_slowdown", 0.25, 8, 1) }
   function parseVividness(raw) { return parseNumber(raw, "rim_vividness", 0, 1, 0.75) }
   function parseSpores(raw) { return parseNumber(raw, "spore_amount", 0, 1, 1) }
+  function parseArrival(raw) { return parseNumber(raw, "arrival", 0, 2, 1) }
   function parseLook(raw) {
     var m = lastValue(raw, "look", "\\w+")
-    return m === "growth" || m === "glow" ? m : "blend"
+    return m === "growth" ? m : "blend"
   }
   FileView {
     path: service.home + "/.config/omarchy/annihilation-notifications-fork.conf"
     watchChanges: true
     printErrors: false
-    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()); service.look = service.parseLook(text()) }
+    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()); service.look = service.parseLook(text()); service.arrivalStrength = service.parseArrival(text()) }
     onFileChanged: reload()
-    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1; service.look = "blend" }
-  }
-  // annihilation: the window glow's clock and seed, published by the theme, for the glow look.
-  GlowClock {
-    id: glowClock
-    path: service.home + "/.local/state/annihilation-theme/glow.json"
+    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1; service.look = "blend"; service.arrivalStrength = 1 }
   }
   // History + DND live under XDG_STATE_HOME: they're persistent user state
   // (the notifications received, the last-set DND preference), not
@@ -1013,7 +1010,7 @@ Item {
       id: popupWindow
       required property var modelData
       screen: modelData
-      visible: popupModel.count > 0 || sporeLayer.active // annihilation: stay up while spores are still drifting
+      visible: popupModel.count > 0 || sporeLayer.active || arrivalLayer.active // annihilation: stay up while spores drift and the arrival's ring travels
 
       WlrLayershell.namespace: "omarchy-notifications"
       WlrLayershell.layer: WlrLayer.Overlay
@@ -1033,6 +1030,18 @@ Item {
       // Keep the surface click-through except over the toast column, so the
       // rest of the (invisible) full-screen overlay never eats input.
       mask: Region { item: popupColumn }
+
+      // annihilation: the arrival's ring and halo, under the cards: they hug each new card's own outline. See ArrivalLayer.qml.
+      ArrivalLayer {
+        id: arrivalLayer
+        anchors.top: parent.top
+        anchors.right: parent.right
+        width: Style.space(380) + popupWindow.popupPlacement.margins.right + ringReach + 40
+        height: Math.min(parent.height, Style.space(720) + ringReach)
+        strength: service.themed ? service.arrivalStrength : 0
+        cornerRadius: service.cornerRadius
+        screenHeight: popupWindow.height
+      }
 
       // annihilation: the spores of toasts that have left, over the whole stack; it outlasts the cards. See SporeLayer.qml.
       SporeLayer {
@@ -1094,7 +1103,7 @@ Item {
             SlotMotion {
               id: motion
               fx: service.themed
-              reveal: service.look === "glow" // annihilation: the card is revealed by the front of light, not faded and scaled in
+              reveal: service.arrivalStrength > 0 // annihilation: the card is revealed by the front of light, not faded and scaled in
               slowdown: service.motionSlowdown
               spacing: Style.space(8)
               onLeaveStarted: cardSlot.releaseSpores()
@@ -1146,12 +1155,12 @@ Item {
               fontFamily: service.shell && service.shell.bar ? service.shell.bar.fontFamily : ""
               glyph: cardSlot.glyph
 
-              // annihilation: in the glow look the card is shown only inside the front of light that leaves its icon (the arrival).
-              layer.enabled: glowRim.arriving
+              // annihilation: the arrival: the card is shown only inside the front of light that leaves its icon.
+              layer.enabled: arrival.revealing
               layer.effect: ShaderEffect {
-                property real front: glowRim.front
+                property real front: arrival.front
                 property size size: Qt.size(card.width, card.height)
-                property vector2d icon: glowRim.cardIcon
+                property vector2d icon: arrival.cardIcon
                 fragmentShader: Qt.resolvedUrl("shaders/cardreveal.frag.qsb")
               }
 
@@ -1162,7 +1171,9 @@ Item {
             // annihilation: the light on the card, over it. Invisible (so nothing is drawn) while the theme is off.
             ToastRim {
               target: card
-              visible: service.themed && service.look !== "glow"
+              visible: service.themed
+              gate: arrival.rimGate // annihilation: the rim fades in as the arrival's edge light falls
+              calm: arrival.armed   // and does not also ignite
               urgency: cardSlot.urgency
               slowdown: service.motionSlowdown
               vividness: service.rimVividness
@@ -1173,16 +1184,18 @@ Item {
               Component.onCompleted: ignite()
             }
 
-            // annihilation: the glow look (look=glow): the window glow's own light on the card, and the arrival. See components/GlowRim.qml.
-            GlowRim {
-              id: glowRim
+            // annihilation: the arrival on the card: the front of light, the card's edge flaring as it crosses, and the clock the ring shares.
+            // Armed only for a fresh toast (not one restored after a shell restart) with the theme on and `arrival` above 0.
+            ArrivalFlare {
+              id: arrival
               target: card
-              glow: glowClock
-              screenSize: Qt.size(popupWindow.width, popupWindow.height)
-              visible: service.themed && service.look === "glow"
-              urgency: cardSlot.urgency
+              ring: arrivalLayer
+              on: service.themed
+              strength: service.arrivalStrength
               slowdown: service.motionSlowdown
-              Component.onCompleted: arrive()
+              urgency: cardSlot.urgency
+              app: cardSlot.app
+              timestamp: cardSlot.timestamp
             }
           }
         }
