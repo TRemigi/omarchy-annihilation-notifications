@@ -37,7 +37,13 @@ changes nothing.
 - **Never ship something that can leave a user with no daemon** without the fallback tooling covering it.
 - Explicit paths in `git add`; small commits that say why; follow the attribution trailer the session asks for.
 - Preferred voice with the user: concise, honest about what is unverified, no repeated permission questions
-  once a direction is agreed. Creating or pushing to a GitHub repo is outward-facing: ask first.
+  once a direction is agreed.
+  **Whenever a change needs the user to do something live, end with copy/paste-ready commands**, one block, in order (sync the installed
+  clone, restart the shell, set the conf line, send the test notifications), each safe to paste as it stands. The installed fork is a
+  separate git clone in `~/.config/omarchy/plugins/annihilation.notifications`, **deliberately not symlinked** to the dev repo (a broken
+  edit would then be the live daemon, and `omarchy plugin update` would pull inside the dev repo; the user declined it on 2026-10-31).
+  Syncing without pushing: `git -C ~/.config/omarchy/plugins/annihilation.notifications fetch ~/dev/omarchy-annihilation-notifications <branch> && git -C ~/.config/omarchy/plugins/annihilation.notifications checkout -q -B <branch> FETCH_HEAD`.
+  The sandbox cannot write under `~/.config`, so the user runs these (with the `!` prefix if they like). Creating or pushing to a GitHub repo is outward-facing: ask first.
 
 ## Gotchas (each verified by reading Omarchy 4.0.4-1, or cost time in the theme repo)
 
