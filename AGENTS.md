@@ -64,7 +64,7 @@ changes nothing.
 bash test/tools-test.sh          # import-upstream and check-upstream, against a scratch Omarchy (47 checks)
 node test/logic-test.js          # NotificationLogic.js (35 checks)
 bash test/motion-test.sh         # components/SlotMotion.qml, offscreen with the real Qt Quick runtime (22 checks)
-bash test/growth-test.sh         # shaders/toastgrowth.frag through the harness: rim, veins, lichen, ring, countdown (35 checks, a few minutes)
+bash test/growth-test.sh         # shaders/toastgrowth.frag through the harness: rim, veins, lichen, ring, the shadow, no countdown line (30 checks, a few minutes)
 bash test/growth-roots-test.sh   # the roots: reach, count, no pop at the start, staggered starts, still growing late, done at the end (25 checks, ~1 min)
 $TMPDIR/venv/bin/python3 test/growth-activity.py FRAG   # not a pass/fail test: the per-second visible root ink, as measured on a recording
 bash test/service-probe.sh       # the REAL Service.qml in an offscreen Quickshell (26 checks, ~30 s): the theme gate on,
@@ -319,8 +319,16 @@ need to be more realistic". I changed the material too (opaque bark-coloured roo
 realistically but they should still be the glow". **The glow stayed the identity; texture and shape are what was wanted.** Final state in `toastgrowth.frag`: roots are
 added light in the toast's colour again (output alpha is only the shadow), with `tube()` taking an arc length and a per-root seed for a rough edge, fibre grain and
 mottling, plus `knob()` (necks and knots), `turn()` (heading: sine waves + jitter + a pull towards hanging down), acute shoots (0.62 rad) and swellings at shoot origins.
-The tests for the countdown line and the roots thresholds are still stale/untested on this version (the zero-alpha check is correct again). Lesson: a request for
+(The tests were brought up to date before the 0.6.0 release: see "Tests before 0.6.0" below.) Lesson: a request for
 "realistic" is not a request to change the look's identity: change form and texture first, and keep the colour and the glow unless told otherwise.
+
+**Tests before 0.6.0 (2026-10-31):** the roots work after 0.5.0 was committed without the tests, at the user's request; before releasing 0.6.0 they were run and
+fixed. In `test/growth-test.sh` (30 checks) the alpha-is-zero check became "alpha is only the roots' soft shadow, at most 0.4, and 0 with no roots or far from the card",
+and the five countdown-line checks became "the `remaining` value changes nothing" (the picture is byte-identical for remaining 1, 0.5, 0 and none). In
+`test/growth-roots-test.sh` (25 checks) the thresholds follow the new design: the roots are about 10 px across at the base so they merge near the card, so the left roots are
+counted on a line 40 px out over the whole height (4 to 7 stretches, between 3 and 9 allowed), there are about 7 roots below (at least 5), and the "nothing yet at 4%" check
+allows 25 pixels of ink. Five deliberate breaks (no bottom roots, one left root, no stagger, roots stop at 80%, roots shrink back) were all caught. **The ink and activity
+measurements (`test/growth-activity.py`) were not redone on the textured, thicker roots**; the pacing was tuned on thin ones.
 
 ## Conventions
 
