@@ -167,9 +167,9 @@ Direction is a design choice to judge: they drift left (away from the screen edg
 toast below) because a toast in the top-right corner has no room above it, as the first mock-up assumed. Say if you would
 rather they went another way.
 
-## G. Growth (P2 slice 6; released as 0.5.0, opt-in; annihilation theme only)
+## G. Growth (P2 slice 6; released as 0.5.0 and refined in 0.6.0, opt-in; annihilation theme only)
 
-Needs 0.5.0 or later, which is on `main`; restart the shell after updating.
+Needs 0.6.0 for the items below about the roots and the missing countdown line (0.5.0 had the countdown as the border, lit); both are on `main`; restart the shell after updating.
 The new look is **off until you ask for it**: put `look=growth` in `~/.config/omarchy/annihilation-notifications-fork.conf`
 (it is read live; `look=blend` or removing the line goes back to the rim of 0.3.0 and 0.4.0). Judge it **against the blend**, by
 flipping between the two with the same notifications. The design is `docs/design/growth-settled.png` and `growth-arriving.png`.
@@ -213,6 +213,7 @@ Say which you prefer, and what to take from the other: this is the experiment th
 
 | Date | Omarchy | Fork | A | B | C | Notes |
 |------|---------|------|---|---|---|-------|
+| 2026-10-31 | 4.0.4-1 | 0.6.0 = `p2/growth-roots-glow` @ 610fb0f (section G, the refined Growth look) | | | | G: the user tried four variants of the roots (glowing thick tubes; solid bark; textured glowing; flat, untextured) and said the textured glowing one was "the best so far" and asked to release it. Per-item notes were not given beyond that. All suites passed on this code (growth 30, roots 25, shader 51, spores 21, motion 22, logic 35, tools 47, service probe 86, validate, check-upstream), after the growth tests were brought up to date; five deliberate breaks of the roots tests were caught. Released as 0.6.0. |
 | 2026-10-31 | 4.0.4-1 | 0.5.0 = `p2/growth` @ 231c4d0 (section G, Growth) | | | | G: the user reported "looking good now" after many rounds from screen recordings (countdown aligned on the border, roots denser and longer with a Bezier-then-exponential pace and late shoots, activity tuned to a recording), and asked to release. Per-item notes were not given beyond that. All suites passed on this commit (growth 35, roots 25, shader 51, spores 21, motion 22, logic 35, tools 47, service probe 86, validate, check-upstream). Released as 0.5.0. |
 | 2026-10-30 | 4.0.4-1 | 0.4.0 = `p2/spores` @ 2653217 (section F, spores) | | | | F: the user reported "the spores look good" and asked to release. Per-item notes (direction, brightness, the faint drift, the window staying up, clicks) were not given, so only that is recorded. Released as 0.4.0. |
 | 2026-10-30 | 4.0.4-1 | 0.3.0 = `p2/look` @ b35037e (section E, the look and the countdown) | | | | E: the user reported "looks good" for the look, and for the countdown after two fixes found from their screenshots (the line was inset 14 px, then stopped at the corners leaving a gap; now border to border). Per-item notes were not given beyond that. Released as 0.3.0. |

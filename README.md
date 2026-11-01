@@ -17,9 +17,11 @@ caption, Jost and Cinzel, a ring round the icon, and a countdown line along the 
 dissolves into a few spores, and a few very faint ones drift off a card's left edge while it is up; `spore_amount` (0 to 1,
 default 1) controls both.
 
-0.5.0 adds a second look, **Growth**, off until you ask for it: `look=growth` in the same file swaps the rim for a living outline
-with lichen, and roots that hang from the card's left and bottom edges and grow over the toast's whole life, with the countdown
-becoming the card's own bottom border, lit (`look=blend`, the default, is the rim above; the file is read live).
+0.5.0 added a second look, **Growth**, off until you ask for it: `look=growth` in the same file swaps the rim for a living outline
+with lichen, and glowing roots that hang from the card's left and bottom edges and grow over the toast's whole life (`look=blend`,
+the default, is the rim above; the file is read live). In 0.6.0 the roots are thicker, tapered and shaded in 3D with a soft shadow and an
+organic, textured shape, and the countdown line is gone: with this look the roots are the timer, still growing until just before the
+toast goes.
 
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and

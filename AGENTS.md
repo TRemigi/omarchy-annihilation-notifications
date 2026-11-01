@@ -247,7 +247,7 @@ Plan: the exit dissolves into spores, and a faint drift off a card. Both are bui
 - **Not verified, needs the user** (checklist section F): how the spores look and feel (taste: size, count, brightness, direction),
   that nothing flickers when the last toast goes, and that the layer never intercepts input.
 
-## P2 slice 6: Growth (released as 0.5.0 on 2026-10-31, opt-in with `look=growth`)
+## P2 slice 6: Growth (released as 0.5.0 and refined in 0.6.0, 2026-10-31; opt-in with `look=growth`)
 
 `look=growth` in the fork's conf file (parsed by `parseLook`, `blend` otherwise) makes `ToastRim` load `shaders/toastgrowth.frag`
 instead of `toastrim.frag`; same overlay, same added-light output, same uniforms plus `seed` (random per toast) and `growth`
