@@ -121,6 +121,11 @@ Tube tube(vec2 px, vec2 p, vec2 se, float r0, float r1, float fade) {
     return Tube(cover, (0.16 + 1.0 * diff) * fade, spec * fade, shadow, dist / max(r, 0.35));
 }
 
+// How thick a root is, as a share of its base, a fraction `a` of the way along it (0 at the base, 1 at the tip): it thins fast after the
+// base and ends in a fine point (10% of the base), a concave taper rather than a straight one: 100%, 65%, 46%, 31%, 19% and 10% at 0, 20, 40,
+// 60, 80 and 100% of the way.
+float taper(float a) { return 0.10 + 0.90 * pow(max(1.0 - a, 0.0), 1.3); }
+
 // Two tubes together: the silhouettes join, the shading is the one the pixel is nearer the middle of, the shadows add up to the strongest.
 Tube over(Tube a, Tube b) {
     Tube r = (b.cover > 0.0 && b.key < a.key) ? b : a;
@@ -143,7 +148,7 @@ Tube shoot(vec2 px, vec2 org, float ang, float stepLen, int n, float seed, float
         vec2 e = vec2(cos(a), sin(a)) * stepLen;
         if (grown > 0.0) {
             float along = fi / float(n);
-            best = over(best, tube(px, p, e * grown, max(r0 * (1.0 - 0.72 * along), 0.4), max(r0 * (1.0 - 0.72 * (along + 1.0 / float(n))), 0.4), 1.0 - 0.45 * along));
+            best = over(best, tube(px, p, e * grown, max(r0 * taper(along), 0.4), max(r0 * taper(along + 1.0 / float(n)), 0.4), 1.0 - 0.45 * along));
         }
         p += e;
     }
@@ -182,12 +187,12 @@ float shootReach(float g, float startAt, float h) {
 
 // A vein (a root): a trunk of 16 steps (which follows `reach`, from rootReach) and four shoots from it, at steps 4, 7, 10 and 13,
 // alternating sides, which sprout on their own schedule (see shootReach) once the trunk has got there. `scale` (about 1 to 2) makes
-// it shorter and thinner or longer and thicker, and `thick` multiplies the radius (6 for the roots, 1 for the faint veins inside the card). Returns what tube() returns for the nearest bit of it. Nothing is drawn far from it.
+// it shorter and thinner or longer and thicker, and `thick` multiplies the radius (5 for the roots, 1 for the faint veins inside the card). Returns what tube() returns for the nearest bit of it. Nothing is drawn far from it.
 Tube vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, float g, float thick) {
     if (reach <= 0.0) return Tube(0.0, 0.0, 0.0, 0.0, 9.0);
     float stepLen = 3.0 * scale;
     if (length(px - org) > stepLen * (16.0 * min(reach, 1.0) + 8.0) + 8.0) return Tube(0.0, 0.0, 0.0, 0.0, 9.0);
-    float rt = (0.60 + 0.16 * scale) * thick;                          // the trunk's radius at its base, in px (six times that for the roots, 1 for the faint veins in the card)
+    float rt = (0.60 + 0.16 * scale) * thick;                          // the trunk's radius at its base, in px (five times that for the roots, 1 for the faint veins in the card)
     vec2 p = org;
     float a = ang;
     Tube v = Tube(0.0, 0.0, 0.0, 0.0, 9.0);
@@ -199,7 +204,7 @@ Tube vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, fl
         vec2 e = vec2(cos(a), sin(a)) * stepLen;
         if (grown > 0.0) {
             float along = fi / 16.0;
-            v = over(v, tube(px, p, e * grown, max(rt * (1.0 - 0.72 * along), 0.45), max(rt * (1.0 - 0.72 * (along + 1.0 / 16.0)), 0.45), 1.0 - 0.45 * along));
+            v = over(v, tube(px, p, e * grown, max(rt * taper(along), 0.4), max(rt * taper(along + 1.0 / 16.0), 0.4), 1.0 - 0.45 * along));
         }
         p += e;
         // a shoot leaves the trunk after steps 3, 6, 9 and 12 (the 4th, 7th, 10th and 13th), once the trunk has grown to there
@@ -209,7 +214,7 @@ Tube vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, fl
             float sr = shootReach(g, 0.16 + 0.16 * j + 0.06 * hash(seed + j * 3.3), hash(seed + j * 5.1 + 1.0)) * smoothstep(k / 16.0, k / 16.0 + 0.06, reach);
             if (sr > 0.0) {
                 float sgn = mod(j, 2.0) < 0.5 ? side : -side;
-                Tube sh = shoot(px, p, a + sgn * (0.9 - 0.05 * j), (3.0 - 0.15 * j) * scale, 7 - int(j > 0.5) - int(j > 1.5) - int(j > 2.5), seed + 1.3 + j * 1.1, sr, rt * (0.68 - 0.05 * j));
+                Tube sh = shoot(px, p, a + sgn * (0.9 - 0.05 * j), (3.0 - 0.15 * j) * scale, 7 - int(j > 0.5) - int(j > 1.5) - int(j > 2.5), seed + 1.3 + j * 1.1, sr, rt * (0.50 - 0.04 * j));
                 sh.lit *= 0.9 - 0.06 * j;
                 sh.spec *= 0.9 - 0.06 * j;
                 v = over(v, sh);
@@ -288,7 +293,7 @@ void main() {
         if (px.x > org.x + 1.0 || org.x - px.x > 112.0 || abs(px.y - org.y) > 92.0) continue;
         float ang = 3.14159 + (h2 - 0.5) * 0.9 - (0.5 - u) * 0.9;
         float reach = rootReach(g, h1, h3);
-        Tube v = vein(px, org, ang, seed + fi * 13.0, reach, 1.4 + 0.6 * h3, g, 6.0);
+        Tube v = vein(px, org, ang, seed + fi * 13.0, reach, 1.4 + 0.6 * h3, g, 5.0);
         v.lit *= 1.0 + 0.5 * (1.0 - reach);                           // brighter while it is still growing
         v.spec *= 1.0 + 0.5 * (1.0 - reach);
         outer = over(outer, v);
@@ -308,7 +313,7 @@ void main() {
             if (abs(px.x - org.x) > 100.0) continue;
             float ang = 1.5708 + 0.35 + (h2 - 0.5) * 0.9;
             float reach = rootReach(g, h1, h3);
-            Tube v = vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 1.1 + 0.6 * h3, g, 6.0);
+            Tube v = vein(px, org, ang, seed + fi * 17.0 + 100.0, reach, 1.1 + 0.6 * h3, g, 5.0);
             v.lit *= 1.0 + 0.5 * (1.0 - reach);
             v.spec *= 1.0 + 0.5 * (1.0 - reach);
             under = over(under, v);
