@@ -314,14 +314,13 @@ has **alpha > 0 for the shadow only** (premultiplied: light in rgb, darkening in
 check and its countdown checks are stale, and the roots test's thresholds are untested on thicker roots.** Committed without running the tests
 at the user's request; fix them before releasing. The root radius is `(0.60 + 0.16 * scale) * thick` px at the base: `thick` is 5 for the roots (the user asked in steps: a little thicker, "at least twice as thick", "three times thicker now", read as three times the current, then, from a screenshot of the real shell, "a little thinner than that" and "more tapered") and 1 for the faint veins inside the card; the taper is `taper()`, a concave curve to 10% of the base, and the shoots start at 50% of the trunk's radius. **Look at the user's screenshots of the real shell, not only at the preview: the preview made the straight taper look fine and the screenshot showed stubby branches.** Roots are one per 24 px of the card's height on the left (3 to 6) and one per 40 px of its width below (4 to 14); `Tube` is a struct with a `key` (distance from the axis in radii) so overlapping pieces are shaded by the nearer-the-middle one; the shadow offset grows with the radius.
 
-**Realistic roots, branch `p2/growth-roots-real` (2026-10-31):** after the tapered tubes the user said they were "still not feeling it, they need to be
-more realistic". What read as unreal was the material, not the shape: glossy, smooth, glowing teal plastic. Changes in `toastgrowth.frag`: roots are drawn
-**opaque** in a bark colour (alpha = cover, rgb premultiplied, not added light: the tone-mapped additive light is mixed under them with
-`rgb*(1-cover) + rootRgb*cover`), with `tube()` taking an arc length and a per-root seed for a rough edge, fibre grain and mottling; `knob()` (necks and
-knots), `turn()` (heading: sine waves + jitter + a pull towards hanging down), acute shoots, swellings at shoot origins, paler tips. **Output alpha is now
-the roots' cover, so any test that assumes alpha is only a faint shadow, or that the roots are added light, is stale** (and the old countdown checks, and
-the roots thresholds, are still untested on this version). Lesson: when "realistic" is the ask, change the material and the irregularity
-before the geometry; added light can never look like a solid dark object.
+**Realistic roots (2026-10-31, branches `p2/growth-roots-real` then `p2/growth-roots-glow`):** after the tapered tubes the user said they were "still not feeling it, they
+need to be more realistic". I changed the material too (opaque bark-coloured roots, alpha = cover) and the user replied "it's fine to be more textured and shaped
+realistically but they should still be the glow". **The glow stayed the identity; texture and shape are what was wanted.** Final state in `toastgrowth.frag`: roots are
+added light in the toast's colour again (output alpha is only the shadow), with `tube()` taking an arc length and a per-root seed for a rough edge, fibre grain and
+mottling, plus `knob()` (necks and knots), `turn()` (heading: sine waves + jitter + a pull towards hanging down), acute shoots (0.62 rad) and swellings at shoot origins.
+The tests for the countdown line and the roots thresholds are still stale/untested on this version (the zero-alpha check is correct again). Lesson: a request for
+"realistic" is not a request to change the look's identity: change form and texture first, and keep the colour and the glow unless told otherwise.
 
 ## Conventions
 

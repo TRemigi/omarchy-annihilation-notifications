@@ -126,7 +126,7 @@ Tube tube(vec2 px, vec2 p, vec2 se, float r0, float r1, float fade, float arc0, 
     q *= min(1.0, inversesqrt(max(dot(q, q), 1e-6)));
     vec3 n = vec3(q, sqrt(max(1.0 - dot(q, q), 0.0)));                 // the surface's normal there (seamless through bends and at the ends)
     float diff = clamp(dot(n, vec3(0.553, -0.553, 0.623)), 0.0, 1.0);
-    float spec = pow(clamp(dot(n, vec3(0.307, -0.307, 0.901)), 0.0, 1.0), 10.0);
+    float spec = pow(clamp(dot(n, vec3(0.307, -0.307, 0.901)), 0.0, 1.0), 14.0);
     float tex = (0.78 + 0.44 * fibre) * (0.82 + 0.36 * mottle);
     return Tube(cover, (0.16 + 1.0 * diff) * fade * tex, spec * fade * fibre, shadow, dist / max(rr, 0.35));
 }
@@ -167,7 +167,7 @@ Tube shoot(vec2 px, vec2 org, float ang, float stepLen, int n, float seed, float
         vec2 e = vec2(cos(a), sin(a)) * stepLen;
         if (grown > 0.0) {
             float along = fi / float(n), along1 = (fi + 1.0) / float(n);
-            best = over(best, tube(px, p, e * grown, max(r0 * taper(along) * knob(fi, seed), 0.4), max(r0 * taper(along1) * knob(fi + 1.0, seed), 0.4), 0.8 + 0.3 * along, arc, seed * 0.37));
+            best = over(best, tube(px, p, e * grown, max(r0 * taper(along) * knob(fi, seed), 0.4), max(r0 * taper(along1) * knob(fi + 1.0, seed), 0.4), 1.0 - 0.45 * along, arc, seed * 0.37));
         }
         p += e;
         arc += stepLen;
@@ -225,7 +225,7 @@ Tube vein(vec2 px, vec2 org, float ang, float seed, float reach, float scale, fl
         if (grown > 0.0) {
             float along = fi / 16.0;
             float swell = 1.0 + 0.14 * (float(i == 3 || i == 6 || i == 9 || i == 12) + float(i == 4 || i == 7 || i == 10 || i == 13));   // a thickening where a shoot leaves
-            v = over(v, tube(px, p, e * grown, max(rt * taper(along) * knob(fi, seed) * swell, 0.4), max(rt * taper(along + 1.0 / 16.0) * knob(fi + 1.0, seed), 0.4), 0.8 + 0.3 * along, arc, seed * 0.37));
+            v = over(v, tube(px, p, e * grown, max(rt * taper(along) * knob(fi, seed) * swell, 0.4), max(rt * taper(along + 1.0 / 16.0) * knob(fi + 1.0, seed), 0.4), 1.0 - 0.45 * along, arc, seed * 0.37));
         }
         p += e;
         arc += stepLen;
@@ -347,12 +347,10 @@ void main() {
     // And, fainter, across the card from its right corners (no shadow: it would darken the card).
     Tube inner = over(vein(px, tr, 3.14159 - 0.55, seed + 23.0, rootReach(g, 0.3, 0.9), 1.0, g, 1.0), vein(px, br, 4.71239 - 0.55, seed + 37.0, rootReach(g, 0.7, 0.5), 1.0, g, 1.0));
     vec3 vcol = desaturate(palette(0.55, ubuf.urgency));
-    // Roots are solid and earth-coloured, not light like the rim: a bark brown (rust for a critical toast, olive for a low one) with a little
-    // of the toast's own colour in it, matte, drawn over what is behind them (below, once the light is done), so they look like bark on any wallpaper.
-    vec3 bark = ubuf.urgency > 1.5 ? vec3(0.56, 0.34, 0.23) : (ubuf.urgency < 0.5 ? vec3(0.40, 0.45, 0.27) : vec3(0.52, 0.40, 0.27));
-    vec3 rootCol = mix(bark, vcol * 0.55, 0.18);
-    vec3 glint = mix(rootCol, vec3(1.0, 0.95, 0.85), 0.5);
-    rgb += (rootCol * inner.cover * inner.lit * 0.5 + glint * inner.cover * inner.spec * 0.1) * (0.5 + 0.5 * inside);
+    vec3 glint = mix(vcol, vec3(1.0, 0.97, 0.9), 0.4);
+    // The roots glow: light in the toast's own colour, added, like the rim, with the grain, mottling and rough edge of tube() showing in it.
+    rgb += vcol * outer.cover * outer.lit * 0.78 + glint * outer.cover * outer.spec * 0.5;
+    rgb += (vcol * inner.cover * inner.lit * 0.4 + glint * inner.cover * inner.spec * 0.2) * (0.5 + 0.5 * inside);
     // Where the roots are not, they darken what is behind them a little: the shadow they cast, down and to the left.
     float shade = outer.shadow * (1.0 - outer.cover) * 0.36;
 
@@ -372,11 +370,5 @@ void main() {
     rgb *= (0.7 + 0.3 * ubuf.vividness) * ubuf.energy;
     rgb += ambientSpores(px) * 0.55 * ubuf.spores;
     rgb = 1.0 - exp(-rgb * 1.7);
-    // The roots themselves: a real colour, not added light. Where one covers the pixel it hides the rim's glow behind it and the wallpaper
-    // (premultiplied: its colour times its cover in rgb, its cover in alpha; the shadow darkens what is left).
-    vec3 rootRgb = min(rootCol * outer.lit * 0.95 + glint * outer.spec * 0.25, vec3(1.0));
-    float cov = outer.cover;
-    rgb = rgb * (1.0 - cov) + rootRgb * cov;
-    float alpha = cov + (1.0 - cov) * shade;
-    fragColor = vec4(rgb, alpha) * ubuf.qt_Opacity;
+    fragColor = vec4(rgb, shade) * ubuf.qt_Opacity;
 }
