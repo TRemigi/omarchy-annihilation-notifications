@@ -19,6 +19,9 @@ Item {
   id: root
 
   property bool fx: false
+  // The glow look: the card is not faded or scaled in (a front of light reveals it, see GlowRim.qml); only the slot opens, a little
+  // faster, so the stack has made room by the time the light crosses the card. Leaving is unchanged.
+  property bool reveal: false
   // The column's spacing, so the gap a slot adds can be folded away with the slot.
   property real spacing: 8
   // Multiplies both durations; 1 is the designed speed.
@@ -27,13 +30,13 @@ Item {
   property real presence: 1
   property bool leaving: false
 
-  readonly property int enterMs: Math.round(480 * slowdown)
+  readonly property int enterMs: Math.round((reveal ? 300 : 480) * slowdown)
   readonly property int exitMs: Math.round(300 * slowdown)
 
   // What the slot binds to.
   readonly property real heightFactor: presence
-  readonly property real cardOpacity: presence
-  readonly property real cardScale: 0.94 + 0.06 * presence
+  readonly property real cardOpacity: reveal && !leaving ? 1 : presence
+  readonly property real cardScale: reveal && !leaving ? 1 : 0.94 + 0.06 * presence
   readonly property real spacingTrim: -spacing * (1 - presence)
   readonly property bool clipping: presence < 1
 

@@ -38,7 +38,9 @@ Item {
   //                    makes it obvious that it is running.
   //   rim_vividness    0 to 1, default 0.75: how strong and saturated the light on the card's rim is.
   //   spore_amount     0 to 1, default 1: how many spores a toast leaves as it goes; 0 for none.
-  //   look             blend (default) or growth: the rim of light, or the living outline, lichen and veins (an experiment).
+  //   look             blend (default), growth or glow: the rim of light; the living outline, lichen and roots (an experiment); or
+  //                    the toast lit by the same light as the windows, arriving as a front of light out of its icon (needs the theme
+  //                    to publish its glow state for the colours to be in step with the windows; see components/GlowClock.qml).
   property real motionSlowdown: 1
   property real rimVividness: 0.75
   property real sporeAmount: 1
@@ -53,7 +55,7 @@ Item {
   function parseSpores(raw) { return parseNumber(raw, "spore_amount", 0, 1, 1) }
   function parseLook(raw) {
     var m = String(raw || "").match(/^\s*look\s*=\s*(\w+)\s*$/m)
-    return m && m[1] === "growth" ? "growth" : "blend"
+    return m && (m[1] === "growth" || m[1] === "glow") ? m[1] : "blend"
   }
   FileView {
     path: service.home + "/.config/omarchy/annihilation-notifications-fork.conf"
@@ -62,6 +64,11 @@ Item {
     onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()); service.look = service.parseLook(text()) }
     onFileChanged: reload()
     onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1; service.look = "blend" }
+  }
+  // annihilation: the window glow's clock and seed, published by the theme, for the glow look.
+  GlowClock {
+    id: glowClock
+    path: service.home + "/.local/state/annihilation-theme/glow.json"
   }
   // History + DND live under XDG_STATE_HOME: they're persistent user state
   // (the notifications received, the last-set DND preference), not
@@ -1081,6 +1088,7 @@ Item {
             SlotMotion {
               id: motion
               fx: service.themed
+              reveal: service.look === "glow" // annihilation: the card is revealed by the front of light, not faded and scaled in
               slowdown: service.motionSlowdown
               spacing: Style.space(8)
               onLeaveStarted: cardSlot.releaseSpores()
@@ -1132,6 +1140,15 @@ Item {
               fontFamily: service.shell && service.shell.bar ? service.shell.bar.fontFamily : ""
               glyph: cardSlot.glyph
 
+              // annihilation: in the glow look the card is shown only inside the front of light that leaves its icon (the arrival).
+              layer.enabled: glowRim.arriving
+              layer.effect: ShaderEffect {
+                property real front: glowRim.front
+                property size size: Qt.size(card.width, card.height)
+                property vector2d icon: glowRim.cardIcon
+                fragmentShader: Qt.resolvedUrl("shaders/cardreveal.frag.qsb")
+              }
+
               onCloseRequested: motion.leave(function() { service.dismissPopup(cardSlot.index) }) // annihilation
               onCardClicked: { cardSlot.releaseSpores(); service.invokePopupDefault(cardSlot.index) } // annihilation: a click dissolves it too
             }
@@ -1139,7 +1156,7 @@ Item {
             // annihilation: the light on the card, over it. Invisible (so nothing is drawn) while the theme is off.
             ToastRim {
               target: card
-              visible: service.themed
+              visible: service.themed && service.look !== "glow"
               urgency: cardSlot.urgency
               slowdown: service.motionSlowdown
               vividness: service.rimVividness
@@ -1148,6 +1165,18 @@ Item {
               spores: service.sporeAmount
               look: service.look
               Component.onCompleted: ignite()
+            }
+
+            // annihilation: the glow look (look=glow): the window glow's own light on the card, and the arrival. See components/GlowRim.qml.
+            GlowRim {
+              id: glowRim
+              target: card
+              glow: glowClock
+              screenSize: Qt.size(popupWindow.width, popupWindow.height)
+              visible: service.themed && service.look === "glow"
+              urgency: cardSlot.urgency
+              slowdown: service.motionSlowdown
+              Component.onCompleted: arrive()
             }
           }
         }
