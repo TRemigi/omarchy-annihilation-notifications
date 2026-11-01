@@ -358,6 +358,11 @@ edge) are mocked up and **not built**; they are the follow-ups.
 - The band's depth is 0.62 of the window's (0.13 against 0.21): with a window's band a 78 px card read as a bevelled frame (seen in
   the first mock-up, fixed before building). The first mock-up also smeared light into the gaps of the merged stack and clipped the arrival
   ring to a box at the overlay's edge; both are fixed in the shaders (the ring now fades with distance from the card).
+- **Found live (2026-10-31, from a recording):** the conf parser took the *first* `look=` line, so `echo look=glow >> file` under an earlier `look=blend`
+  did nothing and the user saw the blend and said the look did not match the checklist. Now the last line for a key wins (`lastValue`). Lesson: when
+  a live report says it "doesn't behave as described", look at the conf and the recording for which look is actually on (the blend's countdown
+  line at the bottom edge gave it away) before suspecting the new code. The same recording showed the theme's depth slider at 0.65, which
+  would have made toast bands five times the mock-up's; the toast depth is now capped (`GlowLogic.toastDepth`).
 - Verified here: `python3 test/glow-test.py` (36 checks on the compiled shaders through the harness, including that a toast's edge has
   the same colour as the theme's real `windowglow.frag` at the same screen place, when the theme repo is next door; 18 deliberate breaks, all
   caught); `node test/glow-logic-test.js` (31 checks; 9 of 10 breaks caught, the tenth is equivalent); `bash test/service-probe.sh` (107

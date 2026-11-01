@@ -44,3 +44,11 @@ function arrivalReach(ix, iy, w, h) {
   var dx = Math.max(ix, w - ix), dy = Math.max(iy, h - iy)
   return Math.sqrt(dx * dx + dy * dy) + 30
 }
+
+// The toast's band depth, as a multiple of the rim width, from the window glow's own depth: a fraction of it (a 78 px card with a
+// window's band reads as a bevelled frame), and never more than `cap` however deep the user has set the windows'.
+function toastDepth(windowDepth, ratio, cap) {
+  var d = Number(windowDepth)
+  if (!isFinite(d)) d = 0.21
+  return Math.max(0.02, Math.min(d * ratio, cap))
+}

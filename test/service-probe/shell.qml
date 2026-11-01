@@ -29,12 +29,12 @@ ShellRoot {
     parse("empty", ""); parse("plain", "motion_slowdown=2"); parse("spaced", "  motion_slowdown = 4  ")
     parse("decimal", "motion_slowdown=0.5"); parse("too small", "motion_slowdown=0.1"); parse("too big", "motion_slowdown=99")
     parse("junk", "motion_slowdown=abc"); parse("other keys", "x=1\nmotion_slowdown=3\ny=2\n"); parse("no key", "x=1")
-    parse("trailing junk", "motion_slowdown=3x")
+    parse("trailing junk", "motion_slowdown=3x"); parse("later line wins", "motion_slowdown=2\nmotion_slowdown=4\n"); parse("a later junk line does not cancel", "motion_slowdown=2\nmotion_slowdown=abc\n"); parse("a later out-of-range line is used and ignored", "motion_slowdown=2\nmotion_slowdown=99\n")
     parseV("empty", ""); parseV("plain", "rim_vividness=0.4"); parseV("zero is allowed", "rim_vividness=0"); parseV("one is allowed", "rim_vividness=1")
     parseV("above 1", "rim_vividness=1.5"); parseV("junk", "rim_vividness=loud"); parseV("beside the other key", "motion_slowdown=2\nrim_vividness=0.9\n")
     parseV("the other key only", "motion_slowdown=2")
     parseL("empty", ""); parseL("growth", "look=growth"); parseL("blend", "look=blend"); parseL("spaced", "  look = growth  "); parseL("unknown", "look=neon")
-    parseL("beside others", "motion_slowdown=2\nlook=growth\n"); parseL("prefix only", "look=growthy"); parseL("glow", "look=glow"); parseL("glow prefix", "look=glowing"); parseL("other key", "xlook=growth")
+    parseL("beside others", "motion_slowdown=2\nlook=growth\n"); parseL("prefix only", "look=growthy"); parseL("glow", "look=glow"); parseL("later line wins", "look=blend\nlook=glow\n"); parseL("later line wins back", "look=glow\nlook=blend\n"); parseL("later unknown", "look=glow\nlook=neon\n"); parseL("glow prefix", "look=glowing"); parseL("other key", "xlook=growth")
     parseS("empty", ""); parseS("plain", "spore_amount=0.3"); parseS("zero", "spore_amount=0"); parseS("above", "spore_amount=2"); parseS("junk", "spore_amount=lots")
   }
 

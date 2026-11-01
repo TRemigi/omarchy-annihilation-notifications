@@ -23,8 +23,10 @@ Item {
   property size screenSize: Qt.size(1920, 1080)
   property real urgency: 1          // NotificationUrgency: 0 low, 1 normal, 2 critical
   property real slowdown: 1
-  // The toast's band is this much shallower than a window's (a 78 px card with a window's band reads as a bevelled frame).
+  // The toast's band is this much shallower than a window's (a 78 px card with a window's band reads as a bevelled frame), and
+  // never deeper than `maxDepth` however deep the windows' is set (the theme's slider goes to 2.5; the mock-up was 0.13).
   property real depthRatio: 0.62
+  property real maxDepth: 0.2
 
   property real wave: -1
   readonly property bool arriving: visible && wave >= 0
@@ -80,7 +82,7 @@ Item {
     property real intensity: root.glow.intensity
     property real seed: root.glow.seed
     property real rimWidth: GlowLogic.rimWidthFor(root.screenSize.height)
-    property real depth: root.glow.depth * root.depthRatio
+    property real depth: GlowLogic.toastDepth(root.glow.depth, root.depthRatio, root.maxDepth)
     property real urgency: root.urgency
     property real radius: root.target.radius
     property real front: root.front

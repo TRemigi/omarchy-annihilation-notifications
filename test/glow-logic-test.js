@@ -46,4 +46,11 @@ near("a 380x78 card with its icon at (34, 39): the far corner is the top or bott
 near("an icon at the right edge reaches back across the card", Math.sqrt(300 * 300 + 20 * 20) + 30, ctx.arrivalReach(300, 20, 300, 40), 1e-9)
 near("an icon in the middle needs only half the card", Math.hypot(50, 20) + 30, ctx.arrivalReach(50, 20, 100, 40), 1e-9)
 
+// the toast's band depth
+near("the default window depth gives the mock-up's toast depth", 0.13, ctx.toastDepth(0.21, 0.62, 0.2), 0.001)
+near("a deeper window band is followed, up to the cap", 0.2, ctx.toastDepth(0.4, 0.62, 0.2), 1e-9)
+near("the cap holds however deep the windows' is (the theme's slider goes to 2.5)", 0.2, ctx.toastDepth(2.5, 0.62, 0.2), 1e-9)
+near("a very shallow band keeps a floor", 0.02, ctx.toastDepth(0.0, 0.62, 0.2), 1e-9)
+near("junk falls back to the default", 0.13, ctx.toastDepth(undefined, 0.62, 0.2), 0.001)
+
 console.log(pass + " passed, " + fail + " failed"); process.exit(fail ? 1 : 0)

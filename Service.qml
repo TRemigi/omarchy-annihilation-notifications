@@ -33,7 +33,7 @@ Item {
   }
 
   // annihilation: the fork's own settings, ~/.config/omarchy/annihilation-notifications-fork.conf, one
-  // `key=value` per line, re-read when saved:
+  // `key=value` per line (the last line for a key wins), re-read when saved:
   //   motion_slowdown  0.25 to 8, default 1: times the designed duration of the toast motion; a large value
   //                    makes it obvious that it is running.
   //   rim_vividness    0 to 1, default 0.75: how strong and saturated the light on the card's rim is.
@@ -45,17 +45,23 @@ Item {
   property real rimVividness: 0.75
   property real sporeAmount: 1
   property string look: "blend"
+  // The last line for a key wins, so `echo key=value >> file` overrides an earlier line instead of being ignored.
+  function lastValue(raw, key, pattern) {
+    var re = new RegExp("^\\s*" + key + "\\s*=\\s*(" + pattern + ")\\s*$", "gm"), text = String(raw || ""), m, last = null
+    while ((m = re.exec(text)) !== null) last = m[1]
+    return last
+  }
   function parseNumber(raw, key, lo, hi, fallback) {
-    var m = String(raw || "").match(new RegExp("^\\s*" + key + "\\s*=\\s*([0-9]*\\.?[0-9]+)\\s*$", "m"))
-    var v = m ? Number(m[1]) : fallback
+    var m = lastValue(raw, key, "[0-9]*\\.?[0-9]+")
+    var v = m !== null ? Number(m) : fallback
     return isFinite(v) && v >= lo && v <= hi ? v : fallback
   }
   function parseSlowdown(raw) { return parseNumber(raw, "motion_slowdown", 0.25, 8, 1) }
   function parseVividness(raw) { return parseNumber(raw, "rim_vividness", 0, 1, 0.75) }
   function parseSpores(raw) { return parseNumber(raw, "spore_amount", 0, 1, 1) }
   function parseLook(raw) {
-    var m = String(raw || "").match(/^\s*look\s*=\s*(\w+)\s*$/m)
-    return m && (m[1] === "growth" || m[1] === "glow") ? m[1] : "blend"
+    var m = lastValue(raw, "look", "\\w+")
+    return m === "growth" || m === "glow" ? m : "blend"
   }
   FileView {
     path: service.home + "/.config/omarchy/annihilation-notifications-fork.conf"

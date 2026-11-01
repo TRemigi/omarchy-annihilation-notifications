@@ -157,7 +157,7 @@ like `ToastRim`'s (`components/GlowRim.qml`, margin 48 px) plus a mask on the ca
 - **Same light as the windows**: `fanField`, `lightSpectrum` and `glints` are copied unchanged from the theme's `windowglow.frag`, and the
   band's profile is the same arithmetic. The field needs the glow's clock and seed (published by the theme, see CONTRACT.md) and the
   toast's place on the screen (the overlay window is the screen; `GlowRim` re-reads its position with the clock at 30 Hz). The band is
-  62% as deep as a window's (depth 0.13 against 0.21): a 78 px card with a window's band read as a bevelled frame.
+  62% as deep as a window's (depth 0.13 against 0.21), capped at 0.2 (the theme's slider goes to 2.5 and the user's was 0.65): a 78 px card with a window's band read as a bevelled frame.
 - **Urgency leans the hue**, it does not set it: critical towards amber (65%), low towards moss (50%); the field still shows through.
 - **The arrival**: `wave` runs 0 to 1 over 1.5 s (ease-out quad, times `motion_slowdown`); the front is `wave * reach` px from the icon, where
   reach is the distance to the farthest corner plus 30. Nothing is lit beyond the front, the edge flares as it crosses, and a soft ring
