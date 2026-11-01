@@ -34,7 +34,7 @@ ShellRoot {
     parseV("above 1", "rim_vividness=1.5"); parseV("junk", "rim_vividness=loud"); parseV("beside the other key", "motion_slowdown=2\nrim_vividness=0.9\n")
     parseV("the other key only", "motion_slowdown=2")
     parseL("empty", ""); parseL("growth", "look=growth"); parseL("blend", "look=blend"); parseL("spaced", "  look = growth  "); parseL("unknown", "look=neon")
-    parseL("beside others", "motion_slowdown=2\nlook=growth\n"); parseL("prefix only", "look=growthy"); parseL("other key", "xlook=growth")
+    parseL("beside others", "motion_slowdown=2\nlook=growth\n"); parseL("prefix only", "look=growthy"); parseL("glow", "look=glow"); parseL("glow prefix", "look=glowing"); parseL("other key", "xlook=growth")
     parseS("empty", ""); parseS("plain", "spore_amount=0.3"); parseS("zero", "spore_amount=0"); parseS("above", "spore_amount=2"); parseS("junk", "spore_amount=lots")
   }
 

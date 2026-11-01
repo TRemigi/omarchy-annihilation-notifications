@@ -20,7 +20,7 @@ has() { if [[ $3 == *"$2"* ]]; then pass=$((pass + 1)); else fail=$((fail + 1));
 cfg=$tmp/cfg; mkdir -p "$cfg/fork/components"
 for e in "$OMARCHY"/shell/*; do b=$(basename "$e"); [[ $b == shell.qml || $b == plugins ]] || ln -s "$e" "$cfg/$b"; done
 cp "$HERE/test/service-probe/shell.qml" "$cfg/shell.qml"
-cp "$HERE/Service.qml" "$HERE/NotificationLogic.js" "$cfg/fork/"; cp "$HERE"/components/*.qml "$cfg/fork/components/"
+cp "$HERE/Service.qml" "$HERE/NotificationLogic.js" "$HERE/GlowLogic.js" "$cfg/fork/"; cp "$HERE"/components/*.qml "$cfg/fork/components/"
 cp -r "$HERE/fonts" "$cfg/fork/fonts"                       # the card loads Jost and Cinzel from ../fonts
 python3 - "$cfg/fork" <<'PY'
 import re, sys
@@ -41,11 +41,21 @@ m = m.replace("  property var pendingDone: null",
   "  Component.onCompleted: console.log('PROBE motion created fx=' + fx + ' slowdown=' + slowdown + ' enterMs=' + enterMs)", 1)
 open(d + "components/SlotMotion.qml", "w").write(m)
 r = open(d + "components/ToastRim.qml").read()
-r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores + ' look=' + root.look) }\n", 1)
+r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores + ' look=' + root.look + ' visible=' + root.visible) }\n", 1)
 open(d + "components/ToastRim.qml", "w").write(r)
 sp = open(d + "components/SporeLayer.qml").read()
 sp = sp.replace("    if (!(amount > 0)) return\n", "    if (!(amount > 0)) return\n    console.log('PROBE burst urgency=' + urgency + ' size=' + Math.round(w) + 'x' + Math.round(h) + ' amount=' + amount)\n", 1)
 open(d + "components/SporeLayer.qml", "w").write(sp)
+g = open(d + "components/GlowRim.qml").read()
+for ms, tag in ((150, "early"), (2300, "late")):
+    g = g.replace("  property real time: 0\n", "  property real time: 0\n  Timer { interval: " + str(ms) + "; running: true; onTriggered: console.log('PROBE glowrim " + tag + " ' + root.target.summary + ' visible=' + root.visible"
+        " + ' wave=' + root.wave.toFixed(2) + ' arriving=' + root.arriving + ' opacity=' + root.target.opacity.toFixed(2) + ' scale=' + root.target.scale.toFixed(2)"
+        " + ' layer=' + root.target.layer.enabled + ' front=' + root.front.toFixed(0) + ' time=' + root.time.toFixed(1) + ' origin=' + Math.round(root.origin.x) + ',' + Math.round(root.origin.y)"
+        " + ' seed=' + root.glow.seed + ' margin=' + root.margin) }\n", 1)
+open(d + "components/GlowRim.qml", "w").write(g)
+s2 = open(d + "Service.qml").read()
+s2 = s2.replace("    id: glowClock\n", "    id: glowClock\n    Timer { interval: 1200; running: true; onTriggered: console.log('PROBE clock shared=' + glowClock.shared + ' seed=' + glowClock.seed + ' intensity=' + glowClock.intensity + ' depth=' + glowClock.depth + ' clock=' + glowClock.clockNow().toFixed(1)) }\n", 1)
+open(d + "Service.qml", "w").write(s2)
 c = open(d + "components/NotificationCard.qml").read()
 probe = ("  Timer { interval: 700; running: true; onTriggered: console.log('PROBE card ' + root.summary + ' themed=' + root.themed"
          " + ' family=' + root.textFamily + ' jost=' + jostFont.status + ' cinzel=' + cinzelFont.status + ' caption=' + root.captionText + ' when=' + root.whenText"
@@ -67,6 +77,8 @@ import re, sys
 p = sys.argv[1]; s = open(p).read()
 s = re.sub(r'^\s*themed: service\.themed\n', '', s, flags=re.M)
 s = re.sub(r'^\s*ToastRim \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+s = re.sub(r'^\s*GlowRim \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+s = re.sub(r'^\s*layer\.enabled: glowRim\.arriving\n\s*layer\.effect: ShaderEffect \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
 open(p, "w").write(s)
 PY
   python3 - "$cfg_stock/fork/components/NotificationCard.qml" <<'PY'
@@ -84,13 +96,14 @@ sed -i 's/readonly property int lowPopupDuration: 5000/readonly property int low
 grep -q 'normalPopupDuration: 700' "$cfg_spores/fork/Service.qml" || { echo "could not shorten the lifetimes for the spore scenarios" >&2; exit 2; }
 CFGDIR=$cfg
 
-run() { # scenario initial-theme [conf-line]
+run() { # scenario initial-theme [conf-line] [glow.json text]
   local home=$tmp/home-$1-$RANDOM
   mkdir -p "$home/.local/state/omarchy/current" "$home/.config/omarchy"
   printf '%s' "$2" >"$home/.local/state/omarchy/current/theme.name"
   [[ -n ${3:-} ]] && printf '%s\n' "$3" >"$home/.config/omarchy/annihilation-notifications-fork.conf"
+  [[ -n ${4:-} ]] && { mkdir -p "$home/.local/state/annihilation-theme"; printf '%s\n' "$4" >"$home/.local/state/annihilation-theme/glow.json"; }
   (cd "$CFGDIR" && env -u DISPLAY -u WAYLAND_DISPLAY HOME="$home" XDG_RUNTIME_DIR="$tmp/xdg" QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME= \
-     PROBE_SCENARIO="$1" timeout 40 quickshell -p shell.qml --no-duplicate 2>&1) | sed 's/\x1b\[[0-9;]*m//g' | grep "PROBE" | sed 's/^.*PROBE /PROBE /'
+     PROBE_SCENARIO="$1" timeout 40 quickshell -p shell.qml --no-duplicate 2>&1) | tee -a "${PROBE_RAW:-/dev/null}" | sed 's/\x1b\[[0-9;]*m//g' | grep "PROBE" | sed 's/^.*PROBE /PROBE /'
 }
 mkdir -p "$tmp/xdg"; chmod 700 "$tmp/xdg"
 
@@ -117,6 +130,8 @@ check "spore_amount: junk is ignored" 1 "$(parseds junk)"
 parsedl() { sed -n "s/^PROBE parseL $1 -> //p" <<<"$out"; }
 check "look: the default is blend" blend "$(parsedl empty)"
 check "look: growth" growth "$(parsedl growth)"
+check "look: glow" glow "$(parsedl glow)"
+check "look: a value that merely starts with glow is not glow" blend "$(parsedl 'glow prefix')"
 check "look: blend" blend "$(parsedl blend)"
 check "look: spaces around = are fine" growth "$(parsedl spaced)"
 check "look: an unknown name falls back to blend" blend "$(parsedl unknown)"
@@ -192,6 +207,33 @@ check "ambient spores: spore_amount=0.5 reaches the rim" 0.5 "$(rimval "$(grep '
 check "look: the rim is the blend by default" blend "$(rimval "$(rimline 'from signal')" look)"
 out_growth=$(run cards annihilation "look=growth")
 check "look: look=growth reaches the rim" growth "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_growth" | head -n1)" look)"
+# -- the glow look: the window glow's own light, and the arrival
+glowline() { grep "PROBE glowrim $1 $2 " <<<"$3" | head -n1; }
+gv() { sed -n "s/.* $2=\([^ ]*\).*/\1/p" <<<"$1"; }
+state='{"seed":53,"clock":100,"at":'$(date +%s%3N)',"speed":1.29,"running":true,"intensity":0.7,"depth":0.3}'
+out_glow=$(run cards annihilation "look=glow" "$state")
+out_nofile=$(run cards annihilation "look=glow")
+check "glow: look=glow reaches the glow rim, visible" true "$(gv "$(glowline early 'from signal' "$out_glow")" visible)"
+check "glow: the card is not faded in (opacity 1 early in the arrival, where the blend look has it still rising)" "1.00" "$(gv "$(glowline early 'from signal' "$out_glow")" opacity)"
+check "glow: nor scaled in" "1.00" "$(gv "$(glowline early 'from signal' "$out_glow")" scale)"
+check "glow: the arrival is under way early on, and the card is a mask layer" "true true" "$(gv "$(glowline early 'from signal' "$out_glow")" arriving) $(gv "$(glowline early 'from signal' "$out_glow")" layer)"
+check "glow: the front has left the icon" yes "$(awk -v f="$(gv "$(glowline early 'from signal' "$out_glow")" front)" 'BEGIN{print (f > 5 && f < 400) ? "yes" : "no"}')"
+check "glow: the arrival is over after about two seconds: settled, no layer" "-1.00 false false" "$(gv "$(glowline late 'from signal' "$out_glow")" wave) $(gv "$(glowline late 'from signal' "$out_glow")" arriving) $(gv "$(glowline late 'from signal' "$out_glow")" layer)"
+check "glow: the shader has the theme's clock (published as 100 s a moment ago)" yes "$(awk -v t="$(gv "$(glowline late 'from signal' "$out_glow")" time)" 'BEGIN{print (t >= 100 && t < 120) ? "yes" : "no"}')"
+check "glow: and its seed" 53 "$(gv "$(glowline late 'from signal' "$out_glow")" seed)"
+check "glow: the clock reports it is in step with the theme" "shared=true seed=53 intensity=0.7 depth=0.3" "$(sed -n 's/^PROBE clock \(shared=[a-z]* seed=[0-9.]* intensity=[0-9.]* depth=[0-9.]*\).*/\1/p' <<<"$out_glow")"
+check "glow: the overlay is placed on the screen (its origin is read, not left at 0,0)" yes "$([[ $(gv "$(glowline late 'from signal' "$out_glow")" origin) != "0,0" ]] && echo yes || echo no)"
+check "glow: without the theme's file it runs on its own clock and says so" "shared=false" "$(sed -n 's/^PROBE clock \(shared=[a-z]*\).*/\1/p' <<<"$out_nofile")"
+check "glow: and with the theme's default settings" "intensity=0.44 depth=0.21" "$(sed -n 's/^PROBE clock shared=[a-z]* seed=[0-9.]* \(intensity=[0-9.]* depth=[0-9.]*\).*/\1/p' <<<"$out_nofile")"
+check "glow: every toast gets it, not only the first" 5 "$(grep -c 'PROBE glowrim early from' <<<"$out_glow")"
+out_blendprobe=$out_cards
+check "blend: the glow rim is hidden and no arrival runs" "false false" "$(gv "$(glowline early 'from signal' "$out_blendprobe")" visible) $(gv "$(glowline early 'from signal' "$out_blendprobe")" arriving)"
+check "blend: the card is still fading in early (opacity below 1)" yes "$(awk -v o="$(gv "$(glowline early 'from signal' "$out_blendprobe")" opacity)" 'BEGIN{print (o < 1) ? "yes" : "no"}')"
+check "blend: no mask layer on the card" false "$(gv "$(glowline early 'from signal' "$out_blendprobe")" layer)"
+out_glow_other=$(run cards other "look=glow" "$state")
+check "glow on another theme: nothing (stock)" "false false" "$(gv "$(glowline early 'from signal' "$out_glow_other")" visible) $(gv "$(glowline early 'from signal' "$out_glow_other")" arriving)"
+check "glow: the blend's rim is hidden (not drawn twice)" false "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_glow" | head -n1)" visible)"
+check "blend: the blend's rim is the one that is drawn" true "$(rimval "$(rimline 'from signal')" visible)"
 out_none=$(run cards annihilation "spore_amount=0")
 check "ambient spores: spore_amount=0 turns them off" 0 "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_none" | head -n1)" spores)"
 
