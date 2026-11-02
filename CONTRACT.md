@@ -55,12 +55,11 @@ All return a string; keep the names and the argument lists.
   recorded. (The theme's missed-notification tracker and docs rely on this.)
 - Lifetimes: low 5 s, normal 8 s (or the sender's timeout if longer), at most 30 s, critical never
   expires. The theme's `MissedTracker.lifetimeFor` mirrors these numbers.
-- **With the annihilation theme active, a toast leaves the screen up to 300 ms later** (times
-  `motion_slowdown`, 1 unless the user changes it in `~/.config/omarchy/annihilation-notifications-fork.conf`) than
-  its lifetime or its dismissal: it folds away first (`components/SlotMotion.qml`) and only then is its file moved to
-  `history/`. Left-click (which acts at once) and the IPC dismissals are not delayed. The theme's `MissedTracker`
-  cannot know this; the only effect is that a toast dismissed in roughly the last second of its lifetime can be
-  counted as expired (a false "missed").
+- **With the annihilation theme active, a toast leaves the screen up to 1.1 s later** (times `motion_slowdown`, 1 unless the user changes it in
+  `~/.config/omarchy/annihilation-notifications-fork.conf`; 300 ms with `arrival=0`) than its lifetime or its dismissal: it dissolves into the light first
+  (`components/ArrivalFlare.qml`, `SlotMotion.dissolve`: the arrival played backwards, 1 s) and the slot folds shut over the last of that, and only then is its file
+  moved to `history/`. Left-click (which acts at once) and the IPC dismissals are not delayed. The theme's `MissedTracker` cannot know this; the only effect is
+  that a toast dismissed in roughly the last 1.5 s of its lifetime can be counted as expired (a false "missed").
 - **With the annihilation theme active, the popup window can stay up, empty and click-through, for up to about 2.2 s after
   the last toast has gone**, to finish drawing the spores it left (`components/SporeLayer.qml`) and, after an arrival, the ring and halo that
   leave a new toast's outline (`components/ArrivalLayer.qml`, up to the arrival's 3 to 6 s, times `motion_slowdown`). It never covers or

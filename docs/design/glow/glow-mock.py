@@ -27,7 +27,9 @@ def build(src_text, name):
 harness = tmp + "/harness"
 subprocess.run(["gcc", "-O2", ROOT + "/test/shader-harness.c", "-o", harness, "-lEGL", "-lGLESv2"], check=True)
 
-wg = open(THEME + "/shaders/windowglow.frag").read()
+try: wg = open(THEME + "/shaders/windowglow.frag").read()
+except FileNotFoundError:           # the theme repo moves on: take the shader from its history (the window glow's own light is what the scene needs)
+    wg = subprocess.run(["git", "-C", os.path.dirname(os.path.dirname(os.path.dirname(THEME))), "show", "p2/arrival:extras/plugin/annihilation.shimmer/shaders/windowglow.frag"], check=True, capture_output=True, text=True).stdout
 wg = wg.replace("    vec4 win5;\n} ubuf;", "    vec4 win5;\n    vec2 origin;\n    vec2 cropSize;\n} ubuf;")
 wg = wg.replace("vec2 uv = qt_TexCoord0;\n    vec2 px = uv * ubuf.resolution;",
                 "vec2 uv = (ubuf.origin + qt_TexCoord0 * ubuf.cropSize) / ubuf.resolution;\n    vec2 px = uv * ubuf.resolution;")
@@ -54,7 +56,7 @@ TOAST_DEPTH = float(os.environ.get('TDEPTH', 0.13))
 RIM = max(16, min(44, SCREEN[1] * 0.026)); ROUND = 4; INTENSITY = 0.44
 WIN = (940, 44, 930, 1136)          # the window the toasts sit over (x, y, w, h); right edge = screen - gapsOut
 BAR = 34
-FONTS = THEME + "/fonts/"
+FONTS = ROOT + "/fonts/"
 def font(name, px, wght):
     f = ImageFont.truetype(FONTS + name, int(round(px * S)))
     try: f.set_variation_by_axes([wght])

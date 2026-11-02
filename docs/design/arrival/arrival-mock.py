@@ -27,7 +27,9 @@ def build(src_text, name):
 harness = tmp + "/harness"
 subprocess.run(["gcc", "-O2", ROOT + "/test/shader-harness.c", "-o", harness, "-lEGL", "-lGLESv2"], check=True)
 
-wg = open(THEME + "/shaders/windowglow.frag").read()
+try: wg = open(THEME + "/shaders/windowglow.frag").read()
+except FileNotFoundError:           # the theme repo moves on: take the shader from its history (the window glow's own light is what the scene needs)
+    wg = subprocess.run(["git", "-C", os.path.dirname(os.path.dirname(os.path.dirname(THEME))), "show", "p2/arrival:extras/plugin/annihilation.shimmer/shaders/windowglow.frag"], check=True, capture_output=True, text=True).stdout
 wg = wg.replace("    vec4 win5;\n} ubuf;", "    vec4 win5;\n    vec2 origin;\n    vec2 cropSize;\n} ubuf;")
 wg = wg.replace("vec2 uv = qt_TexCoord0;\n    vec2 px = uv * ubuf.resolution;",
                 "vec2 uv = (ubuf.origin + qt_TexCoord0 * ubuf.cropSize) / ubuf.resolution;\n    vec2 px = uv * ubuf.resolution;")
@@ -51,7 +53,7 @@ TOAST_DEPTH = float(os.environ.get('TDEPTH', 0.13))
 RIM = max(16, min(44, SCREEN[1] * 0.026)); ROUND = 4; INTENSITY = 0.44
 WIN = (940, 44, 930, 1136)          # the window the toasts sit over (x, y, w, h); right edge = screen - gapsOut
 BAR = 34
-FONTS = THEME + "/fonts/"
+FONTS = ROOT + "/fonts/"
 def font(name, px, wght):
     f = ImageFont.truetype(FONTS + name, int(round(px * S)))
     try: f.set_variation_by_axes([wght])
@@ -205,3 +207,44 @@ for ms in ((900, 500, 150), (1800, 1400, 1050)):
     f = with_text(f, AX0, AY0, three, CARDS, list(ms), [reach_card(380, 78, ICON[0], ICON[1])] * 3)
     frames.append(label(f, "burst %s ms" % (ms,)))
 save(np.concatenate(frames, axis=1), "arrival-burst")
+
+
+# ---- the exit: the arrival played backwards (ArrivalLogic.exitFront etc., mirrored here in numpy)
+def clamp01(x): return min(max(x, 0.0), 1.0)
+def settle(front, rc): t = clamp01((front / rc - 0.7) / 0.4); return t * t * (3 - 2 * t)
+def exit_start(rc, rr): r = min(1.15 * rc / (rc + rr), 0.97); return 1 - (1 - r) ** (1 / 3)
+def exit_front(q, rc, rr): return front_at(exit_start(rc, rr) * (1 - clamp01(q)), rc) - 30 * clamp01(q)
+def exit_fade(front, rc): return (1 - settle(front, rc)) * clamp01(front / (0.35 * rc))
+
+def exit_frame(x0, y0, cw, ch, card, q, urgency=1):
+    x, y, w, h = card; ix, iy = ICON[0], ICON[1]; rc = reach_card(w, h, ix, iy); p0 = exit_start(rc, RING_REACH)
+    p = p0 * (1 - q); fr_ring = front_at(p, rc); fr = exit_front(q, rc, RING_REACH)
+    img = over(scene(x0, y0, cw, ch), window_layer(x0, y0, cw, ch))
+    u = dict(seed=SEED, strength=1.0, reach=RING_REACH, radius=4, resolution=(cw, ch),
+             rect0=(x - x0, y - y0, w, h), src0=(x - x0 + ix, y - y0 + iy, rc, fr_ring), ev0=(p, urgency, 1.0, 0.0),
+             rect1=(0, 0, 0, 0), src1=(0, 0, 0, 0), ev1=(0, 1, 0, 0), rect2=(0, 0, 0, 0), src2=(0, 0, 0, 0), ev2=(0, 1, 0, 0))
+    img = over(img, render(RING, cw * S, ch * S, **u))
+    m = 40; ow, oh = w + 2 * m, h + 2 * m; ox, oy = x - m, y - m
+    YY, XX = np.mgrid[0:oh * S, 0:ow * S].astype(np.float32)
+    qx = np.abs(XX / S - (m + w / 2)) - (w / 2 - 4); qy = np.abs(YY / S - (m + h / 2)) - (h / 2 - 4)
+    dd = np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) + np.minimum(np.maximum(qx, qy), 0) - 4
+    cov = np.clip(0.5 - dd * S * 0.5, 0, 1)[..., None] * 0.93
+    dist = np.hypot(XX / S - (m + ix), YY / S - (m + iy)); t = np.clip((dist - (fr - 16)) / 26, 0, 1); keep = (1 - t * t * (3 - 2 * t))[..., None]
+    cov = cov * keep
+    fl = render(FLARE, ow * S, oh * S, strength=1.0, urgency=urgency, radius=4, front=max(fr, 0), fade=exit_fade(fr, rc), reverse=1, size=(ow, oh), card=(m, m, w, h), icon=(m + ix, m + iy, ICON[2]))
+    layer = np.concatenate([np.array([36, 32, 21], np.float32) / 255 * cov + fl[..., :3], cov], axis=2)
+    sx, sy = (ox - x0) * S, (oy - y0) * S
+    cx0, cy0 = max(sx, 0), max(sy, 0); cx1, cy1 = min(sx + ow * S, cw * S), min(sy + oh * S, ch * S)
+    L = layer[cy0 - sy:cy1 - sy, cx0 - sx:cx1 - sx]
+    img[cy0:cy1, cx0:cx1] = np.clip(L[..., :3] + img[cy0:cy1, cx0:cx1] * (1 - L[..., 3:4]), 0, 1)
+    # text, masked by the same front
+    txt = draw_text(img.copy(), x0, y0, [card], CARDS[:1])
+    Hh, Ww = img.shape[:2]; Y2, X2 = np.mgrid[0:Hh, 0:Ww].astype(np.float32)
+    d2 = np.hypot(X2 / S + x0 - (x + ix), Y2 / S + y0 - (y + iy)); t2 = np.clip((d2 - (fr - 16)) / 26, 0, 1); keep2 = (1 - t2 * t2 * (3 - 2 * t2))[..., None]
+    inbox = ((X2 / S + x0 >= x) & (X2 / S + x0 <= x + w) & (Y2 / S + y0 >= y) & (Y2 / S + y0 <= y + h))[..., None]
+    return np.where(inbox, img * (1 - keep2) + txt * keep2, img)
+
+frames = []
+for q in (0.0, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 1.0):
+    frames.append(label(exit_frame(AX0, AY0, ACW, ACH, card[0], q), "exit q=%.2f (%d ms)" % (q, q * 1000)))
+save(np.concatenate([np.concatenate(frames[i:i + 2], axis=1) for i in range(0, len(frames), 2)], axis=0), "exit-one")

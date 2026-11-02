@@ -225,6 +225,11 @@ Restart the shell after updating either repo (new files). The setting is `arriva
 - [ ] it still **ends**: after about a second the card is fully there and the settled rim has faded in without a jump; the ring is gone after the
       arrival's few seconds and the toast is exactly the settled one
 - [ ] critical toasts are amber to pink, low ones moss, normal ones teal to blue, and they are as strong as the theme's old ring was (say if not)
+- [ ] **the exit**: when a toast expires (or you right-click it) it does not fold and fade: a front of light **retreats across the card to the icon**, the card
+      dissolving from its far corner into the light; the ring and halo **gather back onto it**; the settled rim fades out; the spore at the icon goes out last, and the spores
+      drift off as the card comes apart; then the stack closes up behind it. About a second. Look for: the card's content edge flickering while the mask retreats, a ring or
+      outline that lingers over empty space after the card is gone, the stack closing up late or with a jump, a toast that leaves while another arrives
+- [ ] a **left-click** on a toast (it acts and goes) and `omarchy-shell notifications dismissOne` are still instant, as before
 - [ ] a **burst** of several toasts at once is not a flash (later ones are fainter, at most three rings at a time)
 - [ ] **no second ring**: the theme's own is gone (if you see one from the screen's corner too, the theme is not on `p2/arrival`)
 - [ ] a toast restored after `omarchy restart shell` appears at once, with no arrival (**known and accepted:** only a toast more than 3 s old counts as restored, so one sent just before the restart replays its arrival); `notify-send -a Omarchy ...` (an own-action toast) is fainter

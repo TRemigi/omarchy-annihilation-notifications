@@ -371,6 +371,15 @@ What it is (`docs/design/arrival/README` section in `docs/design/README.md` has 
   sized to the card plus the ring's reach (about 740 px) but the wave travels about 700 px from the *icon*, which is 34 px inside the card, so it ran off the layer's left
   edge. The layer now fills the whole window (half resolution, only while an arrival runs); the probe checks it does. Lesson: size a light's layer from where the light
   can reach (the front's maximum radius from its source), not from the shape it starts from.
+- **The exit (2026-11-02, built on request, no mock-up first; the user judges it live):** the arrival played backwards, faster. `SlotMotion.leave()` with `reveal` runs
+  `dissolve` 0 to 1 over 1 s (times `motion_slowdown`; the spores are released at 25% of it, when the card starts to come apart), and starts the old fold (300 ms) at 80%, so
+  a toast leaves 1.1 s after expiry (CONTRACT.md); `ArrivalFlare` (`exiting`, `q`) retreats the front (`ArrivalLogic.exitFront`: the arrival's wave from `exitStart`, the
+  progress at which the front is 15% beyond the card, derived from the geometry because a fixed start left the card part-dissolved at the small ring reach of the probe's window,
+  back to 0, less 30 px so nothing remains), the card's mask follows it, `ArrivalLayer.beginExit` runs the ring and halo backwards (an event with `exit: true`), `toastflare.frag`'s
+  `reverse` puts the afterglow on the far side with a 60 px trail, and `ToastRim`'s gate fades the rim out. Left-click and the IPC dismissals stay instant; `arrival=0` keeps the old fold.
+  Verified: logic (59), shaders (53, incl. 3 exit checks and 2 deliberate breaks), probe (152: ordering of dissolve, spores and fold, the retreating front, the rim gate, the ring told
+  and run backwards, the instant paths, `arrival=0`, another theme, slowdown); 10 of 11 QML breaks caught in isolated copies (the survivor: the arrival's clock left running while exiting,
+  equivalent, the exit's state takes precedence). **Not verified:** how it looks and feels live (checklist section H, the exit items).
 - Setting: `arrival` 0 to 2, default 1, in the fork conf; 0 turns the whole arrival off (back to the plain unfold and the blend's ignition).
 - **Theme side (branch `p2/arrival` there):** `ArrivalGlow.qml`, `arrival.frag`, `notifyGlow`/`notifyGlowStrength` with their popup slider and switch, the layer rule's
   namespace and the interim `glow.json` writer are removed; the feed, the sound and the missed marks stay. The theme alone has no arrival light now (the user's decision).

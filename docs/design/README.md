@@ -171,3 +171,12 @@ is; the fork can, so the arrival is drawn from each card's real rectangle, corne
   (`rimGate`), and does not also ignite. Colours and amplitudes are the theme's old ring's (normal teal to blue, critical amber to pink, low moss to
   teal; critical 1.3, low 0.6, Omarchy's own toasts 0.7, a burst 0.6). A toast restored after a shell restart does not arrive.
 - Not verified live: see checklist section H.
+
+### The exit (2026-11-02): the arrival played backwards
+`arrival/exit-one.png` (the real shaders, 0 to 1000 ms). When a toast expires or is right-clicked it no longer folds and fades: a front of light retreats across the card
+from beyond its far edge to the icon, so the card **dissolves from its far corner into the light**; the ring and halo **contract onto the card and brighten** as they get there;
+the settled rim fades out as the front starts across; the flare's edge light follows the front with a short ghost trail behind it (a ghost of the whole outline over empty
+space looked wrong); the spore at the icon goes out last. The spores the toast leaves are released a quarter of the way in, when the card starts to come apart. The slot folds
+shut once the dissolve is 80% done so the stack closes up behind it (1.1 s in all, times `motion_slowdown`). It is the arrival's wave from the progress at which the front is
+15% beyond the card (`ArrivalLogic.exitStart`, derived from the geometry so it holds on any screen) back to 0, at 1 s instead of 4.2 s, minus up to 30 px so nothing of the card
+is left round the icon. Left-click and the IPC dismissals are still instant (as stock); `arrival=0` keeps the old 300 ms fold.
