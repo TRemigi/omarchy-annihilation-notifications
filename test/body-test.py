@@ -66,16 +66,13 @@ p = px(img, CX, CY)
 check("body: the middle is the fill's colour times its alpha (premultiplied: 0.1, 0.08, 0.06 times 0.95)", all(abs(p[i] / 255.0 - (0.1, 0.08, 0.06)[i] * 0.95) < 0.012 for i in range(3)), p)
 check("body: the fill's own opacity scales it (0.5 gives half)", abs(alpha(render(fill=(0.1, 0.08, 0.06, 0.5)), CX, CY) - 0.5) < 0.01)
 check("body: qt_Opacity scales everything (0.5)", abs(alpha(render(qt_Opacity=0.5), CX, CY) - 0.475) < 0.01)
-# the light on the edge
-def light_at(img, x, y):                        # the added light: premultiplied colour above the alpha
-    p = px(img, x, y); return tuple(max(0, p[i] - p[3] * (0.1, 0.08, 0.06)[i]) for i in range(3))
-ex, ey = CX + A - 4, CY
-n_, c_, l_ = [render(urgency=u) for u in (1, 2, 0)]
-ln, lc, ll = [light_at(i, ex - 40, CY - B + 4) for i in (n_, c_, l_)]
-check("body: the edge carries light: some at the outline, none at the middle", sum(light_at(img, CX + A - 6, CY)) > 8 and sum(light_at(img, CX, CY)) < 2, (light_at(img, CX + A - 6, CY), light_at(img, CX, CY)))
-check("body: a normal toast's edge light is teal to blue, a critical one's amber to pink, a low one's moss (blue over red; red over blue; less blue than normal)",
-      ln[2] > ln[0] and lc[0] > lc[2] and ll[2] < ln[2], (ln, lc, ll))
-check("body: rim vividness 0 leaves less light on the edge than 1, but some", 0 < sum(light_at(render(vividness=0.0), CX + A - 6, CY)) < sum(light_at(render(vividness=1.0), CX + A - 6, CY)))
-check("body: the edge light is faint: no brighter than a fifth of full anywhere", max(max(light_at(img, x, y)) for x in range(0, W, 5) for y in range(0, H, 5)) < 60)
+# no light and no tint on the edge: the body is its fill and a feather, nothing else (an edge light drew a faint line where the body ends, which read as a hard edge on a flat background)
+def extra(img, x, y):                            # what is in the pixel beyond fill * alpha, in 0-255 steps (premultiplied)
+    p = px(img, x, y); return max(abs(p[i] - p[3] * (0.1, 0.08, 0.06)[i]) for i in range(3))
+worst_extra = max(extra(img, x, y) for x in range(0, W, 3) for y in range(0, H, 3))
+check("body: the colour is the fill times the alpha everywhere, to a step of rounding (no edge light, no tint)", worst_extra < 1.6, worst_extra)
+variants = [render(urgency=u, vividness=v) for u, v in ((2, 0.75), (0, 1.0), (1, 0.0))]
+same = all(v == img for v in variants)
+check("body: urgency and vividness change nothing (they were the edge light's)", same)
 
 print(f"{passed} passed, {failed} failed"); sys.exit(1 if failed else 0)

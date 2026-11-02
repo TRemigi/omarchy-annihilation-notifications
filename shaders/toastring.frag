@@ -97,17 +97,20 @@ vec3 arrival(vec2 px, vec4 rect, vec4 src, vec4 ev) {
     vec2 b = (px - centre) / (4.0 * ubuf.reach);
     float bend = 1.0 + (oval ? 0.025 : 0.05) * sin(b.x * 2.3 + ubuf.seed * 3.1 + ev.w) * sin(b.y * 2.9 + ubuf.seed * 1.7 + 2.0 * ev.w);
     // The ellipse and the pixel's distance from it (first order: k0 * (k0 - 1) / k1), plus the ripple.
-    // With an oval body the ring is the toast's own shape (a superellipse of the body's exponent) a fixed gap outside it, so it matches the toast; without one it is an ellipse
+    // With an oval body the ring is the set of points a fixed distance (0.75 of `reach`, times the growth) outside the body's own outline (offsetting the axes by equal amounts instead left a gap
+    // of 55 px at the top and 35 at the corners), so it is exactly the toast's shape, and far enough out
+    // to be a halo round the toast and not its border: nearer, the bright ring against the soft dark body read as a hard edge, most of all on a flat background. Without one it is an ellipse
     // (half the card plus 0.55 across and 0.8 up and down of `reach`).
     vec2 abBody = 0.5 * rect.zw * ubuf.shape.xy;
-    vec2 ab = max((oval ? abBody + vec2(0.45 * ubuf.reach) : vec2(0.5 * rect.z + 0.55 * ubuf.reach, 0.5 * rect.w + 0.8 * ubuf.reach)) * clamp(src.z, 0.0, 1.0) * bend, vec2(1.0));
+    float grow = clamp(src.z, 0.0, 1.0) * bend;
+    vec2 ab = max((oval ? abBody : vec2(0.5 * rect.z + 0.55 * ubuf.reach, 0.5 * rect.w + 0.8 * ubuf.reach)) * grow, vec2(1.0));
     vec2 e = px - centre;
     float k0 = length(e / ab), k1 = length(e / (ab * ab));
-    float dEll = oval ? ovalSd(e, ab, ubuf.shape.z) : (k1 > 1e-6 ? k0 * (k0 - 1.0) / k1 : -min(ab.x, ab.y));
+    float dEll = oval ? ovalSd(e, ab, ubuf.shape.z) - 0.75 * ubuf.reach * grow : (k1 > 1e-6 ? k0 * (k0 - 1.0) / k1 : -min(ab.x, ab.y));
     dEll += 0.6 * ubuf.reach * ripple * held;
 
     float travel = 1.0 - pow(1.0 - p, 3.0);
-    float w = ubuf.reach * (0.06 + 0.09 * travel);
+    float w = ubuf.reach * (oval ? 0.06 + 0.13 * travel : 0.06 + 0.09 * travel);       // wider, softer round an oval body
     float s = dEll / w;
     float ring = exp(-0.5 * s * s) * (1.0 - smoothstep(3.2, 4.2, abs(s)));
     float ringLife = smoothstep(0.0, 0.07, p) * mix(0.55, 1.0, (1.0 - p) * (1.0 - p)) * (1.0 + 0.18 * held * sin(0.030 * px.x + 0.050 * px.y + 0.8 * t + 1.7 * ev.w));
@@ -123,7 +126,7 @@ vec3 arrival(vec2 px, vec4 rect, vec4 src, vec4 ev) {
     float behind = 1.0 - smoothstep(src.w - 30.0, src.w + 40.0, tEdge);
     vec3 haloCol = mix(inner, vec3(1.0, 0.95, 0.88), 0.10);
 
-    return (ringCol * ring * ringLife * 0.30 + haloCol * halo * haloLife * behind * 0.15) * ev.z * outside;
+    return (ringCol * ring * ringLife * 0.30 + haloCol * halo * haloLife * behind * (oval ? 0.03 : 0.15)) * ev.z * outside;
 }
 
 void main() {
