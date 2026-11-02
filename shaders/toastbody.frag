@@ -5,7 +5,7 @@
 //
 // The shape is a superellipse of exponent `shape.z` (3: an oval with fuller ends than an ellipse, so the text in the corners stays on it) concentric with the card, its
 // semi-axes the card's half-size times `shape.xy`. The distance to it is the usual first-order one, (g - 1) / |grad g|, so the feather is as wide at the ends as on top.
-// The fill is solid 22 px inside the outline and gone 22 px outside it (design px: times `ui`, the pixels per design px: a feather 44 px wide, widened from 26 after the first live look, where the
+// The fill is solid 22 px inside the outline and gone 58 px outside it (design px: times `ui`, the pixels per design px: a feather 80 px wide, widened from 26 and then 44 after live looks, where the
 // edge still read as crisp), so the oval dissolves into what is behind it (and the arrival's glow, which runs under it: toastring.frag no longer hides it behind the card). Chosen from mock-ups on 2026-11-02 (docs/design/blend/). Rebuild with tools/build-shaders.sh after editing.
 
 layout(location = 0) in vec2 qt_TexCoord0;
@@ -35,8 +35,8 @@ void main() {
     vec2 centre = ubuf.card.xy + 0.5 * ubuf.card.zw;
     float sd = ovalSd(px - centre, 0.5 * ubuf.card.zw * ubuf.shape.xy, ubuf.shape.z);
     float u = ubuf.ui;
-    if (sd > 24.0 * u) { fragColor = vec4(0.0); return; }
+    if (sd > 60.0 * u) { fragColor = vec4(0.0); return; }
 
-    float alpha = ubuf.fill.a * (1.0 - smoothstep(-22.0 * u, 22.0 * u, sd));
+    float alpha = ubuf.fill.a * (1.0 - smoothstep(-22.0 * u, 58.0 * u, sd));
     fragColor = vec4(ubuf.fill.rgb * alpha, alpha) * ubuf.qt_Opacity;
 }

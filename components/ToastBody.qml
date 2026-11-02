@@ -16,7 +16,7 @@ Item {
   // The card's own fill colour, which the body keeps.
   property color fill: "black"
 
-  readonly property real margin: 80    // the oval reaches about 25 px past the card's side, and its feather 10 more
+  readonly property real margin: 110    // the oval reaches about 25 px past the card's side, and its feather 58 more (design px: a little over that at 1.155)
 
   anchors.fill: target
   anchors.margins: -margin

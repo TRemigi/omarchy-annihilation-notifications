@@ -5,7 +5,7 @@
 // The toast is not a card with a border any more: it is a soft-edged oval (a superellipse, exponent 3: clearly oval, with fuller ends than an ellipse so the
 // text in the corners stays on it) concentric with the arrival's ring. Its size is the card's layout rectangle times (OVAL_KX, OVAL_KY); the card grows by
 // PAD_X on each side and PAD_Y above and below (design px, times Style.space(1)) so the text sits well inside it. The edge is a feather, FEATHER_IN px inside the
-// outline to FEATHER_OUT px outside it, not a line (26 px wide at first; the first live look found the edge still read as crisp, so it is 44 px now). Chosen from mock-ups on 2026-11-02
+// outline to FEATHER_OUT px outside it, not a line (26 px wide at first, then 44; live, over a near-black window, the toast was a lighter oval with an obvious silhouette, so the fade is long and mostly outside the outline: 22 solid, then 58 out, 80 px wide). Chosen from mock-ups on 2026-11-02
 // (docs/design/blend/). The arrival's front is an oval of the toast's proportions while the toast has an oval body (`ovalAspect`, `ovalFrontReach`).
 var OVAL_KX = 1.12
 var OVAL_KY = 1.20
@@ -13,7 +13,7 @@ var OVAL_N = 3
 var PAD_X = 12
 var PAD_Y = 6
 var FEATHER_IN = 22
-var FEATHER_OUT = 22
+var FEATHER_OUT = 58
 
 // The distance, to first order, from the point (x, y) (from the centre) to the superellipse with semi-axes a and b and exponent n: negative inside.
 function ovalDistance(x, y, a, b, n) {
