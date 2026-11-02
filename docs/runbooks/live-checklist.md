@@ -209,9 +209,9 @@ flipping between the two with the same notifications. The design is `docs/design
 
 Say which you prefer, and what to take from the other: this is the experiment the plan left open.
 
-## H. The arrival (P2, unreleased on `p2/arrival`; annihilation theme only)
+## H. The arrival and the exit (P2, released as 0.7.0; annihilation theme only)
 
-The arrival moved here from the theme. Needs the theme's `p2/arrival` too (it removes the theme's own ring; otherwise two rings run).
+The arrival moved here from the theme. Needs the theme's change that removes its own ring (the theme's `p2/arrival`, merged to its `main`); otherwise two rings run.
 Restart the shell after updating either repo (new files). The setting is `arrival` (0 to 2, default 1; 0 turns it off) in
 `~/.config/omarchy/annihilation-notifications-fork.conf` (read live; the last line for a key wins). Slow it down to judge it:
 `motion_slowdown=4`, then remove the line. It works with any look. The design is `docs/design/arrival/`.

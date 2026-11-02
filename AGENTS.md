@@ -339,7 +339,7 @@ counted on a line 40 px out over the whole height (4 to 7 stretches, between 3 a
 allows 25 pixels of ink. Five deliberate breaks (no bottom roots, one left root, no stagger, roots stop at 80%, roots shrink back) were all caught. **The ink and activity
 measurements (`test/growth-activity.py`) were not redone on the textured, thicker roots**; the pacing was tuned on thin ones.
 
-## P2: the arrival (2026-10-31, unreleased, branch `p2/arrival`, here and in the theme repo)
+## P2: the arrival (2026-10-31, **released as 0.7.0 on 2026-11-02**; branch `p2/arrival` here and in the theme repo, merged)
 
 **Direction, from the user (2026-10-31):** the original brief for this work (the notification toasts, even with all the customising, were still cards
 on top of the theme's glow and did not align with its size and shape; make toast and glow one visual unit, even if the toast stops being a card)

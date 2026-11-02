@@ -23,7 +23,7 @@ the default, is the rim above; the file is read live). In 0.6.0 the roots are th
 organic, textured shape, and the countdown line is gone: with this look the roots are the timer, still growing until just before the
 toast goes.
 
-0.7.0 (unreleased) moves the **arrival** here from the theme and makes it one event with the card. A new toast does not pop in: a front of light
+0.7.0 moves the **arrival** here from the theme and makes it one event with the card. A new toast does not pop in: a front of light
 leaves the **card's centre** (so the arrival is centred on the toast) and crosses the card, which is shown only inside the front; the card's edge flares as the front crosses it; the front carries
 on past the card as a ring and a halo that follow **the card's own outline** (the theme's old ring came from a fixed box near the corner and
 never lined up with the card, which is why it was moved). Teal and blue normally, amber and pink for critical, moss for low; the settled rim
