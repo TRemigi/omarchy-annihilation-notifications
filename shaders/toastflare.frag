@@ -60,8 +60,8 @@ void main() {
     float halo = exp(-max(d, 0.0) / 4.5) * (1.0 - inside) * 0.20;
     float wavefront = exp(-pow((dist - ubuf.front) / 22.0, 2.0));
     float behind = ubuf.reverse > 0.5 ? max(dist - ubuf.front, 0.0) : max(ubuf.front - dist, 0.0);
-    // the arrival's afterglow is a cooling trail behind the front; the exit's ghost is shorter (a ghost rectangle of the whole outline over empty space looked wrong)
-    float trail = ubuf.reverse > 0.5 ? 60.0 : 140.0;
+    // the arrival's afterglow is a cooling trail behind the front; the exit's is a short smear right behind the front (a longer ghost left a faint outline of the whole rectangle lingering after the card had collapsed from it: seen live)
+    float trail = ubuf.reverse > 0.5 ? 18.0 : 140.0;
     float afterglow = behind > 0.0 ? exp(-behind / trail) * 0.45 : 0.0;
     vec3 rgb = col * (rim * 0.95 + spill + halo) * (wavefront * 1.6 + afterglow) * ubuf.fade;
 

@@ -389,6 +389,10 @@ What it is (`docs/design/arrival/README` section in `docs/design/README.md` has 
   card's reach) while the card kept dissolving until the front reached the centre, so the border lingered round the edges. Now on the way out the gate stays 1 and the ToastRim is a mask layer with the same
   front as the card (`cardreveal.frag` again, in the delegate), so border, halo and the blend's countdown line go exactly as the card does. The probe checks the gate stays 1 and the rim is masked; the rim
   mask's own origin binding is live-only, like the card's.
+- **Found live, round two (2026-11-02, from a recording looked at frame by frame at 20 fps, not thumbnails):** after masking the rim, the border *still* lingered a little: a faint outline of the whole rectangle
+  stayed for several frames after the card had collapsed to a disc. It was not the rim but the exit flare's afterglow: `exp(-behind / 60)` left 10 to 20% of the edge light at the far ends. The exit's trail is
+  now 18 px (the arrival's stays 140); `arrival-test.py` checks it is a smear (lit 12 px beyond the front, nearly gone at 60, none at the far end), and the old lengths fail it. Lesson: look at the
+  recording at the frame rate and resolution of the thing, and find the actual lingering element before guessing which layer it is.
 - Setting: `arrival` 0 to 2, default 1, in the fork conf; 0 turns the whole arrival off (back to the plain unfold and the blend's ignition).
 - **Theme side (branch `p2/arrival` there):** `ArrivalGlow.qml`, `arrival.frag`, `notifyGlow`/`notifyGlowStrength` with their popup slider and switch, the layer rule's
   namespace and the interim `glow.json` writer are removed; the feed, the sound and the missed marks stay. The theme alone has no arrival light now (the user's decision).

@@ -137,10 +137,14 @@ check("flare: a little halo outside the edge, none far out", lum(px(fl, fx, 40 -
 
 # the exit: the arrival played backwards. The afterglow is a ghost of the edge on the side the front has left (further from the icon)
 rv = flare(front=120.0, reverse=1)
-gx = 230 + math.sqrt(160 ** 2 - 39 ** 2)   # 160 px from the centre along the top edge: 40 px beyond the front at 120
-check("flare (exit): the ghost of the edge lies just beyond the front, where the card is already gone (lit, as it is dark in the arrival)", lum(px(rv, gx, 41)) > 3 and lum(px(rv, gx, 41)) > 2 * max(1, lum(px(fl, gx, 41))), (px(rv, gx, 41), px(fl, gx, 41)))
+gx = 230 + math.sqrt(135 ** 2 - 39 ** 2)   # 135 px from the centre along the top edge: 15 px beyond the front at 120
+gi = 230 + math.sqrt(105 ** 2 - 39 ** 2)   # 105 px from the centre: 15 px inside the front
+check("flare (exit): a smear of the edge lies just beyond the front, where the card is already gone (the edge 15 px beyond is brighter than 15 px inside, where the wavefront alone is the same)", lum(px(rv, gx, 41)) > 1.15 * lum(px(rv, gi, 41)), (px(rv, gx, 41), px(rv, gi, 41)))
 tr = flare(front=40.0, reverse=1)
-check("flare (exit): and it is a short trail, not the whole outline (far along the edge it is much fainter than just beyond the front)", lum(px(tr, 400, 41)) < 0.5 * lum(px(tr, 300, 41)) and lum(px(tr, 300, 41)) > 8, (px(tr, 400, 41), px(tr, 300, 41)))
+tx_near = 230 + math.sqrt(52 ** 2 - 39 ** 2)    # 12 px beyond the front along the top edge
+check("flare (exit): and it is a short smear, not the whole outline: 12 px beyond the front it is lit, 60 px beyond it is nearly gone, and the far end of the card has none (the outline must not linger once the card has collapsed from it)",
+      lum(px(tr, tx_near, 41)) > 8 and lum(px(tr, 230 + math.sqrt(100 ** 2 - 39 ** 2), 41)) < 0.25 * lum(px(tr, tx_near, 41)) and lum(px(tr, 400, 41)) < 3,
+      (px(tr, tx_near, 41), px(tr, 230 + math.sqrt(100 ** 2 - 39 ** 2), 41), px(tr, 400, 41)))
 check("flare (exit): and none on the side nearer the centre (the edge above the middle, which in the arrival glows behind the front)", lum(px(rv, 230, 41)) < 0.5 * lum(px(fl, 230, 41)), (px(rv, 230, 41), px(fl, 230, 41)))
 check("flare (exit): the front still flares where it crosses the edge", lum(px(rv, fx, 41)) > 2 * lum(px(rv, fx - 70, 41)) and lum(px(rv, fx, 41)) > 20, (px(rv, fx, 41), px(rv, fx - 70, 41)))
 check("flare (exit): the icon is still lit while the front is beyond it, and out when the front has retreated past it", lum(px(flare(front=200.0, reverse=1), 74, 79)) > 40 and lum(px(rv, 74, 79)) < 4)
