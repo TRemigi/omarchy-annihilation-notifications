@@ -7,11 +7,11 @@
 // the corner because the theme could not know where the card was. The fork does: every arrival carries its card's real rectangle,
 // so the ring and the halo have the card's own shape and corner radius.
 //
-// One wave leaves the icon (`src`: icon x, y, the radius at which the front has crossed the whole card, the front's radius now).
+// One wave leaves the card's centre (`src`: its x, y, the radius at which the front has crossed the whole card, the front's radius now).
 // Inside the card it is the front that reveals the card (cardreveal.frag) and flares its edge (toastflare.frag); here it carries
 // on outside. A pixel outside the card is reached by the front at `F = d + |src - q|`, where d is its distance from the outline
 // and q the nearest point of the outline: the wave crosses the outline at q, then travels d further. Near the card that makes the
-// ring hug the outline, bulging where the icon is closest and lagging at the far end; far away F tends to the plain distance from the
+// ring hug the outline, bulging where the centre is closest and lagging at the far end; far away F tends to the plain distance from the
 // icon, so it rounds off into a circle. The halo is a function of d alone (a lamp-glow in the card's shape) and rises behind the front.
 //
 // Colours are the theme's: normal teal to blue, critical amber to pink, low moss to teal; the arrival's own colour inside the ring
@@ -32,7 +32,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 rect0;       // each arrival's card in the layer: x, y, width, height; width <= 0 for none
     vec4 rect1;
     vec4 rect2;
-    vec4 src0;        // icon x, icon y, the front's radius when it has crossed the card, the front's radius now
+    vec4 src0;        // the wave's origin x, y (the card's centre), the front's radius when it has crossed the card, the front's radius now
     vec4 src1;
     vec4 src2;
     vec4 ev0;         // progress 0..1 (outside that, off), urgency (0 low, 1 normal, 2 critical), amplitude, salt

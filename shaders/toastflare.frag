@@ -1,13 +1,13 @@
 #version 440
 
-// The arrival, on the card: the edge of the card flares as the front of light crosses it and cools behind it, and the icon's spore
+// The arrival, on the card: the edge of the card flares as the front of light crosses it and cools behind it, the card's centre is where the light is born (a spark), and the icon's spore
 // is where the light is born. Drawn as an overlay a little larger than the card, above it, click-through, only while the front is
 // crossing; added light only. The card itself is shown only inside the same front (cardreveal.frag), and the ring and halo outside
 // are toastring.frag's. The settled rim is the look's own (toastrim.frag or toastgrowth.frag), which fades in as `fade` falls.
 //
-// `front` is the radius, in px from the icon, the front has reached; `fade` is 1 while the front is crossing and falls to 0 as it
+// `front` is the radius, in px from `origin` (the card's centre), the front has reached; `fade` is 1 while the front is crossing and falls to 0 as it
 // finishes, taking this overlay's light with it as the look's own rim takes over. `reverse` is 1 for the exit, the arrival played backwards: the
-// front retreats towards the icon, and the afterglow is on the side it has left (further from the icon, where the card is already gone), a ghost
+// front retreats towards the centre, and the afterglow is on the side it has left (further from the centre, where the card is already gone), a ghost
 // of the edge that fades.
 // Colours are the theme's, as in toastring.frag. Rebuild with tools/build-shaders.sh after editing.
 
@@ -20,12 +20,13 @@ layout(std140, binding = 0) uniform buf {
     float strength;    // the user's `arrival` setting, 0 to 2
     float urgency;     // 0 low, 1 normal, 2 critical
     float radius;      // the card's corner radius, px
-    float front;       // px from the icon
+    float front;       // px from the origin
     float fade;        // 0 to 1
     float reverse;     // 0 for the arrival, 1 for the exit
     vec2 size;         // the overlay's size, px
     vec4 card;         // the card inside it: x, y, width, height, px
     vec3 icon;         // the icon ring: centre x, centre y, radius; radius <= 0 for none
+    vec2 origin;       // where the wave starts: the card's centre, in the overlay's px
 } ubuf;
 
 const vec3 N_IN = vec3(0.2000, 0.7686, 0.8157);
@@ -48,8 +49,7 @@ void main() {
     if (ubuf.urgency > 1.5) { inner = C_IN; outer = C_OUT; }
     else if (ubuf.urgency < 0.5) { inner = L_IN; outer = L_OUT; }
 
-    vec2 src = ubuf.icon.z > 0.0 ? ubuf.icon.xy : vec2(ubuf.card.x + 32.0, ubuf.card.y + 0.5 * ubuf.card.w);
-    float dist = length(px - src);
+    float dist = length(px - ubuf.origin);
     float across = clamp((px.x - ubuf.card.x) / ubuf.card.z, 0.0, 1.0);
     vec3 col = mix(inner, outer, smoothstep(0.0, 1.0, across));
 
@@ -65,15 +65,20 @@ void main() {
     float afterglow = behind > 0.0 ? exp(-behind / trail) * 0.45 : 0.0;
     vec3 rgb = col * (rim * 0.95 + spill + halo) * (wavefront * 1.6 + afterglow) * ubuf.fade;
 
-    // The icon: the spore where the light is born, and its ring.
+    // The icon: a spore and its ring, lit as the front reaches it.
     if (ubuf.icon.z > 0.0) {
         float r = length(px - ubuf.icon.xy);
         float ring = exp(-pow((r - ubuf.icon.z) / 0.9, 2.0));
         float core = exp(-pow(r / 2.6, 2.0));
         float ringHalo = exp(-max(r - ubuf.icon.z, 0.0) / 5.0) * 0.10 * step(ubuf.icon.z, r);
-        float born = smoothstep(0.0, 8.0, ubuf.front);
+        // lit once the front has reached the icon (and out again as the exit's front retreats past it)
+        float born = 1.0 - smoothstep(ubuf.front - 16.0, ubuf.front + 10.0, length(ubuf.icon.xy - ubuf.origin));
         rgb += inner * (ring * 0.85 + core * 1.1 + ringHalo) * born * ubuf.fade;
     }
+
+    // a spark at the card's centre where the wave starts, spreading into the front
+    float spark = exp(-pow(length(px - ubuf.origin) / (5.0 + 0.25 * ubuf.front), 2.0)) * smoothstep(0.0, 3.0, ubuf.front) * (1.0 - smoothstep(0.0, 90.0, ubuf.front));
+    rgb += mix(inner, vec3(1.0, 0.96, 0.92), 0.4) * spark * 1.1 * ubuf.fade;
 
     rgb *= ubuf.strength;
     rgb = 1.0 - exp(-rgb * 1.7);

@@ -2,7 +2,7 @@
 
 // annihilation: pure helpers for the arrival (components/ArrivalFlare.qml, ArrivalLayer.qml); tested by test/arrival-logic-test.js.
 //
-// One wave per toast leaves the icon. `front` is the radius, in px from the icon, it has reached; it crosses the card (revealing it
+// One wave per toast leaves the card's centre. `front` is the radius, in px from there, it has reached; it crosses the card (revealing it
 // and flaring its edge) and goes on out into the screen as the ring. `p` runs 0 to 1 over the arrival's duration.
 
 // How long an arrival lasts, ms: the theme's old ring's durations.
@@ -24,7 +24,7 @@ function ringReachFor(screenHeight) {
   return Math.max(180, Math.min(340, Number(screenHeight) * 0.26))
 }
 
-// How far the front has to go from the icon (ix, iy, in the card's own pixels) to have crossed a w x h card, and a little more.
+// How far the front has to go from its origin (ix, iy, in the card's own pixels: its centre) to have crossed a w x h card, and a little more.
 function cardReach(ix, iy, w, h) {
   var dx = Math.max(ix, w - ix), dy = Math.max(iy, h - iy)
   return Math.sqrt(dx * dx + dy * dy) + 30
@@ -77,7 +77,7 @@ function exitProgress(q, p0) {
   return p0 * (1 - clamp01(q))
 }
 
-// The front's radius from the icon: the arrival's at that progress, less up to 30 px so that at the end nothing is left of the card, not even a
+// The front's radius from the origin: the arrival's at that progress, less up to 30 px so that at the end nothing is left of the card, not even a
 // soft edge of it round the icon.
 function exitFront(q, cardReach, ringReach) {
   return frontAt(exitProgress(q, exitStart(cardReach, ringReach)), cardReach, ringReach) - 30 * clamp01(q)

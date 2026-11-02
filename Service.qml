@@ -39,13 +39,15 @@ Item {
   //   rim_vividness    0 to 1, default 0.75: how strong and saturated the light on the card's rim is.
   //   spore_amount     0 to 1, default 1: how many spores a toast leaves as it goes; 0 for none.
   //   look             blend (default) or growth: the rim of light, or the living outline, lichen and roots (an experiment).
-  //   arrival          0 to 2, default 1: how strong the arrival is (a front of light leaves the icon, crosses the card and goes on
+  //   arrival          0 to 2, default 1: how strong the arrival is (a front of light leaves the card's centre, crosses the card and goes on
   //                    out as a ring that hugs the card's outline; see components/ArrivalFlare.qml); 0 turns it off, back to the plain unfold.
+  //   position         right (default, where Omarchy puts toasts) or center: the toast column at the top right of the screen, or at its top centre.
   property real motionSlowdown: 1
   property real rimVividness: 0.75
   property real sporeAmount: 1
   property string look: "blend"
   property real arrivalStrength: 1
+  property string position: "right"
   // The last line for a key wins, so `echo key=value >> file` overrides an earlier line instead of being ignored.
   function lastValue(raw, key, pattern) {
     var re = new RegExp("^\\s*" + key + "\\s*=\\s*(" + pattern + ")\\s*$", "gm"), text = String(raw || ""), m, last = null
@@ -61,6 +63,10 @@ Item {
   function parseVividness(raw) { return parseNumber(raw, "rim_vividness", 0, 1, 0.75) }
   function parseSpores(raw) { return parseNumber(raw, "spore_amount", 0, 1, 1) }
   function parseArrival(raw) { return parseNumber(raw, "arrival", 0, 2, 1) }
+  function parsePosition(raw) {
+    var m = lastValue(raw, "position", "\\w+")
+    return m === "center" ? "center" : "right"
+  }
   function parseLook(raw) {
     var m = lastValue(raw, "look", "\\w+")
     return m === "growth" ? m : "blend"
@@ -69,9 +75,9 @@ Item {
     path: service.home + "/.config/omarchy/annihilation-notifications-fork.conf"
     watchChanges: true
     printErrors: false
-    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()); service.look = service.parseLook(text()); service.arrivalStrength = service.parseArrival(text()) }
+    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()); service.look = service.parseLook(text()); service.arrivalStrength = service.parseArrival(text()); service.position = service.parsePosition(text()) }
     onFileChanged: reload()
-    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1; service.look = "blend"; service.arrivalStrength = 1 }
+    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1; service.look = "blend"; service.arrivalStrength = 1; service.position = "right" }
   }
   // History + DND live under XDG_STATE_HOME: they're persistent user state
   // (the notifications received, the last-set DND preference), not
@@ -1018,6 +1024,7 @@ Item {
       exclusionMode: ExclusionMode.Ignore
       color: "transparent"
 
+      readonly property bool centered: service.themed && service.position === "center" // annihilation
       readonly property var popupPlacement: NotificationLogic.popupPlacement(
         service.barPosition, service.barClearance, Style.gapsOut)
 
@@ -1044,18 +1051,19 @@ Item {
       SporeLayer {
         id: sporeLayer
         anchors.top: parent.top
-        anchors.right: parent.right
-        width: Style.space(380) + 260
+        // annihilation: at the top right as before, or centred when the column is (the spores drift left of the card, up to about 100 px)
+        x: popupWindow.centered ? (parent.width - width) / 2 : parent.width - width
+        width: popupWindow.centered ? Style.space(380) + 520 : Style.space(380) + 260
         height: Math.min(parent.height, Style.space(720))
         amount: service.themed ? service.sporeAmount : 0
       }
 
       ColumnLayout {
         id: popupColumn
-        anchors.right: parent.right
+        // annihilation: at the top right (the stock place) or, with `position=center` and the theme on, at the top centre of the screen
+        x: popupWindow.centered ? (parent.width - width) / 2 : parent.width - width - popupWindow.popupPlacement.margins.right
         anchors.top: parent.top
         anchors.topMargin: popupWindow.popupPlacement.margins.top
-        anchors.rightMargin: popupWindow.popupPlacement.margins.right
         spacing: Style.space(8)
 
         Repeater {
@@ -1152,12 +1160,12 @@ Item {
               fontFamily: service.shell && service.shell.bar ? service.shell.bar.fontFamily : ""
               glyph: cardSlot.glyph
 
-              // annihilation: the arrival: the card is shown only inside the front of light that leaves its icon.
+              // annihilation: the arrival: the card is shown only inside the front of light that leaves its centre.
               layer.enabled: arrival.revealing
               layer.effect: ShaderEffect {
                 property real front: arrival.front
                 property size size: Qt.size(card.width, card.height)
-                property vector2d icon: arrival.cardIcon
+                property vector2d origin: arrival.origin
                 fragmentShader: Qt.resolvedUrl("shaders/cardreveal.frag.qsb")
               }
 

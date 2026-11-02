@@ -1,6 +1,6 @@
 // annihilation: the arrival outside the cards: a ring of light that leaves each new toast's own outline and travels out, and a halo
 // that hugs it, drawn by shaders/toastring.frag. It lives in the popup window, under the toast column (so each card hides the middle
-// of its own light), over the whole window, because the ring outlasts the card's unfolding and the wave travels about 700 px from the icon
+// of its own light), over the whole window, because the ring outlasts the card's unfolding and the wave travels some 500 px from the card's centre
 // (a layer sized to the card cut it off in a straight line, seen in a recording); it renders at half resolution and only while an arrival runs. It replaces the theme's
 // old arrival ring, whose source was a fixed box near the corner; here every arrival carries its card, so the light is the card's shape.
 //
@@ -20,7 +20,7 @@ Item {
   property real screenHeight: 1080
   readonly property real ringReach: ArrivalLogic.ringReachFor(screenHeight)
 
-  // { item (the card), x, y, w, h (the card in this layer's px), ix, iy (the icon, in the card's px), cardReach, urgency, amp, salt, start, dur }, oldest first
+  // { item (the card), x, y, w, h (the card in this layer's px), ix, iy (the wave's origin, the card's centre, in the card's px), cardReach, urgency, amp, salt, start, dur }, oldest first
   property var events: []
   property real nowMs: 0
   readonly property bool active: events.length > 0
@@ -32,7 +32,7 @@ Item {
     return events.filter(function(e) { return now - e.start < e.dur })
   }
 
-  // A card arrives: `item` is the NotificationCard, (ix, iy) its icon in its own pixels, `start` the moment (ms) and `dur` the length (ms)
+  // A card arrives: `item` is the NotificationCard, (ix, iy) the wave's origin in its own pixels, `start` the moment (ms) and `dur` the length (ms)
   // it shares with the card's own flare.
   function begin(item, ix, iy, cardReach, urgency, app, start, dur) {
     if (!(strength > 0)) return
