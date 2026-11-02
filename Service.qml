@@ -41,6 +41,8 @@ Item {
   //   look             blend (default) or growth: the rim of light, or the living outline, lichen and roots (an experiment).
   //   arrival          0 to 2, default 1: how strong the arrival is (a front of light leaves the card's centre, crosses the card and goes on
   //                    out as a ring that hugs the card's outline; see components/ArrivalFlare.qml); 0 turns it off, back to the plain unfold.
+  //   body             oval (default) or card: with the blend look the toast is a soft-edged oval, concentric with the arrival's ring, with no border
+  //                    (components/ToastBody.qml); `card` keeps the rectangle and its rim. The growth look is always a card.
   //   position         right (default, where Omarchy puts toasts) or center: the toast column at the top right of the screen, or at its top centre.
   property real motionSlowdown: 1
   property real rimVividness: 0.75
@@ -48,6 +50,9 @@ Item {
   property string look: "blend"
   property real arrivalStrength: 1
   property string position: "right"
+  property string bodyStyle: "oval"
+  // The toast is an oval body, not a card: the theme is on, the look is the blend, and `body` is not `card`.
+  readonly property bool bodyOval: themed && look === "blend" && bodyStyle === "oval"
   // The last line for a key wins, so `echo key=value >> file` overrides an earlier line instead of being ignored.
   function lastValue(raw, key, pattern) {
     var re = new RegExp("^\\s*" + key + "\\s*=\\s*(" + pattern + ")\\s*$", "gm"), text = String(raw || ""), m, last = null
@@ -67,6 +72,10 @@ Item {
     var m = lastValue(raw, "position", "\\w+")
     return m === "center" ? "center" : "right"
   }
+  function parseBody(raw) {
+    var m = lastValue(raw, "body", "\\w+")
+    return m === "card" ? m : "oval"
+  }
   function parseLook(raw) {
     var m = lastValue(raw, "look", "\\w+")
     return m === "growth" ? m : "blend"
@@ -75,9 +84,9 @@ Item {
     path: service.home + "/.config/omarchy/annihilation-notifications-fork.conf"
     watchChanges: true
     printErrors: false
-    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()); service.look = service.parseLook(text()); service.arrivalStrength = service.parseArrival(text()); service.position = service.parsePosition(text()) }
+    onLoaded: { service.motionSlowdown = service.parseSlowdown(text()); service.rimVividness = service.parseVividness(text()); service.sporeAmount = service.parseSpores(text()); service.look = service.parseLook(text()); service.arrivalStrength = service.parseArrival(text()); service.position = service.parsePosition(text()); service.bodyStyle = service.parseBody(text()) }
     onFileChanged: reload()
-    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1; service.look = "blend"; service.arrivalStrength = 1; service.position = "right" }
+    onLoadFailed: { service.motionSlowdown = 1; service.rimVividness = 0.75; service.sporeAmount = 1; service.look = "blend"; service.arrivalStrength = 1; service.position = "right"; service.bodyStyle = "oval" }
   }
   // History + DND live under XDG_STATE_HOME: they're persistent user state
   // (the notifications received, the last-set DND preference), not
@@ -1043,6 +1052,7 @@ Item {
         id: arrivalLayer
         anchors.fill: parent // the wave travels some 700 px from the icon, across the screen: a layer sized to the card cut the ring off in a straight line
         strength: service.themed ? service.arrivalStrength : 0
+        oval: service.bodyOval
         cornerRadius: service.cornerRadius
         screenHeight: popupWindow.height
       }
@@ -1140,11 +1150,30 @@ Item {
               }
             }
 
+            // annihilation: the oval body, under the card (see components/ToastBody.qml): shown only inside the same front as the card while the arrival reveals it and the exit takes it away.
+            ToastBody {
+              id: ovalBody
+              target: card
+              visible: service.bodyOval
+              urgency: cardSlot.urgency
+              vividness: service.rimVividness
+              ui: Style.space(1)
+              fill: Color.notifications.background
+              layer.enabled: arrival.revealing
+              layer.effect: ShaderEffect {
+                property real front: arrival.front
+                property size size: Qt.size(ovalBody.width, ovalBody.height)
+                property vector2d origin: Qt.vector2d(ovalBody.margin + arrival.origin.x, ovalBody.margin + arrival.origin.y)
+                fragmentShader: Qt.resolvedUrl("shaders/cardreveal.frag.qsb")
+              }
+            }
+
             NotificationCard {
               id: card
               anchors.right: parent.right
               // annihilation: the themed look (ToastRim draws its light, below); stock when the theme is off.
               themed: service.themed
+              oval: service.bodyOval // annihilation: no fill and no border of its own, padded, with ToastBody under it
               // annihilation: the unfold; stock values when the theme is off.
               opacity: motion.cardOpacity
               scale: motion.cardScale
@@ -1188,6 +1217,7 @@ Item {
                 fragmentShader: Qt.resolvedUrl("shaders/cardreveal.frag.qsb")
               }
               calm: arrival.armed   // and does not also ignite
+              oval: service.bodyOval // the oval body's soft edge replaces the rim and the countdown line
               urgency: cardSlot.urgency
               slowdown: service.motionSlowdown
               vividness: service.rimVividness

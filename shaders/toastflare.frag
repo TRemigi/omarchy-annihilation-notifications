@@ -27,6 +27,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 card;         // the card inside it: x, y, width, height, px
     vec3 icon;         // the icon ring: centre x, centre y, radius; radius <= 0 for none
     vec2 origin;       // where the wave starts: the card's centre, in the overlay's px
+    vec4 shape;        // the toast's oval body, when it has one: semi-axes as multiples of the card's half-size (x, y), the exponent (z), 1 if it has one (w)
 } ubuf;
 
 const vec3 N_IN = vec3(0.2000, 0.7686, 0.8157);
@@ -36,6 +37,14 @@ const vec3 C_OUT = vec3(0.9490, 0.4784, 0.7000);
 const vec3 L_IN = vec3(0.5300, 0.6900, 0.4200);
 const vec3 L_OUT = vec3(0.2800, 0.6800, 0.7000);
 
+// The distance to a superellipse centred on the origin (first order: (g - 1) / |grad g|), negative inside: the toast's oval body (toastbody.frag).
+float ovalSd(vec2 p, vec2 ab, float n) {
+    vec2 u = max(abs(p) / ab, vec2(1e-4));
+    float g = pow(pow(u.x, n) + pow(u.y, n), 1.0 / n);
+    vec2 gr = pow(g, 1.0 - n) * pow(u, vec2(n - 1.0)) / ab;
+    return (g - 1.0) / max(length(gr), 1e-5);
+}
+
 float roundBox(vec2 p, vec2 halfSize, float r) {
     vec2 q = abs(p) - (halfSize - vec2(r));
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
@@ -44,7 +53,8 @@ float roundBox(vec2 p, vec2 halfSize, float r) {
 void main() {
     vec2 px = qt_TexCoord0 * ubuf.size;
     vec2 centre = ubuf.card.xy + 0.5 * ubuf.card.zw;
-    float d = roundBox(px - centre, 0.5 * ubuf.card.zw, ubuf.radius);
+    // the edge that flares is the oval body's when the toast has one, else the card's
+    float d = ubuf.shape.w > 0.5 ? ovalSd(px - centre, 0.5 * ubuf.card.zw * ubuf.shape.xy, ubuf.shape.z) : roundBox(px - centre, 0.5 * ubuf.card.zw, ubuf.radius);
     vec3 inner = N_IN, outer = N_OUT;
     if (ubuf.urgency > 1.5) { inner = C_IN; outer = C_OUT; }
     else if (ubuf.urgency < 0.5) { inner = L_IN; outer = L_OUT; }

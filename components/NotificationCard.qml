@@ -9,6 +9,7 @@ import Quickshell
 import qs.Commons
 import qs.Ui
 import "../NotificationLogic.js" as NotificationLogic
+import "../BodyLogic.js" as BodyLogic  // annihilation
 
 BorderSurface {
   id: root
@@ -31,6 +32,11 @@ BorderSurface {
   // annihilation: the themed look, set by the delegate while the annihilation theme is active. With it off the card is
   // exactly Omarchy's: its own border, font and spacing, and none of the extras below.
   property bool themed: false
+  // annihilation: the toast has an oval body (ToastBody.qml) instead of this card's own fill and border: the card draws no fill, and is padded so the text sits well inside the oval.
+  // Set by the delegate (the blend look with `body` not `card`). `padX` and `padY` are what that adds on each side.
+  property bool oval: false
+  readonly property real padX: themed && oval ? Style.space(BodyLogic.PAD_X) : 0
+  readonly property real padY: themed && oval ? Style.space(BodyLogic.PAD_Y) : 0
   FontLoader { id: jostFont; source: Qt.resolvedUrl("../fonts/Jost.ttf") }
   FontLoader { id: cinzelFont; source: Qt.resolvedUrl("../fonts/Cinzel.ttf") }
   readonly property string textFamily: themed && jostFont.status === FontLoader.Ready ? jostFont.name : "Liberation Sans"
@@ -50,7 +56,7 @@ BorderSurface {
   // Where the icon is and what ring it needs, for ToastRim: centre x, centre y, radius; radius 0 when there is none.
   // The icon slot sits 12 px in from the border and is 40 px wide, centred on the card's height.
   readonly property vector3d iconRing: themed && smallIconSlot.visible
-    ? Qt.vector3d(borderLeft + Style.space(12) + Style.space(20), height / 2, hasSmallIcon && !hasGlyph ? Style.space(26) : Style.space(17))
+    ? Qt.vector3d(borderLeft + Style.space(12) + padX + Style.space(20), height / 2, hasSmallIcon && !hasGlyph ? Style.space(26) : Style.space(17))
     : Qt.vector3d(0, 0, 0)
 
   // System monospace font injected by the container.
@@ -92,12 +98,12 @@ BorderSurface {
     return Quickshell.iconPath(value, true)
   }
 
-  implicitWidth: Style.space(380)
+  implicitWidth: Style.space(380) + 2 * padX // annihilation: padX is 0 unless the toast has an oval body
   // Add vertical border insets so mainColumn (inset by border on top/left/right)
   // doesn't push content under the bottom edge.
   implicitHeight: mainColumn.implicitHeight + borderTop + borderBottom
   radius: cornerRadius
-  color: Color.notifications.background
+  color: themed && oval ? "transparent" : Color.notifications.background // annihilation: the oval body is the fill
   borderSpec: cardBorderSpec
   clip: true
 
@@ -131,10 +137,10 @@ BorderSurface {
     // Text content.
     RowLayout {
       Layout.fillWidth: true
-      Layout.leftMargin: Style.space(12)
-      Layout.rightMargin: Style.space(12)
-      Layout.topMargin: root.singleLineToast ? Style.space(7) : Style.space(10)
-      Layout.bottomMargin: root.singleLineToast ? Style.space(7) : Style.space(10)
+      Layout.leftMargin: Style.space(12) + root.padX
+      Layout.rightMargin: Style.space(12) + root.padX
+      Layout.topMargin: (root.singleLineToast ? Style.space(7) : Style.space(10)) + root.padY
+      Layout.bottomMargin: (root.singleLineToast ? Style.space(7) : Style.space(10)) + root.padY
       spacing: root.collapseRedundantIcon ? 0 : (root.compactGlyph ? Style.space(8) : Style.space(12))
 
       Item {

@@ -14,6 +14,7 @@
 // is armed and every value below is the settled one, which is stock.
 import QtQuick
 import "../ArrivalLogic.js" as ArrivalLogic
+import "../BodyLogic.js" as BodyLogic
 
 Item {
   id: root
@@ -88,7 +89,8 @@ Item {
     }
   }
 
-  readonly property real margin: 40
+  // the oval body (BodyLogic) reaches 25 px past the card, and its edge flares there too
+  readonly property real margin: 56
   anchors.fill: target
   anchors.margins: -margin
   scale: target.scale
@@ -109,6 +111,7 @@ Item {
     property size size: Qt.size(width, height)
     property vector4d card: Qt.vector4d(root.margin, root.margin, root.target.width, root.target.height)
     property vector2d origin: Qt.vector2d(root.margin + root.origin.x, root.margin + root.origin.y)
+    property vector4d shape: root.target.oval ? Qt.vector4d(BodyLogic.OVAL_KX, BodyLogic.OVAL_KY, BodyLogic.OVAL_N, 1) : Qt.vector4d(0, 0, 0, 0)
     property vector3d icon: root.target.iconRing.z > 0
       ? Qt.vector3d(root.margin + root.target.iconRing.x, root.margin + root.target.iconRing.y, root.target.iconRing.z)
       : Qt.vector3d(0, 0, 0)

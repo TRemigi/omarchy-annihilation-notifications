@@ -28,6 +28,8 @@ Item {
   property real growth: 0
   onRemainingChanged: if (remaining >= 0) growth = Math.max(growth, 1 - remaining)
 
+  // The toast has an oval body (ToastBody.qml): its soft edge replaces the rim, the spill, the halo and the countdown line (blend look only).
+  property bool oval: false
   property real energy: 1
   // annihilation: the arrival (ArrivalFlare) hands over to this rim: `gate` fades it in as the front finishes crossing the card (1 when
   // there is no arrival), and `calm` skips the ignition flash, which the arrival's own edge light replaces.
@@ -83,6 +85,7 @@ Item {
     property real spores: root.spores
     property real seed: root.seed
     property real growth: root.growth
+    property real oval: root.oval ? 1 : 0
 
     fragmentShader: Qt.resolvedUrl(root.look === "growth" ? "../shaders/toastgrowth.frag.qsb" : "../shaders/toastrim.frag.qsb")
   }

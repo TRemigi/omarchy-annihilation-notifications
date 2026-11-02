@@ -159,6 +159,15 @@ pt = (480, 310)
 d_ = tuple(a - b for a, b in zip(px(two, *pt)[:3], px(late, *pt)[:3]))
 check("ring: a second arrival draws its own light round its own card, and amber for critical (what it adds there is red, not blue)", d_[0] > 15 and d_[0] > 2 * d_[2], d_)
 
+# ---- the oval body: nothing is hidden behind the card, and the halo hugs the oval, not the rectangle
+SHAPE = (1.12, 1.20, 3.0, 1.0)         # BodyLogic: semi-axes 1.12 and 1.2 of the card's half-size, exponent 3; the last is "on"
+on_, off_ = ring(front=RC + WAVE, p=1.0, shape=SHAPE), ring(front=RC + WAVE, p=1.0)
+check("ring (oval body): nothing is hidden behind the card any more: the glow is drawn inside the card's rectangle too (the body, which is soft, covers it); with no oval body it is not", lum(px(on_, 400, 139)) > 5 and lum(px(off_, 400, 139)) == 0, (px(on_, 400, 139), px(off_, 400, 139)))
+check("ring (oval body): the halo hugs the oval: 30 px above the oval's top (y = 62) it is brighter than with the card's rectangle, whose edge is 38 px below that", lum(px(on_, 490, 62)) > 1.15 * lum(px(off_, 490, 62)) + 1, (px(on_, 490, 62), px(off_, 490, 62)))
+check("ring (oval body): and it reaches past the card's ends where the oval does (the tip is 23 px beyond the card's right edge: 17 px past it the halo is lit, more than with the card's edge)", lum(px(on_, 720, 139)) > lum(px(off_, 720, 139)) + 2, (px(on_, 720, 139), px(off_, 720, 139)))
+check("ring (oval body): the ring itself is unchanged (an oval from the card's centre: the same far above the card)", abs(lum(px(on_, 490, 40)) - lum(px(off_, 490, 40))) < 0.2 * max(lum(px(off_, 490, 40)), 4), (px(on_, 490, 40), px(off_, 490, 40)))
+check("ring (oval body): the light is still only added light (alpha 0)", maxalpha(on_) == 0)
+
 # ---------------------------------------------------------------------------- the flare (on the card)
 OW, OH = 460, 158; FC = (40, 40, 380, 78); FI = (74, 79, 17); FO = (230, 79)   # the card, the icon ring, the wave's origin (the card's centre)
 def flare(front=100.0, fade=1.0, urgency=1, strength=1.0, icon=FI, reverse=0, origin=FO):
@@ -202,6 +211,14 @@ check("flare (exit): the front still flares where it crosses the edge", lum(px(r
 check("flare (exit): the icon is still lit while the front is beyond it, and out when the front has retreated past it", lum(px(flare(front=200.0, reverse=1), 74, 79)) > 40 and lum(px(rv, 74, 79)) < 4)
 check("flare (exit): the arrival's picture is unchanged by the flag being 0 (explicit 0 and absent are the same)", flare(front=120.0, reverse=0)[2] == fl[2])
 
+# the oval body: the edge that flares is the oval's, not the card's rectangle
+def flare_shape(front, shape): return render(FLARE, OW, OH, strength=1.0, urgency=1, radius=4, front=front, fade=1.0, reverse=0, size=(OW, OH), card=FC, icon=(0, 0, 0), origin=FO, shape=shape)
+def edge_row(img, x, y0, y1): return max(range(y0, y1), key=lambda y: lum(px(img, x, y)))
+fr, fo = flare_shape(400.0, (0, 0, 0, 0)), flare_shape(400.0, (1.12, 1.20, 3.0, 1.0))
+check("flare (oval body): with none the edge that flares above the middle is the card's top (y = 40); with an oval body it is the oval's top, about 8 px higher (y = 32)", abs(edge_row(fr, 230, 20, 60) - 40) <= 2 and abs(edge_row(fo, 230, 20, 60) - 32) <= 3, (edge_row(fr, 230, 20, 60), edge_row(fo, 230, 20, 60)))
+check("flare (oval body): and at the right end it is the oval's tip, 23 px beyond the card's edge (x = 443), not the card's (x = 420)", abs(max(range(380, 460), key=lambda x: lum(px(fo, x, 79))) - 443) <= 4 and abs(max(range(380, 460), key=lambda x: lum(px(fr, x, 79))) - 420) <= 3, (max(range(380, 460), key=lambda x: lum(px(fo, x, 79))), max(range(380, 460), key=lambda x: lum(px(fr, x, 79)))))
+check("flare (oval body): added light still (alpha 0), and with shape off the picture is the old one", maxalpha(fo) == 0 and fr[2] == flare(front=400.0, icon=(0, 0, 0))[2])
+
 # ---------------------------------------------------------------------------- the reveal mask (an unbound texture reads as opaque black: the alpha is the mask)
 def mask(front, x, y): return px(render(REVEAL, 380, 78, front=front, size=(380, 78), origin=(190, 39)), x, y)[3]
 check("reveal: the middle of the card is solid once the front has left it", mask(40, 190, 39) == 255)
@@ -222,7 +239,7 @@ for shader, qml, marker in (("toastring", "components/ArrivalLayer.qml", "  Shad
     check(f"{qml}'s ShaderEffect feeds exactly {shader}.frag's uniforms", a == b, a ^ b)
 svc = open(ROOT + "/Service.qml").read()
 effects = [svc[m.start():][:400] for m in re.finditer(r"layer\.effect: ShaderEffect \{", svc)]
-check("there are two reveal masks (the card, and the rim on the way out)", len(effects) == 2, len(effects))
+check("there are three reveal masks (the card, the rim on the way out, and the oval body)", len(effects) == 3, len(effects))
 for n, blk in enumerate(effects):
     check(f"reveal mask {n + 1}'s layer effect feeds exactly cardreveal.frag's uniforms", uniforms(f"{SHADERS}/cardreveal.frag") == set(re.findall(r"^\s*property (?:real|size|vector2d) (\w+):", blk, re.M)))
 check("the committed .qsb files are the sources compiled", all(

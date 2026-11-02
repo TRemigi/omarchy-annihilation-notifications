@@ -40,6 +40,7 @@ layout(std140, binding = 0) uniform buf {
     float spores;      // 0 to 1: the faint spores off the left edge (the user's spore_amount); 0 for none
     float seed;        // unused here: toastgrowth.frag's, kept so ToastRim feeds both shaders the same properties
     float growth;      // unused here, as above
+    float oval;        // 1 when the toast has an oval body (toastbody.frag): its soft edge replaces the rim, the spill, the halo and the countdown line; the icon ring and the spores stay
 } ubuf;
 
 // Light colours, as in the theme's shaders. Normal runs teal to blue to violet to pink, critical amber to peach to
@@ -113,7 +114,7 @@ void main() {
     float rim = exp(-pow((d + 0.9) / 0.85, 2.0));
     float spill = exp(-max(-d, 0.0) / 9.0) * inside * 0.17;
     float halo = exp(-max(d, 0.0) / 4.5) * (1.0 - inside) * 0.20;
-    vec3 rgb = col * (rim * 0.95 + spill + halo) * light;
+    vec3 rgb = col * (rim * 0.95 + spill + halo) * light * (1.0 - ubuf.oval);
 
     // The icon: a ring with a spore at its centre, in the colour of the rim at that place.
     if (ubuf.icon.z > 0.0) {
@@ -131,7 +132,7 @@ void main() {
     // The countdown: a line just inside the bottom edge, border to border, shrinking from the right. It sits 3.2 px above
     // the edge, where a rounded corner has pulled the border in by `ex`; the rim is centred 0.9 px inside the edge. Starting
     // there makes the line meet the border instead of leaving a gap.
-    if (ubuf.remaining >= 0.0) {
+    if (ubuf.remaining >= 0.0 && ubuf.oval < 0.5) {
         float lineHeight = 3.2;
         float lineY = ubuf.card.y + ubuf.card.w - lineHeight;
         float ex = lineHeight < ubuf.radius ? ubuf.radius - sqrt(max(ubuf.radius * ubuf.radius - (ubuf.radius - lineHeight) * (ubuf.radius - lineHeight), 0.0)) : 0.0;

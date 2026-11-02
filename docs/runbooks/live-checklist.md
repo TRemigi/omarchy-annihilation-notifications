@@ -249,6 +249,18 @@ Restart the shell after updating (`omarchy restart shell`); a slow `motion_slowd
 - [ ] with several toasts the rings do not overlap into a mess, and the stack still reads; a toast that arrives fourth takes the oldest ring's place
 - [ ] it does not feel heavy while a ring rests (30 Hz updates; the layer renders at half resolution), including a critical toast left up for minutes
 
+## I. The oval toast (P2, branch `p2/oval-body`; annihilation theme, blend look)
+
+The toast is a soft-edged oval under the text, not a card. Restart the shell after syncing; `motion_slowdown=3` makes the arrival easy to watch. `body=card` in the fork's conf file turns it off.
+- [ ] there is no rectangle, border or crisp rim: the toast reads as an oval that dissolves into the glow, concentric with the ring
+- [ ] the text has comfortable room from the oval's edge, **including the caption and the "now" at the top corners** and the last line of a three-line body; nothing is cut or sits on the faint edge
+- [ ] the arrival: the oval appears with the wave (no card-shaped flash, the edge flare follows the oval); the exit takes it away with the card's dissolve
+- [ ] with several toasts the ovals overlap only in their soft edges, and a toast still reads clearly over a busy wallpaper
+- [ ] the icon's ring is still round the icon, and a critical toast's colours (amber to pink) show on the oval's edge
+- [ ] the countdown line is gone (known: it belongs to the card's rectangle); say if you want it back, along the oval
+- [ ] `body=card` brings the card back exactly as 0.8.0; `look=growth` is always a card; a different theme is stock
+- [ ] a click anywhere on the text works as before; the oval's soft edge beyond the card is not clickable
+
 ## Results
 
 | Date | Omarchy | Fork | A | B | C | Notes |

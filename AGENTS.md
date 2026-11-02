@@ -421,6 +421,17 @@ the two live findings are in `docs/design/README.md` ("The ring lingers"); what 
   runs and its checks fail with empty values); and an undulation test must measure the ring's half-maximum edge, not its brightest pixel (brightness modulation alone moves that).
 - **Not verified:** a critical toast left up for a long time (cost of the 30 Hz tick), the oval at the screen's top edge on other resolutions, more than three toasts.
 
+## P2: the oval toast (unreleased, branch `p2/oval-body`, 2026-11-02)
+
+The brief: the toast should blend into the arrival, not be a card inside it. Chosen from mock-ups (`docs/design/README.md`, "The toast as an oval"): A's feather (26 px) on a superellipse (n=3, 1.12 x 1.20 of the card), more padding.
+- `BodyLogic.js` (pure; `test/body-logic-test.js`): the shape, the feather, and `textClearance` (the corners of the text are the tight place: compute clearance numerically before changing a size). `shaders/toastbody.frag` + `components/ToastBody.qml` (under the card; masked by the same front as the card in the delegate) +
+  `test/body-test.py` (the shader against a mirror of the logic, pixel by pixel; 9 of 9 deliberate breaks caught after sharpening the `ui` check).
+- `NotificationCard.oval` (set by `Service.bodyOval` = themed, `look` blend, `body` not `card`): transparent fill, `padX`/`padY` added to the layout (the icon ring's x moves with `padX`). `ToastRim.oval` turns the blend rim's edge, spill, halo and countdown line off (uniform `oval`, declared and unused in `toastgrowth.frag`).
+  `toastring.frag` and `toastflare.frag` take `shape` (kx, ky, n, on): with it on, nothing is hidden behind a card, the halo hugs the oval, and the edge flare follows it.
+- Setting `body` (`oval` default, or `card`), parsed by `parseBody`; the service property is `bodyStyle` (a `body` property would shadow the notification's body text in the delegate, and so would the id: the ToastBody's id is `ovalBody`).
+- Probe lessons: it copies the JS helpers into its test tree by name (a new `.js` needs adding there or every scenario fails to load); the stock-card comparison strips the fork's additions from `Service.qml` with regexes, so a new block needs a matching strip; and a probe patch anchored on a source line (`margin: 40`) silently stops patching when that line changes.
+- **Not verified, needs the user** (checklist section I): how it looks and reads live (the text clearance on a real card, the soft edges over busy wallpapers, overlap in a stack), the oval's edge flare and the body's reveal mask in a real shell (a `layer.effect` that nothing here renders), and the lost countdown line.
+
 ## Conventions
 
 - Match the surrounding (Omarchy's) QML style in vendored files: terse comments that explain why, no tutorials.

@@ -40,6 +40,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 ev0;         // progress 0..1 (1 is arrived: the held state; outside 0..1, off), urgency (0 low, 1 normal, 2 critical), amplitude, salt
     vec4 ev1;
     vec4 ev2;
+    vec4 shape;       // the toast's oval body, when it has one: semi-axes as multiples of the card's half-size (x, y), the exponent (z), 1 if it has one (w)
 } ubuf;
 
 const vec3 N_IN = vec3(0.2000, 0.7686, 0.8157);
@@ -48,6 +49,14 @@ const vec3 C_IN = vec3(0.9569, 0.6200, 0.1800);
 const vec3 C_OUT = vec3(0.9490, 0.4784, 0.7000);
 const vec3 L_IN = vec3(0.5300, 0.6900, 0.4200);
 const vec3 L_OUT = vec3(0.2800, 0.6800, 0.7000);
+
+// The distance to a superellipse centred on the origin (first order: (g - 1) / |grad g|), negative inside: the toast's oval body (toastbody.frag).
+float ovalSd(vec2 p, vec2 ab, float n) {
+    vec2 u = max(abs(p) / ab, vec2(1e-4));
+    float g = pow(pow(u.x, n) + pow(u.y, n), 1.0 / n);
+    vec2 gr = pow(g, 1.0 - n) * pow(u, vec2(n - 1.0)) / ab;
+    return (g - 1.0) / max(length(gr), 1e-5);
+}
 
 vec3 arrival(vec2 px, vec4 rect, vec4 src, vec4 ev) {
     float p = ev.x;
@@ -67,9 +76,12 @@ vec3 arrival(vec2 px, vec4 rect, vec4 src, vec4 ev) {
     float vl = length(v);
     float sd = vl - ubuf.radius;                       // > 0 outside
     // The card hides what is under it, so fade out a little inside the outline, not outside it: no gap of dark right at the edge, no seam.
-    float outside = smoothstep(-2.5, -0.5, sd);
+    // With an oval body (ubuf.shape.w) nothing is hidden here: the body is soft and covers the glow itself, which shows through its feathered edge, and the halo
+    // hugs the oval, not the card's rectangle.
+    bool oval = ubuf.shape.w > 0.5;
+    float outside = oval ? 1.0 : smoothstep(-2.5, -0.5, sd);
     if (outside <= 0.0) return vec3(0.0);
-    float d = max(sd, 0.0);
+    float d = max(oval ? ovalSd(pp, 0.5 * rect.zw * ubuf.shape.xy, ubuf.shape.z) : sd, 0.0);
     vec2 q = centre + c + (vl > 1e-4 ? v / vl * ubuf.radius : vec2(0.0));
     float tEdge = length(q - src.xy);
 

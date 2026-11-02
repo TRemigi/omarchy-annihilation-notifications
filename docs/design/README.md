@@ -202,6 +202,16 @@ at once. Held rings are updated at 30 Hz (frame by frame only while something mo
 Open for the user to judge: the oval's proportions (`0.55` and `0.8` in the shader), the ease length (`RING_EASE_PX`), the ripple, whether a critical toast's ring should rest for ever, whether more than three
 rings are wanted. Note that at the top right of the screen the oval is cut by the screen's top and right edges (it is centred on the card).
 
+### The toast as an oval, not a card (2026-11-02, branch `p2/oval-body`; mock-ups in `docs/design/blend/`, not committed: they contain a frame of a screen recording)
+The user's brief again: the toast should blend into the arrival, not be a card inside it. Four mock-ups over the real ring on a frame of their screen: a feathered body (A), a translucent body lit from within (B), a pill (C). They chose A, found it "still way more of a
+card", asked for a wider feather, then went back to A's feather (26 px: solid 16 px inside the outline, gone 10 px outside) and asked for **the card to be oval**. Three ovals were mocked (an ellipse 1.30 x 1.35 of the card; superellipses of exponent 3 and 4); they chose **exponent 3, 1.12 x 1.20**,
+with **more padding between the text and the toast's edge**.
+How it works: `toastbody.frag` draws the oval (a superellipse, first-order distance) as premultiplied fill in the card's colour with a faint edge light in the toast's colours; it lies under the card (the card's own fill is transparent), and the card's
+layout gets 12 px more padding on each side and 6 above and below, which puts the text's corners about 4 px inside the solid zone (`BodyLogic.textClearance`; without the padding they were 7 px short of it, in the feather: the numbers were computed before building because the corners are the tight place for a
+superellipse). `toastring.frag` no longer hides the glow behind the card (`shape` uniform): the body covers it, the feather lets it show through, and the halo hugs the oval; `toastflare.frag`'s edge flare follows the oval too. The blend rim's edge, spill, halo and countdown line are off with an oval body
+(its soft edge replaces them; the icon ring and the faint spores stay). **The countdown line is gone for the blend look as a side effect** (it sat on the rectangle's bottom edge, which an oval does not have): if the user wants a countdown back, it has to follow the oval (an arc that drains along its lower edge is the obvious one).
+Setting `body=card` restores the card; `look=growth` is always a card. Not verified: how it looks live (checklist section I).
+
 ### The arrival leaves the card's centre; the column can be centred on the screen (2026-11-02, "try")
 The user asked to try the toasts at the **top centre of the screen** (they are at the top right, as in Omarchy) and the arrival **centred on the toast**: with the wave leaving the icon, which sits at the
 card's left, the ring seemed centred on the toast's top-left corner. Now the wave starts at the card's centre (`ArrivalFlare.origin`; a small spark there spreads into the front, `toastflare.frag`'s

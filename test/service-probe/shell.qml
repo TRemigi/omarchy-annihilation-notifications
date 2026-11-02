@@ -24,6 +24,7 @@ ShellRoot {
   function parseS(label, raw) { console.log("PROBE parseS " + label + " -> " + svc.parseSpores(raw)) }
   function parseL(label, raw) { console.log("PROBE parseL " + label + " -> " + svc.parseLook(raw)) }
   function parseA(label, raw) { console.log("PROBE parseA " + label + " -> " + svc.parseArrival(raw)) }
+  function parseB(label, raw) { console.log("PROBE parseB " + label + " -> " + svc.parseBody(raw)) }
   function parseP(label, raw) { console.log("PROBE parseP " + label + " -> " + svc.parsePosition(raw)) }
   function parseV(label, raw) { console.log("PROBE parseV " + label + " -> " + svc.parseVividness(raw)) }
 
@@ -38,6 +39,7 @@ ShellRoot {
     parseL("empty", ""); parseL("growth", "look=growth"); parseL("blend", "look=blend"); parseL("spaced", "  look = growth  "); parseL("unknown", "look=neon")
     parseL("beside others", "motion_slowdown=2\nlook=growth\n"); parseL("prefix only", "look=growthy"); parseL("glow", "look=glow"); parseL("later line wins", "look=blend\nlook=growth\n"); parseL("later line wins back", "look=growth\nlook=blend\n"); parseL("later unknown", "look=growth\nlook=neon\n"); parseL("glow prefix", "look=glowing"); parseL("other key", "xlook=growth")
     parseA("empty", ""); parseA("plain", "arrival=0.5"); parseA("zero", "arrival=0"); parseA("two", "arrival=2"); parseA("above", "arrival=3"); parseA("junk", "arrival=big"); parseA("later line wins", "arrival=0.5\narrival=1.5\n")
+    parseB("empty", ""); parseB("card", "body=card"); parseB("oval", "body=oval"); parseB("spaced", "  body = card  "); parseB("unknown", "body=square"); parseB("later wins", "body=card\nbody=oval\n"); parseB("later wins back", "body=oval\nbody=card\n"); parseB("prefix", "body=cardboard"); parseB("beside others", "look=blend\nbody=card\n"); parseB("other key", "somebody=card")
     parseP("empty", ""); parseP("center", "position=center"); parseP("right", "position=right"); parseP("spaced", "  position = center  "); parseP("unknown", "position=left"); parseP("later wins", "position=center\nposition=right\n"); parseP("later wins back", "position=right\nposition=center\n"); parseP("prefix", "position=centered"); parseP("beside others", "arrival=1\nposition=center\n")
     parseS("empty", ""); parseS("plain", "spore_amount=0.3"); parseS("zero", "spore_amount=0"); parseS("above", "spore_amount=2"); parseS("junk", "spore_amount=lots")
   }

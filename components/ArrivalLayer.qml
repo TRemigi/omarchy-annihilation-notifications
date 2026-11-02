@@ -12,6 +12,7 @@
 // into a flash. The layer is invisible, and costs nothing, while there are none, renders at half resolution (the light is soft) and takes no input.
 import QtQuick
 import "../ArrivalLogic.js" as ArrivalLogic
+import "../BodyLogic.js" as BodyLogic
 
 Item {
   id: root
@@ -19,6 +20,9 @@ Item {
   // The user's `arrival` setting, 0 to 2: how strong the arrival's light is; 0 means none.
   property real strength: 1
   property real cornerRadius: 4
+  // The toasts have an oval body (BodyLogic): nothing is then hidden behind a card, the body covers the glow itself, and the halo hugs the oval.
+  property bool oval: false
+  readonly property vector4d shape: oval ? Qt.vector4d(BodyLogic.OVAL_KX, BodyLogic.OVAL_KY, BodyLogic.OVAL_N, 1) : Qt.vector4d(0, 0, 0, 0)
   property real seed: Math.random() * 100
   // The whole window's height, for the ring's reach.
   property real screenHeight: 1080
@@ -171,6 +175,7 @@ Item {
     property vector4d ev0: root.evAt(0, root.nowMs)
     property vector4d ev1: root.evAt(1, root.nowMs)
     property vector4d ev2: root.evAt(2, root.nowMs)
+    property vector4d shape: root.shape
 
     fragmentShader: Qt.resolvedUrl("../shaders/toastring.frag.qsb")
   }

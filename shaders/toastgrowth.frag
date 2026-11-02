@@ -36,6 +36,7 @@ layout(std140, binding = 0) uniform buf {
     float spores;      // 0 to 1: the faint spores off the left edge (the user's spore_amount); 0 for none
     float seed;        // per toast, so no two grow alike
     float growth;      // 0 to 1: how far through its life the toast is (never goes back); the roots grow over it
+    float oval;        // unused here: toastrim.frag's (an oval body goes with the blend look only), kept so ToastRim feeds both shaders the same properties
 } ubuf;
 
 // Living colours: moss and teal for a normal toast, a darker moss for a low one, embers for a critical one.

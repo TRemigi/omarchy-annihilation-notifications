@@ -35,6 +35,10 @@ a short way round the card (about 60 px above and 41 px beyond its ends on a 108
 up, rippling slowly, with the halo breathing alongside. When the toast expires the oval shrinks back onto the card as the card dissolves into it. Critical toasts keep
 theirs until dismissed; a click removes it at once. Up to three rings are drawn at once.
 
+(Unreleased, branch `p2/oval-body`.) With the default blend look the **toast is an oval, not a card**: the rectangle, its fill and its border are gone, and the toast is a soft-edged oval (feathered over about 26 px, so it
+dissolves into the arrival's glow, which now runs under it) concentric with the ring, with more room between the text and its edge. The rim, the halo and the countdown line of the card are off with it (the icon's ring and the faint spores stay).
+`body=card` in the same file brings the card back; `look=growth` is always a card (its roots grow from a rectangle).
+
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and
 > know the [fallback](#falling-back-to-stock) before you need it.

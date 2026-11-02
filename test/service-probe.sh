@@ -20,7 +20,7 @@ has() { if [[ $3 == *"$2"* ]]; then pass=$((pass + 1)); else fail=$((fail + 1));
 cfg=$tmp/cfg; mkdir -p "$cfg/fork/components"
 for e in "$OMARCHY"/shell/*; do b=$(basename "$e"); [[ $b == shell.qml || $b == plugins ]] || ln -s "$e" "$cfg/$b"; done
 cp "$HERE/test/service-probe/shell.qml" "$cfg/shell.qml"
-cp "$HERE/Service.qml" "$HERE/NotificationLogic.js" "$HERE/ArrivalLogic.js" "$cfg/fork/"; cp "$HERE"/components/*.qml "$cfg/fork/components/"
+cp "$HERE/Service.qml" "$HERE/NotificationLogic.js" "$HERE/ArrivalLogic.js" "$HERE/BodyLogic.js" "$cfg/fork/"; cp "$HERE"/components/*.qml "$cfg/fork/components/"
 cp -r "$HERE/fonts" "$cfg/fork/fonts"                       # the card loads Jost and Cinzel from ../fonts
 python3 - "$cfg/fork" <<'PY'
 import re, sys
@@ -41,22 +41,25 @@ m = m.replace("  property var pendingDone: null",
   "  Component.onCompleted: console.log('PROBE motion created fx=' + fx + ' slowdown=' + slowdown + ' enterMs=' + enterMs)", 1)
 open(d + "components/SlotMotion.qml", "w").write(m)
 r = open(d + "components/ToastRim.qml").read()
-r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores + ' look=' + root.look + ' visible=' + root.visible + ' gate=' + root.gate.toFixed(2) + ' calm=' + root.calm + ' opacity=' + root.opacity.toFixed(2)) }\n  Timer { interval: 100; running: true; repeat: true; onTriggered: if (root.layer.enabled) console.log('PROBE rimmask ' + root.target.summary) }\n", 1)
+r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores + ' look=' + root.look + ' oval=' + root.oval + ' visible=' + root.visible + ' gate=' + root.gate.toFixed(2) + ' calm=' + root.calm + ' opacity=' + root.opacity.toFixed(2)) }\n  Timer { interval: 100; running: true; repeat: true; onTriggered: if (root.layer.enabled) console.log('PROBE rimmask ' + root.target.summary) }\n", 1)
 open(d + "components/ToastRim.qml", "w").write(r)
+tb = open(d + "components/ToastBody.qml").read()
+tb = tb.replace("  enabled: false                    // click-through\n", "  enabled: false                    // click-through\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE body ' + root.target.summary + ' visible=' + root.visible + ' size=' + Math.round(root.target.width) + 'x' + Math.round(root.target.height) + ' bodysize=' + Math.round(root.width) + 'x' + Math.round(root.height) + ' margin=' + root.margin + ' fill=' + root.fill.a.toFixed(2) + ' layer=' + root.layer.enabled + ' opacity=' + root.opacity.toFixed(2) + ' ui=' + root.ui.toFixed(2)) }\n", 1)
+open(d + "components/ToastBody.qml", "w").write(tb)
 sp = open(d + "components/SporeLayer.qml").read()
 sp = sp.replace("    if (!(amount > 0)) return\n", "    if (!(amount > 0)) return\n    console.log('PROBE burst urgency=' + urgency + ' size=' + Math.round(w) + 'x' + Math.round(h) + ' amount=' + amount)\n", 1)
 open(d + "components/SporeLayer.qml", "w").write(sp)
 a = open(d + "components/ArrivalFlare.qml").read()
 for ms, tag in ((150, "early"), (2300, "late")):
-    a = a.replace("  readonly property real margin: 40\n", "  readonly property real margin: 40\n  Timer { interval: " + str(ms) + "; running: true; onTriggered: console.log('PROBE arrival " + tag + " ' + root.target.summary + ' armed=' + root.armed"
+    a = a.replace("  readonly property real margin: 56\n", "  readonly property real margin: 56\n  Timer { interval: " + str(ms) + "; running: true; onTriggered: console.log('PROBE arrival " + tag + " ' + root.target.summary + ' armed=' + root.armed"
         " + ' revealing=' + root.revealing + ' p=' + root.p.toFixed(2) + ' front=' + root.front.toFixed(0) + ' gate=' + root.rimGate.toFixed(2) + ' opacity=' + root.target.opacity.toFixed(2)"
         " + ' scale=' + root.target.scale.toFixed(2) + ' layer=' + root.target.layer.enabled + ' reach=' + root.cardReach.toFixed(0) + ' w=' + root.target.width.toFixed(0) + ' h=' + root.target.height.toFixed(0) + ' ox=' + root.origin.x.toFixed(0) + ' oy=' + root.origin.y.toFixed(0) + ' visible=' + root.visible) }\n", 1)
-a = a.replace("  readonly property real margin: 40\n", "  readonly property real margin: 40\n  Timer { interval: 100; running: root.exiting; repeat: true; onTriggered: console.log('PROBE exitstate q=' + root.q.toFixed(2) + ' front=' + root.front.toFixed(0) + ' gate=' + root.rimGate.toFixed(2)"
+a = a.replace("  readonly property real margin: 56\n", "  readonly property real margin: 56\n  Timer { interval: 100; running: root.exiting; repeat: true; onTriggered: console.log('PROBE exitstate q=' + root.q.toFixed(2) + ' front=' + root.front.toFixed(0) + ' gate=' + root.rimGate.toFixed(2)"
     " + ' revealing=' + root.revealing + ' layer=' + root.target.layer.enabled + ' visible=' + root.visible + ' fade=' + root.fade.toFixed(2) + ' reach=' + root.cardReach.toFixed(0) + ' opacity=' + root.target.opacity.toFixed(2)) }\n", 1)
 open(d + "components/ArrivalFlare.qml", "w").write(a)
 al = open(d + "components/ArrivalLayer.qml").read()
 al = al.replace("  enabled: false                      // click-through\n", "  enabled: false                      // click-through\n  Timer { interval: 1500; running: true; onTriggered: console.log('PROBE layer events=' + root.events.length + ' active=' + root.active + ' strength=' + root.strength"
-    " + ' held=' + root.events.filter(function(e) { return e.hold }).length + ' holdreach=' + root.holdReach.toFixed(0) + ' exits=' + root.events.filter(function(e) { return e.exit }).length + ' fills=' + (root.parent !== null && root.width === root.parent.width && root.height === root.parent.height && root.width > 0) + ' amps=' + root.events.map(function(e) { return e.amp.toFixed(2) }).join(',') + ' reach=' + root.ringReach.toFixed(0) + ' first=' + (root.events.length ? root.events[0].w + 'x' + root.events[0].h + '@' + Math.round(root.events[0].x) + ',' + Math.round(root.events[0].y) + ' urg=' + root.events[0].urgency + ' amp=' + root.events[0].amp.toFixed(2) + ' dur=' + root.events[0].dur : 'none')) }\n", 1)
+    " + ' held=' + root.events.filter(function(e) { return e.hold }).length + ' holdreach=' + root.holdReach.toFixed(0) + ' oval=' + root.oval + ' shape=' + root.shape.x.toFixed(2) + ',' + root.shape.y.toFixed(2) + ',' + root.shape.z.toFixed(0) + ',' + root.shape.w.toFixed(0) + ' exits=' + root.events.filter(function(e) { return e.exit }).length + ' fills=' + (root.parent !== null && root.width === root.parent.width && root.height === root.parent.height && root.width > 0) + ' amps=' + root.events.map(function(e) { return e.amp.toFixed(2) }).join(',') + ' reach=' + root.ringReach.toFixed(0) + ' first=' + (root.events.length ? root.events[0].w + 'x' + root.events[0].h + '@' + Math.round(root.events[0].x) + ',' + Math.round(root.events[0].y) + ' urg=' + root.events[0].urgency + ' amp=' + root.events[0].amp.toFixed(2) + ' dur=' + root.events[0].dur : 'none')) }\n", 1)
 al = al.replace("  enabled: false                      // click-through\n", "  enabled: false                      // click-through\n  Timer { interval: 4400; running: Quickshell.env('PROBE_SCENARIO') === 'cards'; onTriggered: console.log('PROBE layerlate events=' + root.events.length + ' held=' + root.events.filter(function(e) { return e.hold }).length + ' exits=' + root.events.filter(function(e) { return e.exit }).length + ' busy=' + root.busy) }\n", 1)
 al = al.replace("  enabled: false                      // click-through\n", "  enabled: false                      // click-through\n  Timer { interval: 4500; running: Quickshell.env('PROBE_SCENARIO') === 'cards'; onTriggered: { root.events = [{ exit: true, p0: 0.4, from: 300, start: 100, dur: 1000, item: null, x: 0, y: 0, w: 1, h: 1, ix: 0, iy: 0, cardReach: 1, urgency: 1, amp: 1, salt: 0 }, { hold: true, item: root, start: 100, dur: 1000, x: 0, y: 0, w: 1, h: 1, ix: 0, iy: 0, cardReach: 1, urgency: 1, amp: 1, salt: 0 }, { hold: true, item: null, start: 100, dur: 1000, x: 0, y: 0, w: 1, h: 1, ix: 0, iy: 0, cardReach: 1, urgency: 1, amp: 1, salt: 0 }]; console.log('PROBE inj exitp=' + root.progressAt(0, 600).toFixed(3) + ' exitf=' + root.frontOf(0, 600).toFixed(0) + ' holdp=' + root.progressAt(1, 600).toFixed(1) + ' holdp_late=' + root.progressAt(1, 9000).toFixed(1) + ' live=' + root.live(Date.now()).length + ' heldof=' + (root.heldOf(root) === root.events[1]) + ' vec=' + root.evAt(0, 600).x.toFixed(3) + '/' + root.evAt(0, 600).z.toFixed(2)); root.end(root); console.log('PROBE ended events=' + root.events.length) } }\n", 1)
 al = al.replace("import QtQuick\n", "import QtQuick\nimport Quickshell\n", 1)
@@ -65,7 +68,8 @@ c = open(d + "components/NotificationCard.qml").read()
 probe = ("  Timer { interval: 700; running: true; onTriggered: console.log('PROBE card ' + root.summary + ' themed=' + root.themed"
          " + ' family=' + root.textFamily + ' jost=' + jostFont.status + ' cinzel=' + cinzelFont.status + ' caption=' + root.captionText + ' when=' + root.whenText"
          " + ' ring=' + root.iconRing.x.toFixed(0) + ',' + root.iconRing.y.toFixed(0) + ',' + root.iconRing.z.toFixed(0)"
-         " + ' size=' + Math.round(root.width) + 'x' + Math.round(root.height) + ' border=' + root.borderTop + ' bordercolor=' + root.cardBorderSpec.color) }\n")
+         " + ' size=' + Math.round(root.width) + 'x' + Math.round(root.height) + ' border=' + root.borderTop + ' bordercolor=' + root.cardBorderSpec.color"
+         " + ' oval=' + root.oval + ' pad=' + root.padX.toFixed(0) + ',' + root.padY.toFixed(0) + ' fillalpha=' + root.color.a.toFixed(2) + ' implw=' + Math.round(root.implicitWidth)) }\n")
 c = c.replace("  property bool themed: false\n", "  property bool themed: false\n" + probe, 1)
 open(d + "components/NotificationCard.qml", "w").write(c)
 PY
@@ -85,6 +89,8 @@ s = re.sub(r'^\s*ToastRim \{\n.*?^\s*Component\.onCompleted: ignite\(\)\n\s*\}\n
 s = re.sub(r'^\s*ArrivalFlare \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
 s = re.sub(r'^\s*ArrivalLayer \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
 s = re.sub(r'^\s*layer\.enabled: arrival\.revealing\n\s*layer\.effect: ShaderEffect \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+s = re.sub(r'^\s*ToastBody \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+s = re.sub(r'^\s*oval: service\.bodyOval.*\n', '', s, flags=re.M)
 s = re.sub(r'^\s*gate: arrival\.rimGate.*\n', '', s, flags=re.M)
 s = re.sub(r'^\s*calm: arrival\.armed.*\n', '', s, flags=re.M)
 s = s.replace(" || arrivalLayer.active", "")
@@ -169,6 +175,17 @@ check "position: the last line wins (center then right is right)" right "$(parse
 check "position: the last line wins (right then center is center)" center "$(parsedp 'later wins back')"
 check "position: a value that merely starts with center is not center" right "$(parsedp prefix)"
 check "position: found beside another key" center "$(parsedp 'beside others')"
+parsedb() { sed -n "s/^PROBE parseB $1 -> //p" <<<"$out"; }
+check "body: the default is oval" oval "$(parsedb empty)"
+check "body: card" card "$(parsedb card)"
+check "body: oval" oval "$(parsedb oval)"
+check "body: spaces around = are fine" card "$(parsedb spaced)"
+check "body: an unknown name means oval" oval "$(parsedb unknown)"
+check "body: the last line wins (card then oval is oval)" oval "$(parsedb 'later wins')"
+check "body: the last line wins (oval then card is card)" card "$(parsedb 'later wins back')"
+check "body: a value that merely starts with card is not card" oval "$(parsedb prefix)"
+check "body: found beside another key" card "$(parsedb 'beside others')"
+check "body: a key that merely ends in body is not body" oval "$(parsedb 'other key')"
 parsedv() { sed -n "s/^PROBE parseV $1 -> //p" <<<"$out"; }
 check "vividness: the default is 0.75" 0.75 "$(parsedv empty)"
 check "vividness: plain" 0.4 "$(parsedv plain)"
@@ -211,7 +228,7 @@ check "themed card: Omarchy's own toasts are captioned Omarchy" Omarchy "$(field
 check "themed card: a bare notify-send has no caption" "" "$(field "$ns" caption)"
 check "themed card: no icon means no ring" "0,0,0" "$(field "$sig" ring)"
 check "themed card: Omarchy's own border is made invisible (ToastRim draws the light)" transparent "$(field "$sig" bordercolor)"
-ring=$(field "$om" ring); check "themed card: a glyph icon gets a ring 17 px across, on the left, centred on the height" yes "$([[ $ring =~ ^34,[0-9]+,17$ ]] && echo yes || echo no)"
+ring=$(field "$om" ring); check "themed card: a glyph icon gets a ring 17 px across, on the left (46 px in: the oval body's 12 px of padding is added to the 34), centred on the height" yes "$([[ $ring =~ ^46,[0-9]+,17$ ]] && echo yes || echo no)"
 themed_h=$(field "$sig" size | sed 's/.*x//'); themed_b=$(field "$sig" border)
 out=$(run cards other)
 sig=$(cardline "from signal")
@@ -219,7 +236,9 @@ check "other theme: the card is stock (not themed, Omarchy's font)" "false Liber
 check "other theme: the border keeps its width when themed" "$(field "$sig" border)" "$themed_b"
 check "other theme: Omarchy's own border is kept" yes "$([[ -n $(field "$sig" bordercolor) && $(field "$sig" bordercolor) != transparent ]] && echo yes || echo no)"
 plain_h=$(field "$sig" size | sed 's/.*x//')
-check "the themed card is taller than stock by the caption row, and not by more than a line or two" yes "$([[ $themed_h -gt $plain_h && $((themed_h - plain_h)) -lt 30 ]] && echo yes || echo no)"
+check "the themed card is taller than stock by the caption row and the oval body's padding (12 px), and not by more than a line or two more" yes "$([[ $themed_h -gt $plain_h && $((themed_h - plain_h)) -lt 50 ]] && echo yes || echo no)"
+check "other theme: no oval body (no padding, no body, the card keeps its own fill)" "false 0,0 yes" "$(field "$sig" oval) $(field "$sig" pad) $([[ $(field "$sig" fillalpha) != 0.00 ]] && echo yes || echo no)"
+check "other theme: and the card is stock width" "380" "$(field "$sig" implw)"
 
 # -- the countdown follows the toast's own clock
 rimline() { grep "PROBE rim $1 " <<<"$out_cards" | head -n1; }
@@ -238,6 +257,24 @@ check "ambient spores: spore_amount=0.5 reaches the rim" 0.5 "$(rimval "$(grep '
 check "look: the rim is the blend by default" blend "$(rimval "$(rimline 'from signal')" look)"
 out_growth=$(run cards annihilation "look=growth")
 check "look: look=growth reaches the rim" growth "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_growth" | head -n1)" look)"
+# -- the oval body (the blend look's default): the toast is a soft-edged oval under the text, not a card with a border
+av() { sed -n "s/.* $2=\([^ ]*\).*/\1/p" <<<"$1"; }
+cs=$(grep "PROBE card from signal " <<<"$out_cards" | head -n1)
+check "oval body: by default the card is oval, padded 12 and 6 px, draws no fill of its own, and is 404 px wide (380 and 12 each side)" "true 12,6 0.00 404" "$(field "$cs" oval) $(field "$cs" pad) $(field "$cs" fillalpha) $(field "$cs" implw)"
+bs=$(grep "PROBE body from signal " <<<"$out_cards" | head -n1)
+check "oval body: the ToastBody is shown, and keeps the card's fill colour (opaque enough to read on)" "true yes" "$(field "$bs" visible) $([[ $(field "$bs" fill) > 0.5 ]] && echo yes || echo no)"
+check "oval body: it is the card's size and 80 px more on every side (the oval reaches 25 px past the card, and its feather)" yes "$(awk -v s="$(field "$bs" size)" -v b="$(field "$bs" bodysize)" 'BEGIN{split(s, a, "x"); split(b, c, "x"); print (c[1] - a[1] == 160 && c[2] - a[2] == 160) ? "yes" : "no"}')"
+check "oval body: the feather scales with the screen (ui is the pixels per design pixel, 1 here)" "ui=1.00" "ui=$(field "$bs" ui)"
+check "oval body: the rim knows (its edge, spill, halo and countdown line are off)" true "$(rimval "$(rimline 'from signal')" oval)"
+lyo=$(grep -m1 'PROBE layer ' <<<"$out_cards")
+check "oval body: the ring layer knows, so nothing is hidden behind a card and the halo hugs the oval" "oval=true shape=1.12,1.20,3,1" "oval=$(av "$lyo" oval) shape=$(av "$lyo" shape)"
+out_cardbody=$(run cards annihilation "body=card")
+cc=$(grep "PROBE card from signal " <<<"$out_cardbody" | head -n1); bc=$(grep "PROBE body from signal " <<<"$out_cardbody" | head -n1)
+check "body=card: the card is as it was: not oval, no padding, its own fill, 380 wide, the icon ring 34 px in" "false 0,0 yes 380" "$(field "$cc" oval) $(field "$cc" pad) $([[ $(field "$cc" fillalpha) != 0.00 ]] && echo yes || echo no) $(field "$cc" implw)"
+check "body=card: and there is no oval body, the rim has its edge back and the ring layer hides the glow behind the card" "false false oval=false shape=0.00,0.00,0,0" "$(field "$bc" visible) $(rimval "$(grep 'PROBE rim from signal ' <<<"$out_cardbody" | head -n1)" oval) oval=$(av "$(grep -m1 'PROBE layer ' <<<"$out_cardbody")" oval) shape=$(av "$(grep -m1 'PROBE layer ' <<<"$out_cardbody")" shape)"
+check "body=card: the ring x is 34 again" yes "$([[ $(field "$(grep 'PROBE card from omarchy ' <<<"$out_cardbody" | head -n1)" ring) =~ ^34, ]] && echo yes || echo no)"
+cg=$(grep "PROBE card from signal " <<<"$out_growth" | head -n1)
+check "look=growth: the card, not an oval (the roots grow from a rectangle): not oval, no padding, no body, the rim has its edge" "false 0,0 false false" "$(field "$cg" oval) $(field "$cg" pad) $(field "$(grep 'PROBE body from signal ' <<<"$out_growth" | head -n1)" visible) $(rimval "$(grep 'PROBE rim from signal ' <<<"$out_growth" | head -n1)" oval)"
 # -- the arrival: a front of light out of the icon, the card revealed by it, the ring under the cards, the rim handed over
 arrline() { grep "PROBE arrival $1 $2 " <<<"$3" | head -n1; }
 av() { sed -n "s/.* $2=\([^ ]*\).*/\1/p" <<<"$1"; }
