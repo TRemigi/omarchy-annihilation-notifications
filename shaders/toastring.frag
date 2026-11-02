@@ -81,9 +81,11 @@ vec3 arrival(vec2 px, vec4 rect, vec4 src, vec4 ev) {
     bool oval = ubuf.shape.w > 0.5;
     float outside = oval ? 1.0 : smoothstep(-2.5, -0.5, sd);
     if (outside <= 0.0) return vec3(0.0);
-    float d = max(oval ? ovalSd(pp, 0.5 * rect.zw * ubuf.shape.xy, ubuf.shape.z) : sd, 0.0);
+    float sdOval = oval ? ovalSd(pp, 0.5 * rect.zw * ubuf.shape.xy, ubuf.shape.z) : sd;
+    float d = max(sdOval, 0.0);
     vec2 q = centre + c + (vl > 1e-4 ? v / vl * ubuf.radius : vec2(0.0));
-    float tEdge = length(q - src.xy);
+    // the front is an oval of the toast's proportions when it has an oval body (as in cardreveal.frag)
+    float tEdge = length((q - src.xy) * (oval ? vec2(1.0, (ubuf.shape.x * rect.z) / (ubuf.shape.y * rect.w)) : vec2(1.0)));
 
     // How settled it is: the undulation grows in as the ring comes to rest.
     float held = smoothstep(0.5, 1.0, p);
@@ -91,14 +93,17 @@ vec3 arrival(vec2 px, vec4 rect, vec4 src, vec4 ev) {
     // plane waves in the layer's position, so the ripple is even all round the oval
     float ripple = 0.10 * sin(0.045 * px.x + 0.030 * px.y - 0.9 * t + ev.w) + 0.06 * sin(0.070 * px.x - 0.050 * px.y + 0.55 * t + 2.0 * ev.w) + 0.04 * sin(0.7 * t + ev.w);
 
-    // A few per cent of bend, smooth in position, so the ring is not a perfect ellipse.
+    // A few per cent of bend (half as much round an oval body, so the ring keeps the toast's shape), smooth in position, so the ring is not a perfect ellipse.
     vec2 b = (px - centre) / (4.0 * ubuf.reach);
-    float bend = 1.0 + 0.05 * sin(b.x * 2.3 + ubuf.seed * 3.1 + ev.w) * sin(b.y * 2.9 + ubuf.seed * 1.7 + 2.0 * ev.w);
+    float bend = 1.0 + (oval ? 0.025 : 0.05) * sin(b.x * 2.3 + ubuf.seed * 3.1 + ev.w) * sin(b.y * 2.9 + ubuf.seed * 1.7 + 2.0 * ev.w);
     // The ellipse and the pixel's distance from it (first order: k0 * (k0 - 1) / k1), plus the ripple.
-    vec2 ab = max(vec2(0.5 * rect.z + 0.55 * ubuf.reach, 0.5 * rect.w + 0.8 * ubuf.reach) * clamp(src.z, 0.0, 1.0) * bend, vec2(1.0));
+    // With an oval body the ring is the toast's own shape (a superellipse of the body's exponent) a fixed gap outside it, so it matches the toast; without one it is an ellipse
+    // (half the card plus 0.55 across and 0.8 up and down of `reach`).
+    vec2 abBody = 0.5 * rect.zw * ubuf.shape.xy;
+    vec2 ab = max((oval ? abBody + vec2(0.45 * ubuf.reach) : vec2(0.5 * rect.z + 0.55 * ubuf.reach, 0.5 * rect.w + 0.8 * ubuf.reach)) * clamp(src.z, 0.0, 1.0) * bend, vec2(1.0));
     vec2 e = px - centre;
     float k0 = length(e / ab), k1 = length(e / (ab * ab));
-    float dEll = k1 > 1e-6 ? k0 * (k0 - 1.0) / k1 : -min(ab.x, ab.y);
+    float dEll = oval ? ovalSd(e, ab, ubuf.shape.z) : (k1 > 1e-6 ? k0 * (k0 - 1.0) / k1 : -min(ab.x, ab.y));
     dEll += 0.6 * ubuf.reach * ripple * held;
 
     float travel = 1.0 - pow(1.0 - p, 3.0);
@@ -112,6 +117,8 @@ vec3 arrival(vec2 px, vec4 rect, vec4 src, vec4 ev) {
     float sigma = ubuf.reach * 0.3;
     float h = d / sigma;
     float halo = exp(-0.5 * h * h) * (1.0 - smoothstep(2.4, 3.4, h));
+    // with an oval body the glow fades out inward as well, behind the body's feathered edge, instead of sitting at full strength right up to it (a bright outline round a dark oval)
+    if (oval) halo *= smoothstep(-0.45 * ubuf.reach, 0.0, sdOval);
     float haloLife = smoothstep(0.0, 0.14, p) * mix(0.6, 1.0, pow(1.0 - p, 1.5)) * (1.0 + 0.15 * held * sin(0.9 * t + ev.w + 0.020 * px.x));
     float behind = 1.0 - smoothstep(src.w - 30.0, src.w + 40.0, tEdge);
     vec3 haloCol = mix(inner, vec3(1.0, 0.95, 0.88), 0.10);

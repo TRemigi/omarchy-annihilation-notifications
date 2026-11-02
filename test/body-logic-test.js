@@ -19,24 +19,32 @@ ok("shape: exponent 3 is fuller in the corners than an ellipse", ctx.ovalDistanc
 ok("distance: finite at the centre", isFinite(ctx.ovalDistance(0, 0, 100, 50, 3)))
 
 // the feather
-near("feather: solid 16 px inside the outline", 1, ctx.feather(-16), 1e-9)
+near("feather: solid 22 px inside the outline", 1, ctx.feather(-22), 1e-9)
 near("feather: and deeper", 1, ctx.feather(-60), 1e-9)
-near("feather: gone 10 px outside", 0, ctx.feather(10), 1e-9)
+near("feather: gone 22 px outside", 0, ctx.feather(22), 1e-9)
 near("feather: and further out", 0, ctx.feather(80), 1e-9)
 { let mono = true, prev = 1; for (let s = -30; s <= 30; s += 0.5) { const v = ctx.feather(s); if (v > prev + 1e-12) mono = false; prev = v }
   ok("feather: only ever falls as you go out", mono) }
-ok("feather: at the outline it is under a half (a soft edge: the body is mostly inside it)", ctx.feather(0) > 0.2 && ctx.feather(0) < 0.45, ctx.feather(0))
-ok("feather: no step: a pixel's change is small (under 0.1)", (() => { let worst = 0; for (let s = -20; s < 14; s += 0.25) worst = Math.max(worst, Math.abs(ctx.feather(s) - ctx.feather(s + 0.25))); return worst < 0.1 })())
+near("feather: half-way at the outline (a feather 44 px wide, symmetric: the edge is not a line)", 0.5, ctx.feather(0), 1e-9)
+ok("feather: no step: a pixel's change is small (under 0.04: the steepest of a 44 px smoothstep is 0.034)", (() => { let worst = 0; for (let s = -30; s < 30; s += 0.25) worst = Math.max(worst, Math.abs(ctx.feather(s) - ctx.feather(s + 0.25)) * 4); return worst < 0.04 })())
 
 // the padding: the text's corners sit in the solid zone (a card of 380 x 80 design px and 404 x 92 once padded)
 const before = ctx.textClearance(380, 80, 14, 12)
 const after = ctx.textClearance(380 + 2 * ctx.PAD_X, 80 + 2 * ctx.PAD_Y, 14 + ctx.PAD_X, 12 + ctx.PAD_Y)
-ok("padding: without it the text's corners are in the feather (about 7 px short of the solid zone)", before < -4 && before > -10, before)
-ok("padding: with it they are inside the solid zone, by a few px", after > 3, after)
+ok("padding: without it the text's corners are in the feather (about 10 px short of the solid zone)", before < -5 && before > -14, before)
+ok("padding: with it they are inside the solid zone (98% opaque), by a couple of px", after > 1, after)
 ok("padding: and it is a real change, over 10 px of room gained", after - before > 10, after - before)
 ok("padding: a toast with one line (a card as low as 56 design px) is still clear of the feather", ctx.textClearance(404, 56 + 2 * ctx.PAD_Y, 14 + ctx.PAD_X, 9 + ctx.PAD_Y) > 0, ctx.textClearance(404, 56 + 2 * ctx.PAD_Y, 14 + ctx.PAD_X, 9 + ctx.PAD_Y))
-ok("padding: and a tall one (three lines of body, 130 px)", ctx.textClearance(404, 130 + 2 * ctx.PAD_Y, 14 + ctx.PAD_X, 12 + ctx.PAD_Y) > 0, ctx.textClearance(404, 142, 26, 18))
+ok("padding: and a tall one (three lines of body, 130 px): at most 4 px short of the 98% zone, so still 95% opaque at the corners", ctx.textClearance(404, 130 + 2 * ctx.PAD_Y, 14 + ctx.PAD_X, 12 + ctx.PAD_Y) > -4, ctx.textClearance(404, 142, 26, 18))
 { // the oval does not stick out far: at most about 25 px past the card's side and 10 past its top and bottom
   const w = 404, h = 92, a = w / 2 * ctx.OVAL_KX, b = h / 2 * ctx.OVAL_KY
   ok("size: it reaches no more than 26 px past the card's ends and 11 past its top and bottom", a - w / 2 <= 26 && b - h / 2 <= 11, [a - w / 2, b - h / 2]) }
+// the solid depth, and the oval front
+near("solid depth: the body is 98% opaque about 18 px in", 18.4, ctx.solidDepth(), 0.3)
+near("aspect: the front's vertical stretch is the body's half-width over half-height (404 x 92: 1.12 x 1.2)", (404 * 1.12) / (92 * 1.2), ctx.ovalAspect(404, 92), 1e-9)
+{ const w = 404, h = 92, reach = ctx.ovalFrontReach(w, h), a = w / 2 * 1.12, k = ctx.ovalAspect(w, h)
+  ok("front reach: more than the body's half-width (the corners of the oval are further than its ends: a superellipse of exponent 3 reaches 1.12 times its half-width), plus the feather", reach > a * 1.12 + 22 && reach < a * 1.12 + 22 + 25, [reach, a])
+  // every point of the body's outline and feather is inside the front at that reach
+  let inside = true; for (let i = 0; i < 720; i++) { const t = i * Math.PI / 360, c = Math.cos(t), s = Math.sin(t), x = a * Math.sign(c) * Math.pow(Math.abs(c), 2 / 3), y = h / 2 * 1.2 * Math.sign(s) * Math.pow(Math.abs(s), 2 / 3); if (Math.hypot(x, y * k) > reach - 22) inside = false }
+  ok("front reach: the whole outline is inside the front, with the feather's width to spare", inside) }
 console.log(pass + " passed, " + fail + " failed"); process.exit(fail ? 1 : 0)

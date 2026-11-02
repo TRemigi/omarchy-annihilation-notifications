@@ -430,6 +430,9 @@ The brief: the toast should blend into the arrival, not be a card inside it. Cho
   `toastring.frag` and `toastflare.frag` take `shape` (kx, ky, n, on): with it on, nothing is hidden behind a card, the halo hugs the oval, and the edge flare follows it.
 - Setting `body` (`oval` default, or `card`), parsed by `parseBody`; the service property is `bodyStyle` (a `body` property would shadow the notification's body text in the delegate, and so would the id: the ToastBody's id is `ovalBody`).
 - Probe lessons: it copies the JS helpers into its test tree by name (a new `.js` needs adding there or every scenario fails to load); the stock-card comparison strips the fork's additions from `Service.qml` with regexes, so a new block needs a matching strip; and a probe patch anchored on a source line (`margin: 40`) silently stops patching when that line changes.
+- **Round two (first live look: "not very feathered", "the arrival's shape should match the toast"):** the halo was a plateau inside the outline (a bright outline round a dark oval): it now fades inward; the feather is 22 + 22 px; the ring is the body's superellipse plus a gap
+  (not a fixed-axis ellipse); the front (reveal mask, flare, halo mask) is an oval via `aspect`. The uniform `aspect` is in `cardreveal.frag` and `toastflare.frag`: **the harness leaves unset uniforms at 0, so a test helper that does not pass it renders a degenerate front** (existing helpers now pass `aspect=1`).
+  Lesson: look at the recording for *what draws the edge you see* (here a bright halo behind the soft edge), not only at the edge's own profile.
 - **Not verified, needs the user** (checklist section I): how it looks and reads live (the text clearance on a real card, the soft edges over busy wallpapers, overlap in a stack), the oval's edge flare and the body's reveal mask in a real shell (a `layer.effect` that nothing here renders), and the lost countdown line.
 
 ## Conventions

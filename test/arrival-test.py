@@ -162,16 +162,35 @@ check("ring: a second arrival draws its own light round its own card, and amber 
 # ---- the oval body: nothing is hidden behind the card, and the halo hugs the oval, not the rectangle
 SHAPE = (1.12, 1.20, 3.0, 1.0)         # BodyLogic: semi-axes 1.12 and 1.2 of the card's half-size, exponent 3; the last is "on"
 on_, off_ = ring(front=RC + WAVE, p=1.0, shape=SHAPE), ring(front=RC + WAVE, p=1.0)
-check("ring (oval body): nothing is hidden behind the card any more: the glow is drawn inside the card's rectangle too (the body, which is soft, covers it); with no oval body it is not", lum(px(on_, 400, 139)) > 5 and lum(px(off_, 400, 139)) == 0, (px(on_, 400, 139), px(off_, 400, 139)))
+check("ring (oval body): nothing is hidden behind the card any more: the glow is drawn inside the card's rectangle near the oval's edge too (the body, which is soft, covers it); with no oval body it is not", lum(px(on_, 490, 108)) > 5 and lum(px(off_, 490, 108)) == 0, (px(on_, 490, 108), px(off_, 490, 108)))
+check("ring (oval body): the glow fades out going inward, behind the body's feathered edge, not a plateau at full strength right up to it: deep inside the oval (47 px in) it is under a fifth of what it is at the outline", lum(px(on_, 490, 139)) < 0.2 * max(lum(px(on_, 490, 92)), 1), (px(on_, 490, 139), px(on_, 490, 92)))
 check("ring (oval body): the halo hugs the oval: 30 px above the oval's top (y = 62) it is brighter than with the card's rectangle, whose edge is 38 px below that", lum(px(on_, 490, 62)) > 1.15 * lum(px(off_, 490, 62)) + 1, (px(on_, 490, 62), px(off_, 490, 62)))
-check("ring (oval body): and it reaches past the card's ends where the oval does (the tip is 23 px beyond the card's right edge: 17 px past it the halo is lit, more than with the card's edge)", lum(px(on_, 720, 139)) > lum(px(off_, 720, 139)) + 2, (px(on_, 720, 139), px(off_, 720, 139)))
-check("ring (oval body): the ring itself is unchanged (an oval from the card's centre: the same far above the card)", abs(lum(px(on_, 490, 40)) - lum(px(off_, 490, 40))) < 0.2 * max(lum(px(off_, 490, 40)), 4), (px(on_, 490, 40), px(off_, 490, 40)))
+halo_on, halo_off = ring(front=RC + WAVE, p=1.0, scale=0.0, shape=SHAPE), ring(front=RC + WAVE, p=1.0, scale=0.0)       # the ring shrunk to nothing: the halo alone
+check("ring (oval body): the halo reaches past the card's ends where the oval does (the tip is 23 px beyond the card's right edge: 17 px past it the halo is lit, more than with the card's edge)", lum(px(halo_on, 720, 139)) > lum(px(halo_off, 720, 139)) + 2, (px(halo_on, 720, 139), px(halo_off, 720, 139)))
+# the ring is the toast's shape, a fixed gap outside it: the distance from the body's outline to the ring's peak is the same all round
+def body_sd(x, y):
+    a, b, n = 190 * 1.12, 39 * 1.20, 3.0
+    ux, uy = max(abs(x - 490) / a, 1e-4), max(abs(y - 139) / b, 1e-4); g = (ux ** n + uy ** n) ** (1 / n)
+    return (g - 1) / math.hypot(g ** (1 - n) * ux ** (n - 1) / a, g ** (1 - n) * uy ** (n - 1) / b)
+ringfull = ring(front=RC + WAVE, p=0.45, time=0.0, shape=SHAPE, strength=1.0)       # before the ripple begins (it grows in from p = 0.5), so only the shape is measured
+def ring_gap(dx, dy):
+    n_ = math.hypot(dx, dy); dx, dy = dx / n_, dy / n_
+    # along the ray from the centre (dx, dy), the signed distance to the body of the brightest pixel beyond the outline
+    best = max(((lum(px(ringfull, 490 + dx * t, 139 + dy * t)), t) for t in [i * 0.5 for i in range(40, 800)] if 0 <= 490 + dx * t < LW and 0 <= 139 + dy * t < LH and body_sd(490 + dx * t, 139 + dy * t) > 8), default=(0, 0))
+    return body_sd(490 + dx * best[1], 139 + dy * best[1])
+# the directions: top, bottom, both ends, and through the body's corners (where an ellipse and the squarer body differ most: 79% along both axes)
+CORNER = (212.8 * 0.794, -46.8 * 0.794)
+gaps = [ring_gap(*d) for d in ((0, -1), (0, 1), (1, 0), (-1, 0), CORNER, (-CORNER[0], -CORNER[1]), (CORNER[0], -CORNER[1]), (-CORNER[0], CORNER[1]))]
+check("ring (oval body): the ring is the toast's shape a fixed gap outside it: its distance from the body's outline (top, bottom, both ends, two diagonals) is the same all round (measured 14 px apart at most, because the first-order distance is not exactly the offset curve and the ring bends 2.5%; a plain ellipse against the squarer body is 23 apart) and about 0.45 * reach (34 px) at the ends", max(gaps) - min(gaps) < 17.5 and 22 < sum(gaps[:4]) / 4 < 42, gaps)
 check("ring (oval body): the light is still only added light (alpha 0)", maxalpha(on_) == 0)
+# the halo is revealed by the oval front: 8 px above the top edge, over the middle, an oval front of aspect 4.55 (212.8 / 46.8) has not got there at front 100 (it is 177 away), a circular one has (39 away)
+h_oval, h_circ = ring(front=100.0, p=0.05, scale=0.0, shape=SHAPE), ring(front=100.0, p=0.05, scale=0.0)
+check("ring (oval body): the halo comes in behind the oval front, not a circular one: above the middle of the card at front 100 it is not there yet with an oval body, and is there without", lum(px(h_oval, 490, 92)) < 0.25 * max(lum(px(h_circ, 490, 92)), 1) and lum(px(h_circ, 490, 92)) > 4, (px(h_oval, 490, 92), px(h_circ, 490, 92)))
 
 # ---------------------------------------------------------------------------- the flare (on the card)
 OW, OH = 460, 158; FC = (40, 40, 380, 78); FI = (74, 79, 17); FO = (230, 79)   # the card, the icon ring, the wave's origin (the card's centre)
-def flare(front=100.0, fade=1.0, urgency=1, strength=1.0, icon=FI, reverse=0, origin=FO):
-    return render(FLARE, OW, OH, strength=strength, urgency=urgency, radius=4, front=front, fade=fade, reverse=reverse, size=(OW, OH), card=FC, icon=icon, origin=origin)
+def flare(front=100.0, fade=1.0, urgency=1, strength=1.0, icon=FI, reverse=0, origin=FO, aspect=1.0):
+    return render(FLARE, OW, OH, strength=strength, urgency=urgency, radius=4, front=front, fade=fade, reverse=reverse, aspect=aspect, size=(OW, OH), card=FC, icon=icon, origin=origin)
 fl = flare(front=120.0)
 check("flare: the output is added light (alpha 0)", maxalpha(fl) == 0)
 check("flare: nothing far from the card", lum(px(fl, 3, 3)) == 0 and lum(px(fl, 455, 150)) == 0)
@@ -212,7 +231,7 @@ check("flare (exit): the icon is still lit while the front is beyond it, and out
 check("flare (exit): the arrival's picture is unchanged by the flag being 0 (explicit 0 and absent are the same)", flare(front=120.0, reverse=0)[2] == fl[2])
 
 # the oval body: the edge that flares is the oval's, not the card's rectangle
-def flare_shape(front, shape): return render(FLARE, OW, OH, strength=1.0, urgency=1, radius=4, front=front, fade=1.0, reverse=0, size=(OW, OH), card=FC, icon=(0, 0, 0), origin=FO, shape=shape)
+def flare_shape(front, shape, aspect=1.0): return render(FLARE, OW, OH, strength=1.0, urgency=1, radius=4, front=front, fade=1.0, reverse=0, aspect=aspect, size=(OW, OH), card=FC, icon=(0, 0, 0), origin=FO, shape=shape)
 def edge_row(img, x, y0, y1): return max(range(y0, y1), key=lambda y: lum(px(img, x, y)))
 fr, fo = flare_shape(400.0, (0, 0, 0, 0)), flare_shape(400.0, (1.12, 1.20, 3.0, 1.0))
 check("flare (oval body): with none the edge that flares above the middle is the card's top (y = 40); with an oval body it is the oval's top, about 8 px higher (y = 32)", abs(edge_row(fr, 230, 20, 60) - 40) <= 2 and abs(edge_row(fo, 230, 20, 60) - 32) <= 3, (edge_row(fr, 230, 20, 60), edge_row(fo, 230, 20, 60)))
@@ -220,12 +239,18 @@ check("flare (oval body): and at the right end it is the oval's tip, 23 px beyon
 check("flare (oval body): added light still (alpha 0), and with shape off the picture is the old one", maxalpha(fo) == 0 and fr[2] == flare(front=400.0, icon=(0, 0, 0))[2])
 
 # ---------------------------------------------------------------------------- the reveal mask (an unbound texture reads as opaque black: the alpha is the mask)
-def mask(front, x, y): return px(render(REVEAL, 380, 78, front=front, size=(380, 78), origin=(190, 39)), x, y)[3]
+def mask(front, x, y, aspect=1.0): return px(render(REVEAL, 380, 78, front=front, aspect=aspect, size=(380, 78), origin=(190, 39)), x, y)[3]
 check("reveal: the middle of the card is solid once the front has left it", mask(40, 190, 39) == 255)
 check("reveal: far beyond the front is nothing yet, on both sides", mask(40, 360, 39) == 0 and mask(40, 20, 39) == 0)
 check("reveal: far behind the front is solid", mask(400, 360, 39) == 255)
 check("reveal: the edge of the front is soft", 0 < mask(100, 290, 39) < 255, mask(100, 290, 39))
 check("reveal: it is round, centred on the card's middle (60 px across and 60 px diagonally are the same; and the same each side)", abs(mask(60, 250, 39) - mask(60, 236, 77)) < 20 and abs(mask(60, 250, 39) - mask(60, 130, 39)) < 20, (mask(60, 250, 39), mask(60, 236, 77), mask(60, 130, 39)))
+
+# the oval front: with an aspect the front is an oval (the distance is stretched vertically), not a circle
+check("reveal (oval front): with aspect 4, 30 px above the centre is as far as 120 px to the side: both are shown at front 160 and neither at 100", mask(100, 190, 39 - 30, 4.0) == 0 and mask(100, 190 + 120, 39, 4.0) == 0 and mask(160, 190, 39 - 30, 4.0) == 255 and mask(160, 190 + 120, 39, 4.0) == 255, [mask(100, 190, 9, 4.0), mask(100, 310, 39, 4.0), mask(160, 190, 9, 4.0), mask(160, 310, 39, 4.0)])
+check("reveal (oval front): and with aspect 1 it is the circle it was (30 px above is shown at front 100)", mask(100, 190, 9, 1.0) == 255)
+a4, a1 = flare(front=156.0, aspect=4.0), flare(front=156.0, aspect=1.0)
+check("flare (oval front): with aspect 4 the wavefront is on the top edge above the middle at front 156 (39 px up, stretched 4 times), much brighter there than with a circular front, for which that edge is long since passed", lum(px(a4, 230, 41)) > 3 * lum(px(a1, 230, 41)), (px(a4, 230, 41), px(a1, 230, 41)))
 
 # ---------------------------------------------------------------------------- the QML feeds what the shaders declare
 def uniforms(path):

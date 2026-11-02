@@ -5,8 +5,9 @@
 //
 // The shape is a superellipse of exponent `shape.z` (3: an oval with fuller ends than an ellipse, so the text in the corners stays on it) concentric with the card, its
 // semi-axes the card's half-size times `shape.xy`. The distance to it is the usual first-order one, (g - 1) / |grad g|, so the feather is as wide at the ends as on top.
-// The fill is solid 16 px inside the outline and gone 10 px outside it (design px: times `ui`, the pixels per design px), so the oval dissolves into the arrival's glow, which runs
-// under it (toastring.frag no longer hides it behind the card). Chosen from mock-ups on 2026-11-02 (docs/design/blend/). Rebuild with tools/build-shaders.sh after editing.
+// The fill is solid 22 px inside the outline and gone 22 px outside it (design px: times `ui`, the pixels per design px: a feather 44 px wide, widened from 26 after the first live look, where the
+// edge still read as crisp), and takes on the glow's colour toward its outer edge, so the oval dissolves into the arrival's glow, which runs under it (toastring.frag no longer hides it behind the
+// card). Chosen from mock-ups on 2026-11-02 (docs/design/blend/). Rebuild with tools/build-shaders.sh after editing.
 
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
@@ -43,11 +44,14 @@ void main() {
     vec2 centre = ubuf.card.xy + 0.5 * ubuf.card.zw;
     float sd = ovalSd(px - centre, 0.5 * ubuf.card.zw * ubuf.shape.xy, ubuf.shape.z);
     float u = ubuf.ui;
-    if (sd > 14.0 * u) { fragColor = vec4(0.0); return; }
+    if (sd > 24.0 * u) { fragColor = vec4(0.0); return; }
 
-    float alpha = ubuf.fill.a * (1.0 - smoothstep(-16.0 * u, 10.0 * u, sd));
+    float alpha = ubuf.fill.a * (1.0 - smoothstep(-22.0 * u, 22.0 * u, sd));
     float across = clamp((px.x - ubuf.card.x) / ubuf.card.z, 0.0, 1.0);
-    float edge = exp(-pow((sd + 4.0 * u) / (9.0 * u), 2.0));
-    vec3 light = edgeColour(across, ubuf.urgency) * edge * 0.17 * (0.7 + 0.3 * ubuf.vividness);
-    fragColor = vec4(ubuf.fill.rgb * alpha + light, alpha) * ubuf.qt_Opacity;
+    vec3 glow = edgeColour(across, ubuf.urgency);
+    // toward the outer edge the body is tinted with the glow (a dark fill fading out over a bright glow reads as a dark smudge with an outline; this makes it a soft edge)
+    vec3 fillRgb = mix(ubuf.fill.rgb, glow * 0.30, 0.55 * smoothstep(-8.0 * u, 20.0 * u, sd));
+    float edge = exp(-pow((sd + 2.0 * u) / (16.0 * u), 2.0));
+    vec3 light = glow * edge * 0.12 * (0.7 + 0.3 * ubuf.vividness);
+    fragColor = vec4(fillRgb * alpha + light, alpha) * ubuf.qt_Opacity;
 }

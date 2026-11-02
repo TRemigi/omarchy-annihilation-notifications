@@ -1162,6 +1162,7 @@ Item {
               layer.enabled: arrival.revealing
               layer.effect: ShaderEffect {
                 property real front: arrival.front
+                property real aspect: arrival.aspect
                 property size size: Qt.size(ovalBody.width, ovalBody.height)
                 property vector2d origin: Qt.vector2d(ovalBody.margin + arrival.origin.x, ovalBody.margin + arrival.origin.y)
                 fragmentShader: Qt.resolvedUrl("shaders/cardreveal.frag.qsb")
@@ -1193,6 +1194,7 @@ Item {
               layer.enabled: arrival.revealing
               layer.effect: ShaderEffect {
                 property real front: arrival.front
+                property real aspect: arrival.aspect
                 property size size: Qt.size(card.width, card.height)
                 property vector2d origin: arrival.origin
                 fragmentShader: Qt.resolvedUrl("shaders/cardreveal.frag.qsb")
@@ -1212,6 +1214,7 @@ Item {
               layer.enabled: arrival.exiting && arrival.revealing
               layer.effect: ShaderEffect {
                 property real front: arrival.front
+                property real aspect: arrival.aspect
                 property size size: Qt.size(rim.width, rim.height)
                 property vector2d origin: Qt.vector2d(rim.margin + arrival.origin.x, rim.margin + arrival.origin.y)
                 fragmentShader: Qt.resolvedUrl("shaders/cardreveal.frag.qsb")

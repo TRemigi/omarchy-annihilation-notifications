@@ -41,7 +41,9 @@ Item {
   // Where the wave starts, in the card's pixels: the card's centre, so the arrival is centred on the toast (it used to leave the icon, which sits at the
   // card's left, so the ring seemed centred on the toast's top left corner). The icon's own ring lights as the front reaches it.
   readonly property vector2d origin: Qt.vector2d(target.width / 2, target.height / 2)
-  readonly property real cardReach: ArrivalLogic.cardReach(origin.x, origin.y, target.width, target.height)
+  // With an oval body the front is an oval of the toast's proportions (`aspect` stretches the distance vertically; 1 is the circle it was), and has to go as far as the body does.
+  readonly property real aspect: target.oval ? BodyLogic.ovalAspect(target.width, target.height) : 1
+  readonly property real cardReach: target.oval ? BodyLogic.ovalFrontReach(target.width, target.height) : ArrivalLogic.cardReach(origin.x, origin.y, target.width, target.height)
   // where the exit's front starts (set when the exit begins)
   property real exitFromPx: 0
   readonly property real front: exiting ? ArrivalLogic.exitFront(q, exitFromPx) : (armed ? ArrivalLogic.frontAt(p, cardReach, ring.ringReach) : -1)
@@ -108,6 +110,7 @@ Item {
     property real front: Math.max(0, root.front)
     property real fade: root.fade
     property real reverse: root.exiting ? 1 : 0
+    property real aspect: root.aspect
     property size size: Qt.size(width, height)
     property vector4d card: Qt.vector4d(root.margin, root.margin, root.target.width, root.target.height)
     property vector2d origin: Qt.vector2d(root.margin + root.origin.x, root.margin + root.origin.y)

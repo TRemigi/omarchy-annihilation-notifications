@@ -252,9 +252,10 @@ Restart the shell after updating (`omarchy restart shell`); a slow `motion_slowd
 ## I. The oval toast (P2, branch `p2/oval-body`; annihilation theme, blend look)
 
 The toast is a soft-edged oval under the text, not a card. Restart the shell after syncing; `motion_slowdown=3` makes the arrival easy to watch. `body=card` in the fork's conf file turns it off.
-- [ ] there is no rectangle, border or crisp rim: the toast reads as an oval that dissolves into the glow, concentric with the ring
+- [ ] there is no rectangle, border or crisp rim: the toast reads as an oval that **dissolves into the glow** over a wide soft edge (about 44 px), with no bright outline round it
+- [ ] the ring is **the toast's shape** a steady gap outside it (squarish like the toast, not rounder, not hugging the ends and floating off the top)
 - [ ] the text has comfortable room from the oval's edge, **including the caption and the "now" at the top corners** and the last line of a three-line body; nothing is cut or sits on the faint edge
-- [ ] the arrival: the oval appears with the wave (no card-shaped flash, the edge flare follows the oval); the exit takes it away with the card's dissolve
+- [ ] the arrival: the toast appears as an **oval front** growing from its centre (not a circle cutting it open), the edge flare follows the oval; the exit takes it away with the card's dissolve
 - [ ] with several toasts the ovals overlap only in their soft edges, and a toast still reads clearly over a busy wallpaper
 - [ ] the icon's ring is still round the icon, and a critical toast's colours (amber to pink) show on the oval's edge
 - [ ] the countdown line is gone (known: it belongs to the card's rectangle); say if you want it back, along the oval

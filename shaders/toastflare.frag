@@ -23,6 +23,7 @@ layout(std140, binding = 0) uniform buf {
     float front;       // px from the origin
     float fade;        // 0 to 1
     float reverse;     // 0 for the arrival, 1 for the exit
+    float aspect;      // the front is an oval of this vertical stretch (1: a circle), as in cardreveal.frag
     vec2 size;         // the overlay's size, px
     vec4 card;         // the card inside it: x, y, width, height, px
     vec3 icon;         // the icon ring: centre x, centre y, radius; radius <= 0 for none
@@ -59,7 +60,8 @@ void main() {
     if (ubuf.urgency > 1.5) { inner = C_IN; outer = C_OUT; }
     else if (ubuf.urgency < 0.5) { inner = L_IN; outer = L_OUT; }
 
-    float dist = length(px - ubuf.origin);
+    vec2 stretch = vec2(1.0, ubuf.aspect);
+    float dist = length((px - ubuf.origin) * stretch);
     float across = clamp((px.x - ubuf.card.x) / ubuf.card.z, 0.0, 1.0);
     vec3 col = mix(inner, outer, smoothstep(0.0, 1.0, across));
 
@@ -82,7 +84,7 @@ void main() {
         float core = exp(-pow(r / 2.6, 2.0));
         float ringHalo = exp(-max(r - ubuf.icon.z, 0.0) / 5.0) * 0.10 * step(ubuf.icon.z, r);
         // lit once the front has reached the icon (and out again as the exit's front retreats past it)
-        float born = 1.0 - smoothstep(ubuf.front - 16.0, ubuf.front + 10.0, length(ubuf.icon.xy - ubuf.origin));
+        float born = 1.0 - smoothstep(ubuf.front - 16.0, ubuf.front + 10.0, length((ubuf.icon.xy - ubuf.origin) * stretch));
         rgb += inner * (ring * 0.85 + core * 1.1 + ringHalo) * born * ubuf.fade;
     }
 
