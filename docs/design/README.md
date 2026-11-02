@@ -143,7 +143,7 @@ card with the windows' band reads as a bevelled frame). Regenerate: `python3 doc
 | `glow-1-windowed.png` | Each toast is a window: same light, band and colour as the window it overlaps; its colour follows the field at its place, urgency only leans it (amber for critical, moss for low). |
 | `glow-2-one-body.png` | The stack as one shape: the cards smoothly merged, the gaps become necks, the seams hairlines, the glow only on the outer outline. |
 | `glow-3-docked.png` | The same body flush with the screen edge, as if it grew out of it. |
-| `glow-arrival.png` | The arrival as one event: a front leaves the icon; the card is solid inside it and nothing beyond; the edge flares as the front crosses it; the ring goes on out into the screen. |
+| `glow-arrival.png` | The arrival as one event: a front leaves the icon (the first design; the arrival below leaves the card's centre); the card is solid inside it and nothing beyond; the edge flares as the front crosses it; the ring goes on out into the screen. |
 | `scene.png` | The window glow alone. |
 
 Not designed yet: what the countdown becomes (the toast's own light dimming over its life is the candidate), the exit (the card
@@ -180,3 +180,11 @@ space looked wrong); the spore at the icon goes out last. The spores the toast l
 shut once the dissolve is 80% done so the stack closes up behind it (1.1 s in all, times `motion_slowdown`). It is the arrival's wave from the progress at which the front is
 15% beyond the card (`ArrivalLogic.exitStart`, derived from the geometry so it holds on any screen) back to 0, at 1 s instead of 4.2 s, minus up to 30 px so nothing of the card
 is left round the icon. Left-click and the IPC dismissals are still instant (as stock); `arrival=0` keeps the old 300 ms fold.
+
+### The arrival leaves the card's centre; the column can be centred on the screen (2026-11-02, "try")
+The user asked to try the toasts at the **top centre of the screen** (they are at the top right, as in Omarchy) and the arrival **centred on the toast**: with the wave leaving the icon, which sits at the
+card's left, the ring seemed centred on the toast's top-left corner. Now the wave starts at the card's centre (`ArrivalFlare.origin`; a small spark there spreads into the front, `toastflare.frag`'s
+`origin` uniform), the reveal is a disc growing from the middle to both ends, the ring and halo are symmetric about the card, the icon's ring lights as the front reaches it, and the exit retreats to
+the centre. The card reach is from the centre (about 225 px for a 380x78 card, not 381), so the front crosses the card in about 0.6 s of 4.2 s, a little quicker than before. `arrival-one.png`,
+`arrival-critical.png`, `arrival-low.png`, `arrival-burst.png` and `exit-one.png` were regenerated. `position=center` in the fork's conf file centres the column (the spore layer is 900 px wide and centred
+on it, so spores can drift left of any card); `position=right` is the default. Both are theme-gated like everything else here.

@@ -357,14 +357,14 @@ actually on before suspecting the new code.
 
 What it is (`docs/design/arrival/README` section in `docs/design/README.md` has the numbers):
 - **One wave per toast, one timeline.** `ArrivalLogic.js` (pure): `p` 0 to 1 over 3.2 / 4.2 / 6 s (low / normal / critical; the theme's old ring's) times
-  `motion_slowdown`, `frontAt(p)` the front's radius from the icon, `settle` the hand-over, `isFresh` (a toast restored after a shell restart does not arrive).
+  `motion_slowdown`, `frontAt(p)` the front's radius from the card's centre, `settle` the hand-over, `isFresh` (a toast restored after a shell restart does not arrive).
 - `components/ArrivalFlare.qml` (per toast, over the card) owns the toast's clock and the flare overlay (`shaders/toastflare.frag`: the card's edge lit as the
   front crosses it, an afterglow, the icon's spore); the delegate masks the card with `shaders/cardreveal.frag` as a `layer.effect` while `arrival.revealing`;
   `ToastRim` gets `gate` (fades the settled rim in as the front finishes crossing) and `calm` (no ignition flash); `SlotMotion.reveal` opens the slot in 300 ms
   and leaves the card's opacity and scale at 1 on entry. Armed from creation so the card is hidden from the first frame; the clock starts one tick later,
   when layout has given the card its size.
 - `components/ArrivalLayer.qml` (one per popup window, under the column, like `SporeLayer`) draws `shaders/toastring.frag`: a ring and a halo that follow **each card's
-  own rounded rectangle** (a pixel is reached by the front at `d + |icon - q|`, d its distance from the outline and q the nearest outline point), at most three at a
+  own rounded rectangle** (a pixel is reached by the front at `d + |centre - q|`, d its distance from the outline and q the nearest outline point), at most three at a
   time, rendered at half resolution, only while there are any; the window stays visible while it runs (`visible: ... || arrivalLayer.active`, CONTRACT.md). It follows the
   card while it exists (the stack moves).
 - **Found live (2026-11-02, from a recording):** the ring was cut off in a straight vertical line as it travelled towards the middle of the screen: the layer was
@@ -380,6 +380,11 @@ What it is (`docs/design/arrival/README` section in `docs/design/README.md` has 
   Verified: logic (59), shaders (53, incl. 3 exit checks and 2 deliberate breaks), probe (152: ordering of dissolve, spores and fold, the retreating front, the rim gate, the ring told
   and run backwards, the instant paths, `arrival=0`, another theme, slowdown); 10 of 11 QML breaks caught in isolated copies (the survivor: the arrival's clock left running while exiting,
   equivalent, the exit's state takes precedence). **Not verified:** how it looks and feels live (checklist section H, the exit items).
+- **Centred (2026-11-02, "try"):** the user asked for the toasts at the top centre of the screen and the arrival centred on the toast. **Position:** `position=center|right` in the fork conf
+  (`Service.qml`: `popupWindow.centered`, the column's and the spore layer's `x` replace their right anchors; theme-gated; right is the default and is the stock place). **Origin:** the wave
+  now starts at the card's centre, not the icon (`ArrivalFlare.origin`, `toastflare.frag`'s `origin` uniform with a spark there and the icon's ring lit as the front reaches it, `cardreveal.frag`'s
+  `origin`, the ring's `src`); the card reach is from the centre. Verified: arrival-test (54), probe (168: position parsing, the column and spore layer centred or right, another theme stock, the
+  origin and reach); 6 of 7 wiring breaks caught (the survivor is the reveal mask's own origin binding, which only a live look can see, like the mask itself).
 - Setting: `arrival` 0 to 2, default 1, in the fork conf; 0 turns the whole arrival off (back to the plain unfold and the blend's ignition).
 - **Theme side (branch `p2/arrival` there):** `ArrivalGlow.qml`, `arrival.frag`, `notifyGlow`/`notifyGlowStrength` with their popup slider and switch, the layer rule's
   namespace and the interim `glow.json` writer are removed; the feed, the sound and the missed marks stay. The theme alone has no arrival light now (the user's decision).

@@ -216,7 +216,7 @@ Restart the shell after updating either repo (new files). The setting is `arriva
 `~/.config/omarchy/annihilation-notifications-fork.conf` (read live; the last line for a key wins). Slow it down to judge it:
 `motion_slowdown=4`, then remove the line. It works with any look. The design is `docs/design/arrival/`.
 
-- [ ] a new toast does **not pop in**: a front of light leaves its **icon** and the card is shown only inside it, round, growing across the card
+- [ ] a new toast does **not pop in**: a front of light leaves the **middle of the card** (a spark) and the card is shown only inside it, round, growing outwards to both ends; the icon's ring lights as the front reaches it
 - [ ] the card's **edge flares** where the front crosses it and cools behind it; nothing flashes, and the text is never half-drawn in a way that
       looks like a glitch. Look for a hard or flickering edge on the card's content (the card is rendered into a layer while it arrives), text
       that shifts when the arrival ends, and the stack below making room smoothly (300 ms)
@@ -226,7 +226,7 @@ Restart the shell after updating either repo (new files). The setting is `arriva
       arrival's few seconds and the toast is exactly the settled one
 - [ ] critical toasts are amber to pink, low ones moss, normal ones teal to blue, and they are as strong as the theme's old ring was (say if not)
 - [ ] **the exit**: when a toast expires (or you right-click it) it does not fold and fade: a front of light **retreats across the card to the icon**, the card
-      dissolving from its far corner into the light; the ring and halo **gather back onto it**; the settled rim fades out; the spore at the icon goes out last, and the spores
+      dissolving from its far corners into the light, towards the middle; the ring and halo **gather back onto it**; the settled rim fades out; the spark at the middle goes out last, and the spores
       drift off as the card comes apart; then the stack closes up behind it. About a second. Look for: the card's content edge flickering while the mask retreats, a ring or
       outline that lingers over empty space after the card is gone, the stack closing up late or with a jump, a toast that leaves while another arrives
 - [ ] a **left-click** on a toast (it acts and goes) and `omarchy-shell notifications dismissOne` are still instant, as before

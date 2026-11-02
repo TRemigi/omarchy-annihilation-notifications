@@ -24,11 +24,11 @@ organic, textured shape, and the countdown line is gone: with this look the root
 toast goes.
 
 0.7.0 (unreleased) moves the **arrival** here from the theme and makes it one event with the card. A new toast does not pop in: a front of light
-leaves its icon and crosses the card, which is shown only inside the front; the card's edge flares as the front crosses it; the front carries
+leaves the **card's centre** (so the arrival is centred on the toast) and crosses the card, which is shown only inside the front; the card's edge flares as the front crosses it; the front carries
 on past the card as a ring and a halo that follow **the card's own outline** (the theme's old ring came from a fixed box near the corner and
 never lined up with the card, which is why it was moved). Teal and blue normally, amber and pink for critical, moss for low; the settled rim
 (whichever look is chosen) fades in as the arrival's edge light falls. `arrival` (0 to 2, default 1) in the same file sets its strength, 0
-turns it off. The theme no longer draws an arrival ring; without this fork there is none.
+turns it off. `position=center` in the same file puts the toast column at the top centre of the screen instead of the top right (`right`, the default, is where Omarchy puts toasts). The theme no longer draws an arrival ring; without this fork there is none.
 
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and

@@ -129,6 +129,7 @@ def extract(name):
     out = f"{tmp}/{name}.glsl"; subprocess.run([QSB, "-x", "glsl,100 es", "-o", out, f"{ROOT}/shaders/{name}.frag.qsb"], check=True); return out
 RING, FLARE, REVEAL = extract("toastring"), extract("toastflare"), extract("cardreveal")
 ICON = (34, 39, 17)                                           # icon centre and ring radius in a 380x78 card, as the real card reports for a glyph
+ORIGIN = (190, 39)                                            # where the wave starts: the card's centre (it used to be the icon)
 
 def reach_card(w, h, ix, iy): return math.hypot(max(ix, w - ix), max(iy, h - iy)) + 30
 RING_REACH = max(180, min(340, SCREEN[1] * 0.26))
@@ -144,7 +145,7 @@ def arrival_frame(x0, y0, cw, ch, cards, times_ms, strength=1.0, urgencies=None,
     u = dict(seed=SEED, strength=strength, reach=RING_REACH, radius=4, resolution=(cw, ch))
     for i in range(3):
         if i < len(cards):
-            x, y, w, h = cards[i]; ix, iy = ICON[0], ICON[1] + (h - 78) / 2
+            x, y, w, h = cards[i]; ix, iy = ORIGIN[0], ORIGIN[1] + (h - 78) / 2
             p = min(max(times_ms[i] / dur_for(urgencies[i]), 0.0), 1.0); rc = reach_card(w, h, ix, iy)
             u[f"rect{i}"] = (x - x0, y - y0, w, h); u[f"src{i}"] = (x - x0 + ix, y - y0 + iy, rc, front_at(p, rc)); u[f"ev{i}"] = (p, urgencies[i], amps[i], 1.3 * i)
         else:
@@ -152,7 +153,7 @@ def arrival_frame(x0, y0, cw, ch, cards, times_ms, strength=1.0, urgencies=None,
     img = over(img, render(RING, cw * S, ch * S, **u))
     # the cards, each revealed by its front, with its flare above
     for i, (x, y, w, h) in enumerate(cards):
-        ix, iy = ICON[0], ICON[1] + (h - 78) / 2
+        ix, iy = ORIGIN[0], ORIGIN[1] + (h - 78) / 2
         p = min(max(times_ms[i] / dur_for(urgencies[i]), 0.0), 1.0); rc = reach_card(w, h, ix, iy); fr = front_at(p, rc)
         m = 40; ow, oh = w + 2 * m, h + 2 * m; ox, oy = x - m, y - m
         YY, XX = np.mgrid[0:oh * S, 0:ow * S].astype(np.float32)
@@ -162,7 +163,7 @@ def arrival_frame(x0, y0, cw, ch, cards, times_ms, strength=1.0, urgencies=None,
         dist = np.hypot(XX / S - (m + ix), YY / S - (m + iy)); t = np.clip((dist - (fr - 16)) / 26, 0, 1)
         cov = cov * (1 - t * t * (3 - 2 * t))[..., None]                     # cardreveal.frag
         fade = 1 - min(max((fr / rc - 0.7) / 0.4, 0), 1); fade = fade * fade * (3 - 2 * fade)
-        fl = render(FLARE, ow * S, oh * S, strength=strength, urgency=urgencies[i], radius=4, front=fr, fade=fade, size=(ow, oh), card=(m, m, w, h), icon=(m + ix, m + iy, ICON[2]))
+        fl = render(FLARE, ow * S, oh * S, strength=strength, urgency=urgencies[i], radius=4, front=fr, fade=fade, size=(ow, oh), card=(m, m, w, h), icon=(m + ICON[0], m + h / 2, ICON[2]), origin=(m + ix, m + iy))
         layer = np.concatenate([np.array([36, 32, 21], np.float32) / 255 * cov + fl[..., :3], cov], axis=2)
         sx, sy = (ox - x0) * S, (oy - y0) * S
         cx0, cy0 = max(sx, 0), max(sy, 0); cx1, cy1 = min(sx + ow * S, cw * S), min(sy + oh * S, ch * S)
@@ -175,7 +176,7 @@ def with_text(img, x0, y0, cards, texts, times_ms, rcs):
     out = draw_text(img.copy(), x0, y0, cards, texts)
     H, W = img.shape[:2]; YY, XX = np.mgrid[0:H, 0:W].astype(np.float32)
     for (x, y, w, h), tm, rc in zip(cards, times_ms, rcs):
-        p = min(max(tm / 4200, 0), 1); fr = front_at(p, rc); ix, iy = x + ICON[0], y + ICON[1]
+        p = min(max(tm / 4200, 0), 1); fr = front_at(p, rc); ix, iy = x + ORIGIN[0], y + ORIGIN[1]
         dist = np.hypot(XX / S + x0 - ix, YY / S + y0 - iy); t = np.clip((dist - (fr - 16)) / 26, 0, 1); keep = (1 - t * t * (3 - 2 * t))[..., None]
         inbox = ((XX / S + x0 >= x) & (XX / S + x0 <= x + w) & (YY / S + y0 >= y) & (YY / S + y0 <= y + h))[..., None]
         out = np.where(inbox, img * (1 - keep) + out * keep, out)
@@ -187,7 +188,7 @@ card = [(1490, 44, 380, 78)]
 frames = []
 for ms in (60, 160, 300, 480, 700, 1000, 1500, 2300, 3300):
     f = arrival_frame(AX0, AY0, ACW, ACH, card, [ms])
-    f = with_text(f, AX0, AY0, card, CARDS[:1], [ms], [reach_card(380, 78, ICON[0], ICON[1])])
+    f = with_text(f, AX0, AY0, card, CARDS[:1], [ms], [reach_card(380, 78, ORIGIN[0], ORIGIN[1])])
     frames.append(label(f, "%d ms" % ms))
 while len(frames) % 3: frames.append(np.zeros_like(frames[0]))
 save(np.concatenate([np.concatenate(frames[i:i + 3], axis=1) for i in range(0, len(frames), 3)], axis=0), "arrival-one")
@@ -197,14 +198,14 @@ for name, u in (("critical", [2]), ("low", [0])):
     frames = []
     for ms in (200, 700, 1400, 2600):
         f = arrival_frame(AX0, AY0, ACW, ACH, card, [ms], urgencies=u)
-        f = with_text(f, AX0, AY0, card, CARDS[1:2] if u[0] == 2 else CARDS[2:3], [ms], [reach_card(380, 78, ICON[0], ICON[1])])
+        f = with_text(f, AX0, AY0, card, CARDS[1:2] if u[0] == 2 else CARDS[2:3], [ms], [reach_card(380, 78, ORIGIN[0], ORIGIN[1])])
         frames.append(label(f, "%s %d ms" % (name, ms)))
     save(np.concatenate([np.concatenate(frames[:2], axis=1), np.concatenate(frames[2:], axis=1)], axis=0), "arrival-" + name)
 three = [(1490, 44, 380, 78), (1490, 130, 380, 78), (1490, 216, 380, 78)]
 frames = []
 for ms in ((900, 500, 150), (1800, 1400, 1050)):
     f = arrival_frame(AX0, AY0, ACW, ACH + 60, three, list(ms), amps=[1, 0.6, 0.6])
-    f = with_text(f, AX0, AY0, three, CARDS, list(ms), [reach_card(380, 78, ICON[0], ICON[1])] * 3)
+    f = with_text(f, AX0, AY0, three, CARDS, list(ms), [reach_card(380, 78, ORIGIN[0], ORIGIN[1])] * 3)
     frames.append(label(f, "burst %s ms" % (ms,)))
 save(np.concatenate(frames, axis=1), "arrival-burst")
 
@@ -217,7 +218,7 @@ def exit_front(q, rc, rr): return front_at(exit_start(rc, rr) * (1 - clamp01(q))
 def exit_fade(front, rc): return (1 - settle(front, rc)) * clamp01(front / (0.35 * rc))
 
 def exit_frame(x0, y0, cw, ch, card, q, urgency=1):
-    x, y, w, h = card; ix, iy = ICON[0], ICON[1]; rc = reach_card(w, h, ix, iy); p0 = exit_start(rc, RING_REACH)
+    x, y, w, h = card; ix, iy = ORIGIN[0], ORIGIN[1]; rc = reach_card(w, h, ix, iy); p0 = exit_start(rc, RING_REACH)
     p = p0 * (1 - q); fr_ring = front_at(p, rc); fr = exit_front(q, rc, RING_REACH)
     img = over(scene(x0, y0, cw, ch), window_layer(x0, y0, cw, ch))
     u = dict(seed=SEED, strength=1.0, reach=RING_REACH, radius=4, resolution=(cw, ch),
@@ -231,7 +232,7 @@ def exit_frame(x0, y0, cw, ch, card, q, urgency=1):
     cov = np.clip(0.5 - dd * S * 0.5, 0, 1)[..., None] * 0.93
     dist = np.hypot(XX / S - (m + ix), YY / S - (m + iy)); t = np.clip((dist - (fr - 16)) / 26, 0, 1); keep = (1 - t * t * (3 - 2 * t))[..., None]
     cov = cov * keep
-    fl = render(FLARE, ow * S, oh * S, strength=1.0, urgency=urgency, radius=4, front=max(fr, 0), fade=exit_fade(fr, rc), reverse=1, size=(ow, oh), card=(m, m, w, h), icon=(m + ix, m + iy, ICON[2]))
+    fl = render(FLARE, ow * S, oh * S, strength=1.0, urgency=urgency, radius=4, front=max(fr, 0), fade=exit_fade(fr, rc), reverse=1, size=(ow, oh), card=(m, m, w, h), icon=(m + ICON[0], m + h / 2, ICON[2]), origin=(m + ix, m + iy))
     layer = np.concatenate([np.array([36, 32, 21], np.float32) / 255 * cov + fl[..., :3], cov], axis=2)
     sx, sy = (ox - x0) * S, (oy - y0) * S
     cx0, cy0 = max(sx, 0), max(sy, 0); cx1, cy1 = min(sx + ow * S, cw * S), min(sy + oh * S, ch * S)

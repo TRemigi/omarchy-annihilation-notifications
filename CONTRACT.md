@@ -64,6 +64,8 @@ All return a string; keep the names and the argument lists.
   the last toast has gone**, to finish drawing the spores it left (`components/SporeLayer.qml`) and, after an arrival, the ring and halo that
   leave a new toast's outline (`components/ArrivalLayer.qml`, up to the arrival's 3 to 6 s, times `motion_slowdown`). It never covers or
   intercepts anything: its input region is the toast column, which is empty by then. The layer namespace is unchanged.
+- **Where the toasts are:** top right, as in Omarchy, unless the annihilation theme is active and `position=center` is set in the fork's conf file (read live): then the column is centred
+  horizontally at the top of the screen (same top margin, so below the bar). The window, the layer namespace and the input region are unchanged.
 - Click runs the toast's default action (`omarchy-exec-argv`, else the sender's `default` action) and
   dismisses; right click dismisses; hovering pauses the countdown.
 - Live toasts survive a shell restart (restored from the popup files).
