@@ -30,7 +30,7 @@ s = s.replace("PanelWindow {", "FloatingWindow {")
 # a toast that clicks itself 300 ms after it appears, when PROBE_CLICK is set (a click removes it at once, with no fold)
 s = s.replace("            Component.onCompleted: motion.enter()\n", "            Component.onCompleted: { motion.enter(); if (Quickshell.env('PROBE_CLICK') === '1') clicker.start() }\n            Timer { id: clicker; interval: 300; onTriggered: card.cardClicked() }\n", 1)
 # a log of the window, which has to outlive its toasts
-s = s.replace("FloatingWindow {\n", "FloatingWindow {\n      Timer { interval: 400; running: true; repeat: true; onTriggered: console.log('PROBE win rows=' + popupModel.count + ' visible=' + visible + ' spores=' + sporeLayer.active + ' arrival=' + arrivalLayer.active) }\n", 1)
+s = s.replace("FloatingWindow {\n", "FloatingWindow {\n      Timer { interval: 400; running: true; repeat: true; onTriggered: console.log('PROBE win rows=' + popupModel.count + ' visible=' + visible + ' spores=' + sporeLayer.active + ' arrival=' + arrivalLayer.active + ' colx=' + Math.round(popupColumn.x) + ' colw=' + Math.round(popupColumn.width) + ' winw=' + Math.round(width) + ' spx=' + Math.round(sporeLayer.x) + ' spw=' + Math.round(sporeLayer.width)) }\n", 1)
 for pat in [r'^\s*screen: modelData\n', r'^\s*WlrLayershell\.[a-zA-Z.]+: .*\n', r'^\s*exclusionMode: .*\n',
             r'^\s*anchors \{ top: true; bottom: true; left: true; right: true \}\n', r'^\s*mask: Region \{ item: popupColumn \}\n']:
     s = re.sub(pat, "", s, flags=re.M)
@@ -50,7 +50,7 @@ a = open(d + "components/ArrivalFlare.qml").read()
 for ms, tag in ((150, "early"), (2300, "late")):
     a = a.replace("  readonly property real margin: 40\n", "  readonly property real margin: 40\n  Timer { interval: " + str(ms) + "; running: true; onTriggered: console.log('PROBE arrival " + tag + " ' + root.target.summary + ' armed=' + root.armed"
         " + ' revealing=' + root.revealing + ' p=' + root.p.toFixed(2) + ' front=' + root.front.toFixed(0) + ' gate=' + root.rimGate.toFixed(2) + ' opacity=' + root.target.opacity.toFixed(2)"
-        " + ' scale=' + root.target.scale.toFixed(2) + ' layer=' + root.target.layer.enabled + ' reach=' + root.cardReach.toFixed(0) + ' visible=' + root.visible) }\n", 1)
+        " + ' scale=' + root.target.scale.toFixed(2) + ' layer=' + root.target.layer.enabled + ' reach=' + root.cardReach.toFixed(0) + ' w=' + root.target.width.toFixed(0) + ' h=' + root.target.height.toFixed(0) + ' ox=' + root.origin.x.toFixed(0) + ' oy=' + root.origin.y.toFixed(0) + ' visible=' + root.visible) }\n", 1)
 a = a.replace("  readonly property real margin: 40\n", "  readonly property real margin: 40\n  Timer { interval: 100; running: root.exiting; repeat: true; onTriggered: console.log('PROBE exitstate q=' + root.q.toFixed(2) + ' front=' + root.front.toFixed(0) + ' gate=' + root.rimGate.toFixed(2)"
     " + ' revealing=' + root.revealing + ' layer=' + root.target.layer.enabled + ' visible=' + root.visible + ' fade=' + root.fade.toFixed(2) + ' reach=' + root.cardReach.toFixed(0) + ' opacity=' + root.target.opacity.toFixed(2)) }\n", 1)
 open(d + "components/ArrivalFlare.qml", "w").write(a)
@@ -158,6 +158,16 @@ check "look: an unknown name falls back to blend" blend "$(parsedl unknown)"
 check "look: found beside another key" growth "$(parsedl 'beside others')"
 check "look: a value that merely starts with growth is not growth" blend "$(parsedl 'prefix only')"
 check "look: a key that merely ends in look is not look" blend "$(parsedl 'other key')"
+parsedp() { sed -n "s/^PROBE parseP $1 -> //p" <<<"$out"; }
+check "position: the default is right (where Omarchy puts toasts)" right "$(parsedp empty)"
+check "position: center" center "$(parsedp center)"
+check "position: right" right "$(parsedp right)"
+check "position: spaces around = are fine" center "$(parsedp spaced)"
+check "position: an unknown name means right" right "$(parsedp unknown)"
+check "position: the last line wins (center then right is right)" right "$(parsedp 'later wins')"
+check "position: the last line wins (right then center is center)" center "$(parsedp 'later wins back')"
+check "position: a value that merely starts with center is not center" right "$(parsedp prefix)"
+check "position: found beside another key" center "$(parsedp 'beside others')"
 parsedv() { sed -n "s/^PROBE parseV $1 -> //p" <<<"$out"; }
 check "vividness: the default is 0.75" 0.75 "$(parsedv empty)"
 check "vividness: plain" 0.4 "$(parsedv plain)"
@@ -234,6 +244,8 @@ out_arr=$out_cards
 e=$(arrline early 'from signal' "$out_arr"); l=$(arrline late 'from signal' "$out_arr")
 check "arrival: a fresh toast is armed and under way early on" "true true" "$(av "$e" armed) $(av "$e" revealing)"
 check "arrival: the card is a mask layer while the front crosses it" true "$(av "$e" layer)"
+check "arrival: the wave starts at the card's centre (the origin is half its width and height)" yes "$(awk -v w="$(av "$e" w)" -v h="$(av "$e" h)" -v ox="$(av "$e" ox)" -v oy="$(av "$e" oy)" 'BEGIN{print (w > 0 && h > 0 && ox - w / 2 >= -1 && ox - w / 2 <= 1 && oy - h / 2 >= -1 && oy - h / 2 <= 1) ? "yes" : "no"}')"
+check "arrival: and its reach is from there to the far corner, and 30 px (not from the icon, which is nearer the left edge)" yes "$(awk -v w="$(av "$e" w)" -v h="$(av "$e" h)" -v r="$(av "$e" reach)" 'BEGIN{c = sqrt((w / 2) ^ 2 + (h / 2) ^ 2) + 30; d = r - c; print (d >= -1 && d <= 1) ? "yes" : "no"}')"
 check "arrival: the front has left the icon but not crossed the card" yes "$(awk -v f="$(av "$e" front)" -v r="$(av "$e" reach)" 'BEGIN{print (f > 5 && f < r) ? "yes" : "no"}')"
 check "arrival: the card is not faded or scaled in (the front reveals it)" "1.00 1.00" "$(av "$e" opacity) $(av "$e" scale)"
 check "arrival: the settled rim waits for the front (gate 0 early on)" "0.00" "$(av "$e" gate)"
@@ -267,6 +279,18 @@ check "a toast that is a minute old (restored after a restart) does not arrive" 
 check "and a fresh one beside it does" "true" "$(av "$(arrline early 'new toast' "$out_stale")" armed)"
 out_crit=$(run crit annihilation)
 check "a critical toast's arrival lasts 6000 ms" "dur=6000" "dur=$(av "$(grep 'PROBE layer ' <<<"$out_crit" | head -n1)" dur)"
+geo() { grep 'PROBE win rows=5' <<<"$1" | tail -n1; }
+gw() { sed -n "s/.* $2=\\(-\\?[0-9]*\\).*/\\1/p" <<<"$1"; }
+g=$(geo "$out_arr")
+check "position: by default the column is at the right, not centred" yes "$(awk -v x="$(gw "$g" colx)" -v w="$(gw "$g" colw)" -v ww="$(gw "$g" winw)" 'BEGIN{d = x + w / 2 - ww / 2; print (d < -20 && x + w <= ww) ? "yes" : "no"}')"
+check "position: the spore layer is at the right too (its right edge is the window's)" yes "$(awk -v x="$(gw "$g" spx)" -v w="$(gw "$g" spw)" -v ww="$(gw "$g" winw)" 'BEGIN{print (x + w == ww) ? "yes" : "no"}')"
+out_pc=$(run cards annihilation "position=center")
+g=$(geo "$out_pc")
+check "position=center: the column is centred in the window" yes "$(awk -v x="$(gw "$g" colx)" -v w="$(gw "$g" colw)" -v ww="$(gw "$g" winw)" 'BEGIN{d = x + w / 2 - ww / 2; print (d >= -1 && d <= 1) ? "yes" : "no"}')"
+check "position=center: and the spore layer is centred on it, wide enough for spores on both sides (900 px)" yes "$(awk -v x="$(gw "$g" spx)" -v w="$(gw "$g" spw)" -v ww="$(gw "$g" winw)" 'BEGIN{d = x + w / 2 - ww / 2; print (d >= -1 && d <= 1 && w >= 800) ? "yes" : "no"}')"
+out_pco=$(run cards other "position=center")
+g=$(geo "$out_pco")
+check "position=center on another theme: stock (at the right)" yes "$(awk -v x="$(gw "$g" colx)" -v w="$(gw "$g" colw)" -v ww="$(gw "$g" winw)" 'BEGIN{d = x + w / 2 - ww / 2; print (d < -20) ? "yes" : "no"}')"
 out_slow=$(run cards annihilation "motion_slowdown=2")
 check "motion_slowdown=2 doubles the arrival too" "dur=8400" "dur=$(av "$(grep 'PROBE layer ' <<<"$out_slow" | head -n1)" dur)"
 check "arrival: the settled rim's own gate is closed while the front crosses (slowed, so at 0.9 s it has barely started)" "0.00" "$(rimval "$(grep 'PROBE rim from signal ' <<<"$out_slow" | head -n1)" gate)"

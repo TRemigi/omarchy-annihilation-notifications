@@ -35,10 +35,10 @@ def maxalpha(img): return max(img[2][3::4])
 
 # ---------------------------------------------------------------------------- the ring (outside the card)
 LW, LH = 900, 400
-CARD = (300, 100, 380, 78); ICON = (334, 139)                  # the card in the layer; the icon 34 px in, centred on its height
-RC = math.hypot(346, 39) + 30; REACH = 309.0
+CARD = (300, 100, 380, 78); ORIGIN = (490, 139)                # the card in the layer; the wave starts at its centre
+RC = math.hypot(190, 39) + 30; REACH = 309.0
 def ring(front=60.0, p=0.1, urgency=1, amp=1.0, strength=1.0, rect=CARD, radius=4, salt=0.0, **over):
-    src = (rect[0] + 34, rect[1] + 39, RC, front)
+    src = (rect[0] + 190, rect[1] + 39, RC, front)
     u = dict(seed=5, strength=strength, reach=REACH, radius=radius, resolution=(LW, LH), rect0=rect, rect1=(0, 0, 0, 0), rect2=(0, 0, 0, 0),
              src0=src, src1=(0, 0, 0, 0), src2=(0, 0, 0, 0), ev0=(p, urgency, amp, salt), ev1=(0, 1, 0, 0), ev2=(0, 1, 0, 0))
     u.update(over); return render(RING, LW, LH, **u)
@@ -55,17 +55,17 @@ check("ring: amplitude scales it (0.5 is dimmer)", total(ring(front=tfront(0.12)
 
 # shaped by the card, and reached by the front
 early = ring(front=40.0, p=0.02)
-check("ring: early, light leaves the edge nearest the icon (just above the card, over the icon)", lum(px(early, 334, 100 - 10)) > 3 * max(1, lum(px(early, 640, 100 - 10))), (px(early, 334, 90), px(early, 640, 90)))
-check("ring: and the far end of the card has none yet (the front has not got there)", lum(px(early, 660, 100 - 10)) < 3 and lum(px(early, 690, 139)) < 3)
+check("ring: early, light leaves the edge nearest the centre (just above the card, over its middle)", lum(px(early, 490, 100 - 10)) > 3 * max(1, lum(px(early, 640, 100 - 10))) and lum(px(early, 490, 100 - 10)) > 3 * max(1, lum(px(early, 340, 100 - 10))), (px(early, 490, 90), px(early, 640, 90), px(early, 340, 90)))
+check("ring: and both ends of the card have none yet (the front has not got there; it starts from the middle, so it is the same on both sides)", lum(px(early, 660, 100 - 10)) < 3 and lum(px(early, 690, 139)) < 3 and lum(px(early, 320, 100 - 10)) < 3 and lum(px(early, 290, 139)) < 3)
 late = ring(front=tfront(0.12), p=0.12)
 beyond = ring(front=tfront(0.3), p=0.3)
-check("ring: later the wave has crossed the card and is out beyond its far end", lum(px(beyond, 700, 139)) > 4 or lum(px(beyond, 720, 139)) > 4, (px(beyond, 700, 139), px(beyond, 720, 139)))
+check("ring: later the wave has crossed the card and is out beyond both its ends", (lum(px(beyond, 700, 139)) > 4 or lum(px(beyond, 720, 139)) > 4) and (lum(px(beyond, 280, 139)) > 4 or lum(px(beyond, 260, 139)) > 4), (px(beyond, 700, 139), px(beyond, 720, 139), px(beyond, 280, 139), px(beyond, 260, 139)))
 # the halo hugs the outline: equally far above and below a vertically-centred icon
 h_top, h_bot = lum(px(late, 480, 100 - 8)), lum(px(late, 480, 178 + 8))
-check("ring: the glow hugs the card's outline, the same above and below (the icon is centred)", h_top > 3 and abs(h_top - h_bot) < 0.25 * max(h_top, h_bot), (h_top, h_bot))
-# the ring front itself: at this front, the outline-distance contour near the icon vs far from it
+check("ring: the glow hugs the card's outline, the same above and below (the centre is centred)", h_top > 3 and abs(h_top - h_bot) < 0.25 * max(h_top, h_bot), (h_top, h_bot))
+# the ring front itself: at front 100 the wave has gone 61 px past the top edge above the centre
 mid = ring(front=100.0, p=0.05)
-check("ring: the front is a thin band of light (bright where it is, dim a few widths away)", lum(px(mid, 334, 100 - (100 - 39))) > 2 * lum(px(mid, 334, 100 - (100 - 39) - 40)) or lum(px(mid, 334, 100 - (100 - 39))) > 8, (px(mid, 334, 61), px(mid, 334, 21)))
+check("ring: the front is a band of light where the wave is (above the middle of the card, 61 px out)", lum(px(mid, 490, 100 - 61)) > 8, (px(mid, 490, 39), px(mid, 490, 84)))
 
 # it follows the card, and its corner radius
 ca = (300, 160, 380, 78); cb = (400, 200, 380, 78)
@@ -102,14 +102,15 @@ check("ring: a critical one is amber to pink (red over blue)", sc[0] > sc[2] * 1
 check("ring: a low one is moss to teal (less blue and more red than a normal one)", sl[2] / sl[1] < 0.8 * sr[2] / sr[1] and sl[0] / sl[2] > 1.3 * sr[0] / sr[2], (sl, sr))
 
 # several arrivals at once are independent
-two = ring(front=tfront(0.12), p=0.12, rect1=(300, 220, 380, 78), src1=(334, 259, RC, tfront(0.12)), ev1=(0.12, 2, 1.0, 1.3))
-below_only = lum(px(two, 480, 220 + 90)) 
-check("ring: a second arrival draws its own light round its own card (and amber for critical)", below_only > lum(px(late, 480, 220 + 90)) and px(two, 480, 220 + 90)[0] > px(two, 480, 220 + 90)[2], (px(two, 480, 310), px(late, 480, 310)))
+two = ring(front=tfront(0.12), p=0.12, rect1=(300, 220, 380, 78), src1=(490, 259, RC, tfront(0.12)), ev1=(0.12, 2, 1.0, 1.3))
+pt = (480, 310)
+d_ = tuple(a - b for a, b in zip(px(two, *pt)[:3], px(late, *pt)[:3]))
+check("ring: a second arrival draws its own light round its own card, and amber for critical (what it adds there is red, not blue)", d_[0] > 15 and d_[0] > 2 * d_[2], d_)
 
 # ---------------------------------------------------------------------------- the flare (on the card)
-OW, OH = 460, 158; FC = (40, 40, 380, 78); FI = (74, 79, 17)
-def flare(front=100.0, fade=1.0, urgency=1, strength=1.0, icon=FI, reverse=0):
-    return render(FLARE, OW, OH, strength=strength, urgency=urgency, radius=4, front=front, fade=fade, reverse=reverse, size=(OW, OH), card=FC, icon=icon)
+OW, OH = 460, 158; FC = (40, 40, 380, 78); FI = (74, 79, 17); FO = (230, 79)   # the card, the icon ring, the wave's origin (the card's centre)
+def flare(front=100.0, fade=1.0, urgency=1, strength=1.0, icon=FI, reverse=0, origin=FO):
+    return render(FLARE, OW, OH, strength=strength, urgency=urgency, radius=4, front=front, fade=fade, reverse=reverse, size=(OW, OH), card=FC, icon=icon, origin=origin)
 fl = flare(front=120.0)
 check("flare: the output is added light (alpha 0)", maxalpha(fl) == 0)
 check("flare: nothing far from the card", lum(px(fl, 3, 3)) == 0 and lum(px(fl, 455, 150)) == 0)
@@ -118,14 +119,17 @@ check("flare: fade 0 draws nothing at all", total(flare(front=120.0, fade=0.0)) 
 check("flare: strength 0 draws nothing", total(flare(front=120.0, strength=0.0)) == 0)
 check("flare: strength 2 is brighter", total(flare(front=120.0, strength=2.0)) > 1.2 * total(fl))
 # the front's place on the top edge: at x where the distance from the icon is 120
-fx = 74 + math.sqrt(120 ** 2 - 39 ** 2)
-check("flare: the edge is brightest where the front crosses it", lum(px(fl, fx, 40 + 1)) > 2 * lum(px(fl, fx + 80, 40 + 1)) and lum(px(fl, fx, 41)) > lum(px(fl, fx - 70, 41)) * 0.9, (px(fl, fx, 41), px(fl, fx + 80, 41), px(fl, fx - 70, 41)))
-check("flare: ahead of the front the edge is dark (the far end of the card)", lum(px(fl, 400, 41)) < 4, px(fl, 400, 41))
-check("flare: behind the front there is an afterglow (the left edge is lit, fainter than at the front)", 3 < lum(px(fl, 60, 41)) < lum(px(fl, fx, 41)), (px(fl, 60, 41), px(fl, fx, 41)))
+fx = 230 + math.sqrt(120 ** 2 - 39 ** 2)       # right of the centre, along the top edge
+check("flare: the edge is brightest where the front crosses it", lum(px(fl, fx, 40 + 1)) > 2 * lum(px(fl, fx + 60, 40 + 1)) and lum(px(fl, fx, 41)) > lum(px(fl, fx - 70, 41)) * 0.9, (px(fl, fx, 41), px(fl, fx + 60, 41), px(fl, fx - 70, 41)))
+check("flare: ahead of the front the edge is dark (both ends of the card: it starts from the middle)", lum(px(fl, 400, 41)) < 4 and lum(px(fl, 60, 41)) < 4, (px(fl, 400, 41), px(fl, 60, 41)))
+check("flare: behind the front there is an afterglow (the edge above the middle is lit, fainter than at the front)", 3 < lum(px(fl, 230, 41)) < lum(px(fl, fx, 41)), (px(fl, 230, 41), px(fl, fx, 41)))
 born = flare(front=0.0)
-check("flare: before the front has left, the spore is not yet lit", lum(px(born, 74, 79)) < 4, px(born, 74, 79))
-check("flare: once it has, the icon has a spore and a ring", lum(px(fl, 74, 79)) > 40 and lum(px(fl, 74 + 17, 79)) > 30, (px(fl, 74, 79), px(fl, 91, 79)))
-check("flare: no icon, no spore", lum(px(flare(front=120.0, icon=(0, 0, 0)), 74, 79)) < 6)
+check("flare: before the front has reached the icon (156 px from the centre) it is not lit", lum(px(born, 74, 79)) < 4 and lum(px(fl, 74, 79)) < 4, (px(born, 74, 79), px(fl, 74, 79)))
+fi = flare(front=200.0)
+check("flare: once it has, the icon has a spore and a ring", lum(px(fi, 74, 79)) > 40 and lum(px(fi, 74 + 17, 79)) > 30, (px(fi, 74, 79), px(fi, 91, 79)))
+check("flare: no icon, no spore", lum(px(flare(front=200.0, icon=(0, 0, 0)), 74, 79)) < 6)
+sp = flare(front=12.0)
+check("flare: a spark at the card's centre where the wave starts, which has gone out by the time the front is 90 px out", lum(px(sp, 230, 79)) > 40 and lum(px(flare(front=100.0), 230, 79)) < 6, (px(sp, 230, 79), px(flare(front=100.0), 230, 79)))
 crit_, norm_ = flare(front=120.0, urgency=2), flare(front=120.0, urgency=1)
 def sums(img): return tuple(sum(img[2][i + c] for i in range(0, len(img[2]), 4)) for c in range(3))
 check("flare: critical is amber (red over blue), normal teal (blue over red)", sums(crit_)[0] > sums(crit_)[2] * 1.2 and sums(norm_)[2] > sums(norm_)[0] * 1.1, (sums(crit_), sums(norm_)))
@@ -133,21 +137,22 @@ check("flare: a little halo outside the edge, none far out", lum(px(fl, fx, 40 -
 
 # the exit: the arrival played backwards. The afterglow is a ghost of the edge on the side the front has left (further from the icon)
 rv = flare(front=120.0, reverse=1)
-gx = 229   # 160 px from the icon along the top edge: 40 px beyond the front at 120
+gx = 230 + math.sqrt(160 ** 2 - 39 ** 2)   # 160 px from the centre along the top edge: 40 px beyond the front at 120
 check("flare (exit): the ghost of the edge lies just beyond the front, where the card is already gone (lit, as it is dark in the arrival)", lum(px(rv, gx, 41)) > 3 and lum(px(rv, gx, 41)) > 2 * max(1, lum(px(fl, gx, 41))), (px(rv, gx, 41), px(fl, gx, 41)))
-check("flare (exit): and it is a short trail, not the whole outline (far along the edge it is gone)", lum(px(rv, 400, 41)) < 3, px(rv, 400, 41))
-check("flare (exit): and none on the side nearer the icon (the left edge, which in the arrival glows behind the front)", lum(px(rv, 60, 41)) < 0.5 * lum(px(fl, 60, 41)), (px(rv, 60, 41), px(fl, 60, 41)))
+tr = flare(front=40.0, reverse=1)
+check("flare (exit): and it is a short trail, not the whole outline (far along the edge it is much fainter than just beyond the front)", lum(px(tr, 400, 41)) < 0.5 * lum(px(tr, 300, 41)) and lum(px(tr, 300, 41)) > 8, (px(tr, 400, 41), px(tr, 300, 41)))
+check("flare (exit): and none on the side nearer the centre (the edge above the middle, which in the arrival glows behind the front)", lum(px(rv, 230, 41)) < 0.5 * lum(px(fl, 230, 41)), (px(rv, 230, 41), px(fl, 230, 41)))
 check("flare (exit): the front still flares where it crosses the edge", lum(px(rv, fx, 41)) > 2 * lum(px(rv, fx - 70, 41)) and lum(px(rv, fx, 41)) > 20, (px(rv, fx, 41), px(rv, fx - 70, 41)))
-check("flare (exit): the spore is still lit while the front is beyond the icon, and out when the front reaches it", lum(px(rv, 74, 79)) > 40 and lum(px(flare(front=0.0, reverse=1), 74, 79)) < 4)
+check("flare (exit): the icon is still lit while the front is beyond it, and out when the front has retreated past it", lum(px(flare(front=200.0, reverse=1), 74, 79)) > 40 and lum(px(rv, 74, 79)) < 4)
 check("flare (exit): the arrival's picture is unchanged by the flag being 0 (explicit 0 and absent are the same)", flare(front=120.0, reverse=0)[2] == fl[2])
 
 # ---------------------------------------------------------------------------- the reveal mask (an unbound texture reads as opaque black: the alpha is the mask)
-def mask(front, x, y): return px(render(REVEAL, 380, 78, front=front, size=(380, 78), icon=(34, 39)), x, y)[3]
-check("reveal: the icon's own place is solid once the front has left it", mask(40, 34, 39) == 255)
-check("reveal: far beyond the front is nothing yet", mask(40, 360, 39) == 0)
+def mask(front, x, y): return px(render(REVEAL, 380, 78, front=front, size=(380, 78), origin=(190, 39)), x, y)[3]
+check("reveal: the middle of the card is solid once the front has left it", mask(40, 190, 39) == 255)
+check("reveal: far beyond the front is nothing yet, on both sides", mask(40, 360, 39) == 0 and mask(40, 20, 39) == 0)
 check("reveal: far behind the front is solid", mask(400, 360, 39) == 255)
-check("reveal: the edge of the front is soft", 0 < mask(200, 234, 39) < 255, mask(200, 234, 39))
-check("reveal: it is round, centred on the icon (60 px across and 60 px diagonally are the same)", abs(mask(60, 94, 39) - mask(60, 82, 75)) < 4, (mask(60, 94, 39), mask(60, 82, 75)))
+check("reveal: the edge of the front is soft", 0 < mask(100, 290, 39) < 255, mask(100, 290, 39))
+check("reveal: it is round, centred on the card's middle (60 px across and 60 px diagonally are the same; and the same each side)", abs(mask(60, 250, 39) - mask(60, 236, 77)) < 20 and abs(mask(60, 250, 39) - mask(60, 130, 39)) < 20, (mask(60, 250, 39), mask(60, 236, 77), mask(60, 130, 39)))
 
 # ---------------------------------------------------------------------------- the QML feeds what the shaders declare
 def uniforms(path):
