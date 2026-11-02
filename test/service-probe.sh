@@ -54,7 +54,7 @@ for ms, tag in ((150, "early"), (2300, "late")):
 open(d + "components/ArrivalFlare.qml", "w").write(a)
 al = open(d + "components/ArrivalLayer.qml").read()
 al = al.replace("  enabled: false                      // click-through\n", "  enabled: false                      // click-through\n  Timer { interval: 1500; running: true; onTriggered: console.log('PROBE layer events=' + root.events.length + ' active=' + root.active + ' strength=' + root.strength"
-    " + ' amps=' + root.events.map(function(e) { return e.amp.toFixed(2) }).join(',') + ' reach=' + root.ringReach.toFixed(0) + ' first=' + (root.events.length ? root.events[0].w + 'x' + root.events[0].h + '@' + Math.round(root.events[0].x) + ',' + Math.round(root.events[0].y) + ' urg=' + root.events[0].urgency + ' amp=' + root.events[0].amp.toFixed(2) + ' dur=' + root.events[0].dur : 'none')) }\n", 1)
+    " + ' fills=' + (root.parent !== null && root.width === root.parent.width && root.height === root.parent.height && root.width > 0) + ' amps=' + root.events.map(function(e) { return e.amp.toFixed(2) }).join(',') + ' reach=' + root.ringReach.toFixed(0) + ' first=' + (root.events.length ? root.events[0].w + 'x' + root.events[0].h + '@' + Math.round(root.events[0].x) + ',' + Math.round(root.events[0].y) + ' urg=' + root.events[0].urgency + ' amp=' + root.events[0].amp.toFixed(2) + ' dur=' + root.events[0].dur : 'none')) }\n", 1)
 open(d + "components/ArrivalLayer.qml", "w").write(al)
 c = open(d + "components/NotificationCard.qml").read()
 probe = ("  Timer { interval: 700; running: true; onTriggered: console.log('PROBE card ' + root.summary + ' themed=' + root.themed"
@@ -240,6 +240,7 @@ check "arrival: every toast arrives, not only the first" 5 "$(grep -c 'PROBE arr
 ly=$(grep 'PROBE layer ' <<<"$out_arr" | head -n1)
 check "arrival: the ring layer is told (three at once at most)" "3 true" "$(av "$ly" events) $(av "$ly" active)"
 check "arrival: at full strength" "strength=1" "strength=$(av "$ly" strength)"
+check "arrival: the ring layer covers the whole window (a layer sized to the card cut the ring off in a straight line)" "true" "$(av "$ly" fills)"
 check "arrival: a burst is thinned and urgency scales it (the last three of five toasts at once: normal 1 x 0.6, critical 1.3 x 0.6, low 0.6 x 0.6)" "amps=0.60,0.78,0.36" "amps=$(av "$ly" amps)"
 check "arrival: the ring's reach follows the screen (between 180 and 340)" yes "$(awk -v r="$(av "$ly" reach)" 'BEGIN{print (r >= 180 && r <= 340) ? "yes" : "no"}')"
 check "arrival: the ring has the card's own rectangle (a width and a height, read from the card)" yes "$([[ $(av "$ly" first) =~ ^[0-9]+x[0-9]+@ ]] && echo yes || echo no)"

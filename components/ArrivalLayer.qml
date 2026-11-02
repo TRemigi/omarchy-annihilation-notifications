@@ -1,6 +1,7 @@
 // annihilation: the arrival outside the cards: a ring of light that leaves each new toast's own outline and travels out, and a halo
 // that hugs it, drawn by shaders/toastring.frag. It lives in the popup window, under the toast column (so each card hides the middle
-// of its own light), top right, because the ring outlasts the card's unfolding and reaches 340 px beyond it. It replaces the theme's
+// of its own light), over the whole window, because the ring outlasts the card's unfolding and the wave travels about 700 px from the icon
+// (a layer sized to the card cut it off in a straight line, seen in a recording); it renders at half resolution and only while an arrival runs. It replaces the theme's
 // old arrival ring, whose source was a fixed box near the corner; here every arrival carries its card, so the light is the card's shape.
 //
 // A toast's ArrivalFlare calls begin() with its card. Up to three arrivals are drawn at once; a burst is thinned so it does not stack

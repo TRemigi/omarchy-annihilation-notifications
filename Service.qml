@@ -1034,10 +1034,7 @@ Item {
       // annihilation: the arrival's ring and halo, under the cards: they hug each new card's own outline. See ArrivalLayer.qml.
       ArrivalLayer {
         id: arrivalLayer
-        anchors.top: parent.top
-        anchors.right: parent.right
-        width: Style.space(380) + popupWindow.popupPlacement.margins.right + ringReach + 40
-        height: Math.min(parent.height, Style.space(720) + ringReach)
+        anchors.fill: parent // the wave travels some 700 px from the icon, across the screen: a layer sized to the card cut the ring off in a straight line
         strength: service.themed ? service.arrivalStrength : 0
         cornerRadius: service.cornerRadius
         screenHeight: popupWindow.height

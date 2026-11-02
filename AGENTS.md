@@ -367,6 +367,10 @@ What it is (`docs/design/arrival/README` section in `docs/design/README.md` has 
   own rounded rectangle** (a pixel is reached by the front at `d + |icon - q|`, d its distance from the outline and q the nearest outline point), at most three at a
   time, rendered at half resolution, only while there are any; the window stays visible while it runs (`visible: ... || arrivalLayer.active`, CONTRACT.md). It follows the
   card while it exists (the stack moves).
+- **Found live (2026-11-02, from a recording):** the ring was cut off in a straight vertical line as it travelled towards the middle of the screen: the layer was
+  sized to the card plus the ring's reach (about 740 px) but the wave travels about 700 px from the *icon*, which is 34 px inside the card, so it ran off the layer's left
+  edge. The layer now fills the whole window (half resolution, only while an arrival runs); the probe checks it does. Lesson: size a light's layer from where the light
+  can reach (the front's maximum radius from its source), not from the shape it starts from.
 - Setting: `arrival` 0 to 2, default 1, in the fork conf; 0 turns the whole arrival off (back to the plain unfold and the blend's ignition).
 - **Theme side (branch `p2/arrival` there):** `ArrivalGlow.qml`, `arrival.frag`, `notifyGlow`/`notifyGlowStrength` with their popup slider and switch, the layer rule's
   namespace and the interim `glow.json` writer are removed; the feed, the sound and the missed marks stay. The theme alone has no arrival light now (the user's decision).
