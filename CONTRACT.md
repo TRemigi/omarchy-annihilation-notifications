@@ -57,12 +57,13 @@ All return a string; keep the names and the argument lists.
   expires. The theme's `MissedTracker.lifetimeFor` mirrors these numbers.
 - **With the annihilation theme active, a toast leaves the screen up to 1.1 s later** (times `motion_slowdown`, 1 unless the user changes it in
   `~/.config/omarchy/annihilation-notifications-fork.conf`; 300 ms with `arrival=0`) than its lifetime or its dismissal: it dissolves into the light first
-  (`components/ArrivalFlare.qml`, `SlotMotion.dissolve`: the arrival played backwards, 1 s) and the slot folds shut over the last of that, and only then is its file
+  (`components/ArrivalFlare.qml`, `SlotMotion.dissolve`: the ring that has rested round the card collapses onto it, 1 s) and the slot folds shut over the last of that, and only then is its file
   moved to `history/`. Left-click (which acts at once) and the IPC dismissals are not delayed. The theme's `MissedTracker` cannot know this; the only effect is
   that a toast dismissed in roughly the last 1.5 s of its lifetime can be counted as expired (a false "missed").
 - **With the annihilation theme active, the popup window can stay up, empty and click-through, for up to about 2.2 s after
-  the last toast has gone**, to finish drawing the spores it left (`components/SporeLayer.qml`) and, after an arrival, the ring and halo that
-  leave a new toast's outline (`components/ArrivalLayer.qml`, up to the arrival's 3 to 6 s, times `motion_slowdown`). It never covers or
+  the last toast has gone**, to finish drawing the spores it left (`components/SporeLayer.qml`). The arrival's ring and halo (`components/ArrivalLayer.qml`) now rest round
+  a card and **linger for as long as the toast is up** (at most 3 at a time; they are drawn in the same window, so the window is up anyway), and a ring goes with its
+  card (collapsed in the exit, or at once on a click or an IPC dismissal), so it no longer outlasts the toast. It never covers or
   intercepts anything: its input region is the toast column, which is empty by then. The layer namespace is unchanged.
 - **Where the toasts are:** top right, as in Omarchy, unless the annihilation theme is active and `position=center` is set in the fork's conf file (read live): then the column is centred
   horizontally at the top of the screen (same top margin, so below the bar). The window, the layer namespace and the input region are unchanged.

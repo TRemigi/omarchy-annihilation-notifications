@@ -236,6 +236,19 @@ Restart the shell after updating either repo (new files). The setting is `arriva
 - [ ] `arrival=0` is the plain unfold of 0.2 to 0.6; with `look=growth` the roots and rim arrive in step; a **different theme** is exactly as before
 - [ ] it does not feel heavy (the ring layer renders at half resolution while an arrival runs, and not at all otherwise)
 
+### H2. The ring lingers (branch `p2/arrival-linger`; try it, then say what to change)
+
+The arrival's ring no longer fades away: it travels out, **comes to rest a short way from the card (48 to 84 px, 7% of the screen's height) and stays there for the toast's life**,
+undulating slowly (a ripple travelling round it, a breath in its brightness and the halo's). On expiry it is pulled in onto the card as the card dissolves into the light
+(no more reappearing ring). Critical toasts keep theirs until dismissed. Up to three rings are drawn at once (the oldest of a crowd loses its ring).
+Restart the shell after syncing (`omarchy restart shell`); a slow `motion_slowdown=3` makes it easiest to judge.
+- [ ] the ring forms as before but stops close to the card instead of crossing the screen, and stays
+- [ ] the ripple is slow and subtle (not distracting, not a pulse); the halo breathes with it
+- [ ] on expiry the ring contracts onto the card, brightening, and the card dissolves into it; nothing lingers afterwards
+- [ ] a click dismisses the toast and its ring at once
+- [ ] with several toasts the rings do not overlap into a mess, and the stack still reads; a toast that arrives fourth takes the oldest ring's place
+- [ ] it does not feel heavy while a ring rests (30 Hz updates; the layer renders at half resolution), including a critical toast left up for minutes
+
 ## Results
 
 | Date | Omarchy | Fork | A | B | C | Notes |

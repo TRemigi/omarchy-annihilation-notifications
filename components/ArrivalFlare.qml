@@ -3,8 +3,10 @@
 // (shaders/toastflare.frag, the overlay below), and the front goes on out into the screen as ArrivalLayer's ring and halo. When the front
 // has crossed the card the look's own rim takes over: `rimGate` rises 0 to 1 for the ToastRim, as the flare's own light falls.
 //
-// The exit is the same wave played backwards, faster (ArrivalLogic.exitFront): when the toast leaves (`exiting`, `q` the dissolve's 0 to 1 from SlotMotion) the front
-// retreats from beyond the card to the icon, so the card dissolves from its far corner into the light; the ring and halo contract onto it (ArrivalLayer.beginExit);
+// The ring and halo do not leave when the arrival is over: they rest round the card and undulate for as long as the toast is up (ArrivalLayer, which holds them).
+//
+// The exit is the ring collapsing (ArrivalLogic.exitFront): when the toast leaves (`exiting`, `q` the dissolve's 0 to 1 from SlotMotion) the front
+// retreats from where the ring rests to the icon, so the ring is pulled in onto the card and the card dissolves from its far corner into the light (ArrivalLayer.beginExit);
 // the flare's afterglow is a ghost of the edge on the side the front has left; and the settled rim fades out as the flare comes up (`rimGate` again).
 //
 // This item owns the toast's timeline: `p` runs 0 to 1 over the arrival (ArrivalLogic.durationFor, times `slowdown`), the same
@@ -39,7 +41,9 @@ Item {
   // card's left, so the ring seemed centred on the toast's top left corner). The icon's own ring lights as the front reaches it.
   readonly property vector2d origin: Qt.vector2d(target.width / 2, target.height / 2)
   readonly property real cardReach: ArrivalLogic.cardReach(origin.x, origin.y, target.width, target.height)
-  readonly property real front: exiting ? ArrivalLogic.exitFront(q, cardReach, ring.ringReach) : (armed ? ArrivalLogic.frontAt(p, cardReach, ring.ringReach) : -1)
+  // where the exit's front starts (set when the exit begins)
+  property real exitFromPx: 0
+  readonly property real front: exiting ? ArrivalLogic.exitFront(q, exitFromPx) : (armed ? ArrivalLogic.frontAt(p, cardReach, ring.ringReach) : -1)
   readonly property real settled: exiting || armed ? ArrivalLogic.settle(front, cardReach) : 1
   // the card is masked, and the flare drawn, while the front is crossing it (and the settled rim fades in over the end of that, or out over the start of the exit)
   readonly property bool revealing: (exiting || armed) && front < cardReach + 30
@@ -48,13 +52,18 @@ Item {
   readonly property real rimGate: exiting ? 1 : settled
   readonly property real fade: exiting ? ArrivalLogic.exitFade(front, cardReach) : 1 - settled
 
-  // The exit begins: the arrival is over (if it was still running), and the ring is told to contract onto the card.
+  // The exit begins: the card's arrival is over (if it was still running) and the ring is told to contract onto the card, from where its front is now (or where it rests).
   onExitingChanged: {
     if (!exiting) return
+    var now = Date.now()
+    exitFromPx = ArrivalLogic.exitFrom(startMs > 0 ? ArrivalLogic.frontAt(ArrivalLogic.progressOf(startMs, now, durMs), cardReach, ring.ringReach) : 1e9, cardReach, ring.holdReach)
     armed = false
     clock.stop()
-    if (on && strength > 0) ring.beginExit(target, origin.x, origin.y, cardReach, urgency, app, Date.now(), ArrivalLogic.exitDurationMs() * slowdown)
+    if (on && strength > 0) ring.beginExit(target, exitFromPx, now, ArrivalLogic.exitDurationMs() * slowdown)
   }
+
+  // A card dismissed at once takes its ring with it.
+  Component.onDestruction: if (ring) ring.end(target)
 
   // Armed from the moment the toast exists, so its card is hidden (the front is at the icon, 0) from the first frame; the clock starts, and the
   // layer is told, once the first layout has given the card its size and place.

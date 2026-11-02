@@ -4,7 +4,11 @@
 // (a layer sized to the card cut it off in a straight line, seen in a recording); it renders at half resolution and only while an arrival runs. It replaces the theme's
 // old arrival ring, whose source was a fixed box near the corner; here every arrival carries its card, so the light is the card's shape.
 //
-// A toast's ArrivalFlare calls begin() with its card. Up to three arrivals are drawn at once; a burst is thinned so it does not stack
+// The ring does not fade away when the arrival is over: it comes to rest a short way (`holdReach`) from the card's outline and lingers there, undulating, for as long
+// as the toast is up (the event is "held"); when the toast leaves, beginExit() swaps it for an exit event that pulls it in onto the card. A toast dismissed at once
+// (click, IPC) takes its ring with it (end()).
+//
+// A toast's ArrivalFlare calls begin() with its card. Up to three rings are drawn at once (the oldest goes first); a burst is thinned so it does not stack
 // into a flash. The layer is invisible, and costs nothing, while there are none, renders at half resolution (the light is soft) and takes no input.
 import QtQuick
 import "../ArrivalLogic.js" as ArrivalLogic
@@ -18,18 +22,35 @@ Item {
   property real seed: Math.random() * 100
   // The whole window's height, for the ring's reach.
   property real screenHeight: 1080
+  // How fast the front runs (the arrival's timing), and how far from the outline the ring rests (the arrival's size on screen).
   readonly property real ringReach: ArrivalLogic.ringReachFor(screenHeight)
+  readonly property real holdReach: ArrivalLogic.holdReachFor(screenHeight)
 
-  // { item (the card), x, y, w, h (the card in this layer's px), ix, iy (the wave's origin, the card's centre, in the card's px), cardReach, urgency, amp, salt, start, dur }, oldest first
+  // { item (the card), x, y, w, h (the card in this layer's px), ix, iy (the wave's origin, the card's centre, in the card's px), cardReach, urgency, amp, salt, start, dur,
+  //   hold (stays after dur until it is replaced or ended), exit (leaving; with p0, the arrival's progress then, and from, the front's radius then) }, oldest first
   property var events: []
   property real nowMs: 0
+  // seconds, wrapped, for the shader's undulation
+  readonly property real shaderTime: (nowMs % 600000) / 1000
   readonly property bool active: events.length > 0
   readonly property int maxEvents: 3
 
   enabled: false                      // click-through
 
   function live(now) {
-    return events.filter(function(e) { return now - e.start < e.dur })
+    return events.filter(function(e) { return e.hold ? e.item !== null : now - e.start < e.dur })
+  }
+
+  // The event of a card that is up: its ring, resting or on its way.
+  function heldOf(item) {
+    for (var i = 0; i < events.length; i++) if (events[i].item === item && events[i].hold) return events[i]
+    return null
+  }
+
+  // The card has gone without an exit (dismissed at once): its ring goes with it.
+  function end(item) {
+    var kept = events.filter(function(e) { return e.item !== item })
+    if (kept.length !== events.length) events = kept
   }
 
   // A card arrives: `item` is the NotificationCard, (ix, iy) the wave's origin in its own pixels, `start` the moment (ms) and `dur` the length (ms)
@@ -43,22 +64,24 @@ Item {
     list.push({
       item: item, x: p.x, y: p.y, w: item.width, h: item.height, ix: ix, iy: iy, cardReach: cardReach,
       urgency: urgency, amp: ArrivalLogic.amplitudeFor(app, urgency, last ? start - last.start : 1e9),
-      salt: (list.length + Math.floor(now / 1000)) % 7 * 1.3, start: start, dur: dur
+      salt: (list.length + Math.floor(now / 1000)) % 7 * 1.3, start: start, dur: dur, hold: true
     })
     events = list.slice(-maxEvents)
     nowMs = now
   }
 
-  // A card is leaving: the same wave played backwards (ArrivalLogic.exitProgress), faster, so the ring contracts onto the card and brightens as it gets there.
-  // `start` and `dur` are the dissolve's, which the card's own flare shares.
-  function beginExit(item, ix, iy, cardReach, urgency, app, start, dur) {
-    if (!(strength > 0)) return
+  // A card is leaving: its ring (resting, or still on its way) is pulled in onto the card (ArrivalLogic.exitFront), brightening as it goes, while the card dissolves
+  // into it. `start` and `dur` are the dissolve's, which the card's own flare shares; `from` is the front's radius at the start (ArrivalLogic.exitFrom). A toast with
+  // no ring (it did not arrive: restored after a shell restart, or its ring was the oldest of a crowd) has nothing to pull in.
+  function beginExit(item, from, start, dur) {
+    var held = heldOf(item)
+    if (!held) return
     var now = Date.now()
-    var list = live(now)
-    var p = item.mapToItem(root, 0, 0)
+    var list = live(now).filter(function(e) { return e !== held })
     list.push({
-      item: item, x: p.x, y: p.y, w: item.width, h: item.height, ix: ix, iy: iy, cardReach: cardReach, exit: true, p0: ArrivalLogic.exitStart(cardReach, ringReach),
-      urgency: urgency, amp: ArrivalLogic.amplitudeFor(app, urgency, 1e9), salt: (list.length + Math.floor(now / 1000)) % 7 * 1.3, start: start, dur: dur
+      item: item, x: held.x, y: held.y, w: held.w, h: held.h, ix: held.ix, iy: held.iy, cardReach: held.cardReach, exit: true, from: from,
+      p0: ArrivalLogic.progressOf(held.start, now, held.dur),
+      urgency: held.urgency, amp: held.amp, salt: held.salt, start: start, dur: dur
     })
     events = list.slice(-maxEvents)
     nowMs = now
@@ -82,9 +105,14 @@ Item {
     nowMs = now
   }
 
+  // The arrival's progress (1 once it has arrived: the held state; an exit keeps the progress it left at).
   function progressAt(i, now) {
-    var e = events[i], t = ArrivalLogic.progressOf(e.start, now, e.dur)
-    return e.exit ? ArrivalLogic.exitProgress(t, e.p0) : t
+    var e = events[i]
+    return e.exit ? e.p0 : ArrivalLogic.progressOf(e.start, now, e.dur)
+  }
+  function frontOf(i, now) {
+    var e = events[i]
+    return e.exit ? ArrivalLogic.exitFront(ArrivalLogic.progressOf(e.start, now, e.dur), e.from) : ArrivalLogic.frontAt(progressAt(i, now), e.cardReach, ringReach)
   }
   function rectAt(i, now) {
     if (i >= events.length || now < 0) return Qt.vector4d(0, 0, 0, 0)
@@ -94,16 +122,26 @@ Item {
   function srcAt(i, now) {
     if (i >= events.length || now < 0) return Qt.vector4d(0, 0, 0, 0)
     var e = events[i]
-    return Qt.vector4d(e.x + e.ix, e.y + e.iy, e.cardReach, ArrivalLogic.frontAt(progressAt(i, now), e.cardReach, ringReach))
+    return Qt.vector4d(e.x + e.ix, e.y + e.iy, e.cardReach, frontOf(i, now))
   }
   function evAt(i, now) {
     if (i >= events.length || now < 0) return Qt.vector4d(0, 1, 0, 0)
     var e = events[i]
-    return Qt.vector4d(progressAt(i, now), e.urgency, e.amp, e.salt)
+    // pulled in, the ring brightens
+    var lift = e.exit ? 1 + 0.7 * ArrivalLogic.clamp01(2 * ArrivalLogic.progressOf(e.start, now, e.dur)) : 1
+    return Qt.vector4d(progressAt(i, now), e.urgency, e.amp * lift, e.salt)
   }
 
+  // Frame by frame while anything moves quickly (an arrival under way, a ring being pulled in); at 30 Hz while rings only rest, which is slow enough not to show.
+  readonly property bool busy: events.some(function(e) { return e.exit || (e.hold && nowMs - e.start < e.dur) })
   FrameAnimation {
-    running: root.active
+    running: root.busy
+    onTriggered: root.tick()
+  }
+  Timer {
+    interval: 33
+    repeat: true
+    running: root.active && !root.busy
     onTriggered: root.tick()
   }
 
@@ -117,7 +155,8 @@ Item {
 
     property real seed: root.seed
     property real strength: root.strength
-    property real reach: root.ringReach
+    property real reach: root.holdReach
+    property real time: root.shaderTime
     property real radius: root.cornerRadius
     property size resolution: Qt.size(width, height)
     property vector4d rect0: root.rectAt(0, root.nowMs)

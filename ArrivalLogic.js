@@ -19,9 +19,15 @@ function amplitudeFor(app, urgency, sinceLastMs) {
   return base
 }
 
-// How far the ring travels beyond the card, px, for a screen this tall (judged at the real resolution).
+// How far the front runs beyond the card, px, for a screen this tall (judged at the real resolution). It sets the arrival's *timing* (how fast the
+// front crosses the card); the ring no longer travels that far, it comes to rest at `holdReachFor`.
 function ringReachFor(screenHeight) {
   return Math.max(180, Math.min(340, Number(screenHeight) * 0.26))
+}
+
+// How far from the card's outline the ring rests, px (it lingers there for the toast's life and undulates round it): the arrival's largest extent on screen.
+function holdReachFor(screenHeight) {
+  return Math.max(48, Math.min(84, Number(screenHeight) * 0.07))
 }
 
 // How far the front has to go from its origin (ix, iy, in the card's own pixels: its centre) to have crossed a w x h card, and a little more.
@@ -58,29 +64,23 @@ function isFresh(timestampMs, nowMs) {
   return nowMs - Number(timestampMs) < 3000
 }
 
-// ---- The exit: the arrival played backwards, faster. `q` runs 0 to 1 over `exitDurationMs` (times the user's slowdown).
-// The wave is the arrival's from a progress `exitStart` back to 0, chosen so that at q = 0 the front is just beyond the card (15% past its reach), whatever the
-// screen: a ring a little beyond the card contracts onto it, brightening, as the front retreats across the card to the icon, so the card dissolves from its far
-// corner into the light and the spore at the icon goes out last. The slot folds shut once the dissolve is mostly done (EXIT_FOLD_AT), so the stack closes up behind it.
+// ---- The exit: the ring that has lingered round the card collapses onto it as the card dissolves into the light. `q` runs 0 to 1 over `exitDurationMs` (times the user's slowdown).
+// The front starts from where the lingering ring rests (or from where the arrival's front is, if the toast leaves before the arrival has finished), slow at first and quicker
+// as it falls in: the ring contracts onto the card, brightening, then the card dissolves from its far corner towards the icon and the spore goes out last. The slot folds
+// shut once the dissolve is mostly done (EXIT_FOLD_AT), so the stack closes up behind it.
 var EXIT_FOLD_AT = 0.8
 
 function exitDurationMs() { return 1000 }
 
-// The arrival's own progress at which the front is 15% beyond the card (capped, for a ring reach so small that the front would never get there).
-function exitStart(cardReach, ringReach) {
-  var r = Math.min(1.15 * cardReach / (cardReach + ringReach), 0.97)
-  return 1 - Math.pow(1 - r, 1 / 3)
+// Where the exit's front starts: the arrival's front now if it is still on the way, else just far enough out that the ring (at most `holdReach` from the outline) has not moved yet.
+function exitFrom(frontNow, cardReach, holdReach) {
+  return Math.min(frontNow, cardReach + holdReach)
 }
 
-// The arrival's progress that the exit is at (`p0` at the start, 0 at the end).
-function exitProgress(q, p0) {
-  return p0 * (1 - clamp01(q))
-}
-
-// The front's radius from the origin: the arrival's at that progress, less up to 30 px so that at the end nothing is left of the card, not even a
-// soft edge of it round the icon.
-function exitFront(q, cardReach, ringReach) {
-  return frontAt(exitProgress(q, exitStart(cardReach, ringReach)), cardReach, ringReach) - 30 * clamp01(q)
+// The front's radius from the origin, from `from` at q = 0 to less than nothing at q = 1 (less 30 px so that nothing is left of the card, not even a soft edge round the icon).
+function exitFront(q, from) {
+  var c = clamp01(q)
+  return from * (1 - Math.pow(c, 1.25)) - 30 * c
 }
 
 // How much of the flare's light there is: none while the front is still beyond the card (the settled rim is lit then), then up as it crosses

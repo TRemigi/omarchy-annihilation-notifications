@@ -51,22 +51,23 @@ eq("fresh: a toast from a second ago arrives", true, ctx.isFresh(9000, 10000))
 eq("fresh: one from a minute ago (restored after a shell restart) does not", false, ctx.isFresh(10000 - 60000, 10000))
 eq("fresh: the limit is 3 s", [true, false], [ctx.isFresh(7001, 10000), ctx.isFresh(7000, 10000)])
 
-// the exit: the arrival played backwards
+// the exit: the lingering ring collapses onto the card
 eq("exit: the fold is mostly through the dissolve", 0.8, ctx.EXIT_FOLD_AT)
-eq("exit: it lasts a second (a little quicker than the arrival's crossing of the card is, but quicker than the arrival overall)", 1000, ctx.exitDurationMs())
-for (const rr of [180, 309.4, 340]) {
-  const p0 = ctx.exitStart(rc, rr)
-  near("exit: starts with the front 15% beyond the card (ring reach " + rr + ")", 1.15 * rc, ctx.frontAt(p0, rc, rr), 1e-6)
-  yes("exit: the start is a progress between 0 and 1 (" + rr + ")", p0 > 0 && p0 < 1, p0)
-  near("exit: q=0 puts the front there (" + rr + ")", 1.15 * rc, ctx.exitFront(0, rc, rr), 1e-6)
-  near("exit: q=1 leaves less than nothing of the card (the front is at -30)", -30, ctx.exitFront(1, rc, rr), 1e-6)
-  let down = true; for (let i = 1; i <= 100; i++) if (ctx.exitFront(i / 100, rc, rr) > ctx.exitFront((i - 1) / 100, rc, rr)) down = false
-  yes("exit: the front only ever retreats (" + rr + ")", down)
-  yes("exit: it is slow to start and quick to finish (the last tenth covers more than the first tenth) (" + rr + ")", ctx.exitFront(0.9, rc, rr) - ctx.exitFront(1, rc, rr) > ctx.exitFront(0, rc, rr) - ctx.exitFront(0.1, rc, rr))
+eq("exit: it lasts a second", 1000, ctx.exitDurationMs())
+eq("hold reach: 7% of the screen's height, between 48 and 84 px", [48, 75.6, 84], [ctx.holdReachFor(300), Math.round(ctx.holdReachFor(1080) * 10) / 10, ctx.holdReachFor(4000)])
+yes("hold reach: much smaller than the front's run (it is the arrival's largest extent now)", ctx.holdReachFor(1190) < 0.3 * ctx.ringReachFor(1190))
+for (const hr of [48, 75.6, 84]) {
+  const from = ctx.exitFrom(1e6, rc, hr)
+  near("exit: from rest the front starts just beyond the card by the hold reach (" + hr + ")", rc + hr, from, 1e-9)
+  near("exit: a toast leaving mid-arrival starts where the front is", 120, ctx.exitFrom(120, rc, hr), 1e-9)
+  near("exit: q=0 puts the front at its start", from, ctx.exitFront(0, from), 1e-9)
+  near("exit: q=1 leaves less than nothing of the card (the front is at -30)", -30, ctx.exitFront(1, from), 1e-9)
+  let down = true; for (let i = 1; i <= 100; i++) if (ctx.exitFront(i / 100, from) > ctx.exitFront((i - 1) / 100, from)) down = false
+  yes("exit: the front only ever retreats (" + hr + ")", down)
+  yes("exit: it is slow to start and quick to finish (the last tenth covers more than the first tenth) (" + hr + ")", ctx.exitFront(0.9, from) - ctx.exitFront(1, from) > ctx.exitFront(0, from) - ctx.exitFront(0.1, from))
+  yes("exit: the card starts to dissolve (the front crosses its edge) within the first third (" + hr + ")", ctx.exitFront(0.33, from) < rc + 30)
+  eq("exit: q is clamped", [from, -30], [ctx.exitFront(-1, from), ctx.exitFront(2, from)])
 }
-near("exit: a tiny ring reach caps the start below 1", 1 - Math.pow(0.03, 1 / 3), ctx.exitStart(rc, 1), 1e-9)
-eq("exit: progress is the start at q=0 and 0 at q=1", [0.3, 0], [ctx.exitProgress(0, 0.3), ctx.exitProgress(1, 0.3)])
-eq("exit: progress is clamped", [0.3, 0], [ctx.exitProgress(-1, 0.3), ctx.exitProgress(2, 0.3)])
 eq("exit: no flare while the front is still beyond the card", 0, ctx.exitFade(1.15 * rc, rc))
 yes("exit: the flare comes up as the front crosses the card", ctx.exitFade(0.8 * rc, rc) > 0.5, ctx.exitFade(0.8 * rc, rc))
 eq("exit: and is out at the end (nothing lingers)", 0, ctx.exitFade(0, rc))

@@ -36,18 +36,18 @@ def maxalpha(img): return max(img[2][3::4])
 # ---------------------------------------------------------------------------- the ring (outside the card)
 LW, LH = 900, 400
 CARD = (300, 100, 380, 78); ORIGIN = (490, 139)                # the card in the layer; the wave starts at its centre
-RC = math.hypot(190, 39) + 30; REACH = 309.0
+RC = math.hypot(190, 39) + 30; WAVE = 309.0; REACH = 75.0     # the front runs WAVE beyond the card (the timing); the ring rests at 0.6 of REACH and the light stays within it
 def ring(front=60.0, p=0.1, urgency=1, amp=1.0, strength=1.0, rect=CARD, radius=4, salt=0.0, **over):
     src = (rect[0] + 190, rect[1] + 39, RC, front)
     u = dict(seed=5, strength=strength, reach=REACH, radius=radius, resolution=(LW, LH), rect0=rect, rect1=(0, 0, 0, 0), rect2=(0, 0, 0, 0),
              src0=src, src1=(0, 0, 0, 0), src2=(0, 0, 0, 0), ev0=(p, urgency, amp, salt), ev1=(0, 1, 0, 0), ev2=(0, 1, 0, 0))
     u.update(over); return render(RING, LW, LH, **u)
-def tfront(p): return (RC + REACH) * (1 - (1 - p) ** 3)
+def tfront(p): return (RC + WAVE) * (1 - (1 - p) ** 3)
 base = ring(front=tfront(0.12), p=0.12)
 check("ring: the output is added light (alpha 0 everywhere)", maxalpha(base) == 0)
 check("ring: nothing is drawn under the card (the card hides it)", lum(px(base, 480, 139)) == 0 and lum(px(base, 330, 139)) == 0)
 check("ring: nothing when the arrival has not started (progress 0)", total(ring(p=0.0)) == 0)
-check("ring: nothing when it is over (progress 1)", total(ring(p=1.0)) == 0)
+check("ring: progress 1 is not over, it is the held state: the ring rests and still draws", total(ring(front=RC + WAVE, p=1.0)) > 0.3 * total(base))
 check("ring: nothing with no card (width 0)", total(ring(rect=(0, 0, 0, 0))) == 0)
 check("ring: strength 0 draws nothing", total(ring(front=tfront(0.12), p=0.12, strength=0)) == 0)
 check("ring: strength 2 is brighter than 1", total(ring(front=tfront(0.12), p=0.12, strength=2)) > 1.3 * total(base))
@@ -63,9 +63,9 @@ check("ring: later the wave has crossed the card and is out beyond both its ends
 # the halo hugs the outline: equally far above and below a vertically-centred icon
 h_top, h_bot = lum(px(late, 480, 100 - 8)), lum(px(late, 480, 178 + 8))
 check("ring: the glow hugs the card's outline, the same above and below (the centre is centred)", h_top > 3 and abs(h_top - h_bot) < 0.25 * max(h_top, h_bot), (h_top, h_bot))
-# the ring front itself: at front 100 the wave has gone 61 px past the top edge above the centre
-mid = ring(front=100.0, p=0.05)
-check("ring: the front is a band of light where the wave is (above the middle of the card, 61 px out)", lum(px(mid, 490, 100 - 61)) > 8, (px(mid, 490, 39), px(mid, 490, 84)))
+# the ring front itself: at front 70 the wave has gone 31 px past the top edge above the centre
+mid = ring(front=70.0, p=0.05)
+check("ring: the front is a band of light where the wave is (above the middle of the card, 31 px out)", lum(px(mid, 490, 100 - 31)) > 8 and lum(px(mid, 490, 100 - 31)) > 2 * lum(px(mid, 490, 100 - 44)), (px(mid, 490, 69), px(mid, 490, 56)))
 
 # it follows the card, and its corner radius
 ca = (300, 160, 380, 78); cb = (400, 200, 380, 78)
@@ -90,8 +90,51 @@ check("ring: no seam at the card's outline (neighbouring pixels differ by little
 gone = ring(front=800.0, p=0.5)
 check("ring: the halo is still there after the ring has gone on (the front is far out)", lum(px(gone, 480, 100 - 8)) > 8 and lum(px(gone, 480, 178 + 8)) > 8, (px(gone, 480, 92), px(gone, 480, 186)))
 check("ring: the halo is not there before the front has reached that part of the card (far end, front still near the icon)", lum(px(ring(front=40.0, p=0.15), 650, 100 - 8)) < 3 and lum(px(gone, 650, 100 - 8)) > 5, (px(ring(front=40.0, p=0.15), 650, 92), px(gone, 650, 92)))
-check("ring: the halo hugs the outline: strong beside it, gone about three widths (200 px) out", lum(px(gone, 480, 186)) > 8 and lum(px(gone, 480, 178 + 8 + 190)) < 4, (px(gone, 480, 186), px(gone, 480, 376)))
+check("ring: the halo hugs the outline: strong beside it, gone within the hold reach (75 px) and a little more", lum(px(gone, 480, 186)) > 8 and lum(px(gone, 480, 178 + 8 + 100)) < 2, (px(gone, 480, 186), px(gone, 480, 286)))
 check("ring: an out-of-range progress draws nothing (not garbage)", total(ring(p=1.5)) == 0 and total(ring(p=-0.5)) == 0, (total(ring(p=1.5)), total(ring(p=-0.5))))
+
+# ---- lingering: the ring comes to rest at 0.6 * reach from the outline, all round, and stays within the hold reach
+def peak(img, x, y0, direction, span=90):
+    best = max(range(1, span), key=lambda k: lum(px(img, x, y0 + direction * k))); return best
+def held(t=0.0, front=RC + WAVE, **kw): return ring(front=front, p=1.0, time=t, **kw)
+h0 = held()
+up, down = peak(h0, 480, 100, -1), peak(h0, 480, 178, 1)
+check("held: the ring rests about 0.6 * reach (45 px) from the outline, above and below the card (the front is far out; it stopped)", 28 <= up <= 62 and 28 <= down <= 62, (up, down))
+lt, rt = peak(h0, 300, 139, -1), peak(h0, 680, 139, 1)   # (horizontal scans: use rows)
+def peak_h(img, y, x0, direction, span=90): return max(range(1, span), key=lambda k: lum(px(img, x0 + direction * k, y)))
+left, right = peak_h(h0, 139, 300, -1), peak_h(h0, 139, 680, 1)
+check("held: and the same at both ends (the ring follows the outline, it is not a circle)", 28 <= left <= 62 and 28 <= right <= 62, (left, right))
+check("held: nothing beyond the reach (75 px) plus the width of the ring, above or below the card, at any of eight moments",
+      all(max(lum(px(held(t), 480, y)) for y in (100 - 75 - 22, 178 + 75 + 22)) < 3 for t in (0, 1.3, 2.9, 4.4, 6.1, 7.7, 9.2, 11.5)),
+      [(t, px(held(t), 480, 3), px(held(t), 480, 375)) for t in (0, 5)])
+def ringpos(t):
+    img = held(t); return [peak(img, x, 100, -1) for x in (340, 420, 490, 560, 640)]
+pos = [ringpos(t) for t in (0, 1.5, 3.0, 4.5)]
+check("held: it undulates: the ring's distance from the outline changes with time, by several px", max(max(a) - min(a) for a in zip(*pos)) >= 4, pos)
+check("held: and along the card at one moment (a ripple, not a uniform breath)", max(pos[0]) - min(pos[0]) >= 3, pos[0])
+check("held: but only a ripple: it stays within about 25% of its rest distance either side (34 to 58 px) at all moments", all(30 <= v <= 60 for a in pos for v in a), pos)
+bright = [total(held(t)) for t in (0, 1.5, 3.0, 4.5, 6.0)]
+check("held: the halo stays beside the outline after the arrival is over (it used to fall to nothing with the ring)", lum(px(h0, 480, 100 - 8)) > 8 and lum(px(h0, 480, 178 + 8)) > 8, (px(h0, 480, 92), px(h0, 480, 186)))
+check("held: it breathes in brightness, within about 30%", 0.02 < (max(bright) - min(bright)) / min(bright) < 0.35, bright)
+arr_a, arr_b = ring(front=tfront(0.12), p=0.12, time=0.0), ring(front=tfront(0.12), p=0.12, time=3.0)
+check("held: while the arrival is still under way (progress 0.12) it does not undulate: the picture is the same at two times", total(arr_a) > 0 and abs(total(arr_a) - total(arr_b)) < 0.002 * total(arr_a), (total(arr_a), total(arr_b)))
+def peak_lum(img): return max(lum(px(img, 490, 100 - k)) for k in range(1, 90))
+check("held: the ring is dimmer than the arrival's passing one (so a ring that stays is not in the way)", peak_lum(h0) < 0.8 * peak_lum(arr_a), (peak_lum(h0), peak_lum(arr_a)))
+peak_arr = ring(front=tfront(0.12), p=0.12)
+check("held: arriving, the ring leaves the outline and stops at rest: at a front 20 px beyond the nearest point of the outline the ring is 20 px out; beyond that it does not go further",
+      peak(ring(front=40 + 20, p=0.05), 490, 100, -1) in range(12, 30) and peak(ring(front=RC + WAVE, p=0.95, time=0.0), 490, 100, -1) <= 62, (peak(ring(front=60, p=0.05), 490, 100, -1), peak(ring(front=RC + WAVE, p=0.95), 490, 100, -1)))
+
+# ---- the exit: from rest the front falls in and the ring is pulled onto the card
+rest_start = ring(front=RC + 75.0, p=1.0, time=2.0)
+rest_far = ring(front=RC + WAVE, p=1.0, time=2.0)
+check("exit: at q=0 (the front 75 px beyond the card's reach) the picture is exactly the resting one (no jump when the exit begins)", sum(abs(a - b) for a, b in zip(rest_start[2], rest_far[2])) < 0.001 * sum(rest_far[2]), (total(rest_start), total(rest_far)))
+near_end = ring(front=RC - 40.0, p=1.0, time=2.0)
+check("exit: the ring goes in from the far ends first: with the front at 40 px inside the card's reach the ring at the ends is already nearer the outline than at rest, the top-middle's is still at rest",
+      peak_h(near_end, 139, 680, 1) <= 36 and peak(near_end, 490, 100, -1) >= 38 and peak_h(rest_far, 139, 680, 1) >= 38, (peak_h(near_end, 139, 680, 1), peak(near_end, 490, 100, -1), peak_h(rest_far, 139, 680, 1)))
+late_exit = ring(front=60.0, p=1.0, time=2.0)
+check("exit: later it has been pulled in all round: the top-middle's ring is within 25 px of the outline, and the light is a third of what it was", peak(late_exit, 490, 100, -1) <= 25 and total(late_exit) < 0.5 * total(rest_far), (peak(late_exit, 490, 100, -1), total(late_exit), total(rest_far)))
+check("exit: with the front at -30 (the end) nothing is drawn", total(ring(front=-30.0, p=1.0, time=2.0)) < 0.01 * total(rest_far), total(ring(front=-30.0, p=1.0)))
+check("exit: the ring brightens as it is pulled in (the amplitude the layer passes rises; the shader multiplies it)", total(ring(front=RC - 20, p=1.0, amp=1.7, time=2.0)) > 1.4 * total(ring(front=RC - 20, p=1.0, amp=1.0, time=2.0)))
 
 # colours
 def rgb_at(img, x, y): p = px(img, x, y); return p[:3]

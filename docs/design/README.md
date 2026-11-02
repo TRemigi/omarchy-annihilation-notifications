@@ -181,6 +181,17 @@ shut once the dissolve is 80% done so the stack closes up behind it (1.1 s in al
 15% beyond the card (`ArrivalLogic.exitStart`, derived from the geometry so it holds on any screen) back to 0, at 1 s instead of 4.2 s, minus up to 30 px so nothing of the card
 is left round the icon. Left-click and the IPC dismissals are still instant (as stock); `arrival=0` keeps the old 300 ms fold.
 
+### The ring lingers (2026-11-02, "try"; branch `p2/arrival-linger`)
+The arrival's ring no longer fades out after its few seconds and then reappears at the exit. It travels out as before (the front's timing is unchanged, so the card is revealed at
+the same pace), but **stops at a resting distance from the outline** (0.6 of `ArrivalLogic.holdReachFor`: 7% of the screen's height, 48 to 84 px, so 45 px or so at 1080p; the
+arrival used to reach about 300 px) and **stays there for the toast's whole life** with the halo, a little dimmer than the passing ring, **undulating**: two plane waves travel along
+the outline (the distance from the card varies by about plus or minus 20%, wavelengths 90 to 140 px, periods 7 to 11 s), the ring's brightness breathes by 18% and the halo's by 15%. The
+first version made the ripple a function of the angle round the card's centre, which pinched it into a sharp kink across the middle of a wide card's top and bottom (seen in the preview): plane waves
+in the outline's position are even. On expiry the ring is pulled in onto the card from where it rests (`ArrivalLogic.exitFrom`, `exitFront`: slow at first, quicker as it falls in, brightening
+up to 1.7 times) while the card dissolves into the light; a toast that leaves mid-arrival starts from the front's place then. A click or IPC dismissal removes the ring at once. Held rings are updated at
+30 Hz (frame by frame only while something moves fast). At most three rings at a time (the shader has three slots): a fourth toast takes the oldest ring's place.
+Open for the user to judge: the resting distance (`holdReachFor`), the ripple's size and speed, whether a critical toast's ring should rest for ever, whether more than three rings are wanted.
+
 ### The arrival leaves the card's centre; the column can be centred on the screen (2026-11-02, "try")
 The user asked to try the toasts at the **top centre of the screen** (they are at the top right, as in Omarchy) and the arrival **centred on the toast**: with the wave leaving the icon, which sits at the
 card's left, the ring seemed centred on the toast's top-left corner. Now the wave starts at the card's centre (`ArrivalFlare.origin`; a small spark there spreads into the front, `toastflare.frag`'s
