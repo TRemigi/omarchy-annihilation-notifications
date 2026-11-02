@@ -51,6 +51,20 @@ eq("fresh: a toast from a second ago arrives", true, ctx.isFresh(9000, 10000))
 eq("fresh: one from a minute ago (restored after a shell restart) does not", false, ctx.isFresh(10000 - 60000, 10000))
 eq("fresh: the limit is 3 s", [true, false], [ctx.isFresh(7001, 10000), ctx.isFresh(7000, 10000)])
 
+// the ring's size: it eases into its full size, no wall
+eq("ring size: nothing at the start, and for a negative front", [0, 0], [ctx.ringScale(0), ctx.ringScale(-50)])
+near("ring size: 63% grown at one ease length (110 px)", 1 - Math.exp(-1), ctx.ringScale(110), 1e-9)
+yes("ring size: 95% at three ease lengths", ctx.ringScale(330) > 0.95 && ctx.ringScale(330) < 0.96)
+yes("ring size: never over 1, and nearly 1 when the wave has gone right out (the arrival's full run)", ctx.ringScale(1e6) <= 1 && ctx.ringScale(530) > 0.99)
+{ let up = true, slow = true; let prev = ctx.ringScale(0), prevStep = 1
+  for (let f = 5; f <= 600; f += 5) { const v = ctx.ringScale(f); if (v < prev) up = false; if (v - prev > prevStep + 1e-12) slow = false; prevStep = v - prev; prev = v }
+  yes("ring size: only grows, and each step is smaller than the one before (it eases in, with no stop)", up && slow) }
+for (const [from, s0] of [[305, 0.99], [180, 0.6], [305, 1]]) {
+  near("ring size on the way out: starts at the size it had (from " + from + ")", Math.min(1, s0), ctx.ringScaleExit(from, from, s0), 1e-9)
+  eq("ring size on the way out: nothing at the end", 0, ctx.ringScaleExit(0, from, s0))
+  yes("ring size on the way out: only shrinks as the front falls, never over 1 (from " + from + ")", [from, from * 0.8, from * 0.5, from * 0.2, 0].every((f, i, a) => i === 0 || ctx.ringScaleExit(f, from, s0) <= ctx.ringScaleExit(a[i - 1], from, s0)) && ctx.ringScaleExit(from, from, 1) <= 1)
+}
+
 // the exit: the lingering ring collapses onto the card
 eq("exit: the fold is mostly through the dissolve", 0.8, ctx.EXIT_FOLD_AT)
 eq("exit: it lasts a second", 1000, ctx.exitDurationMs())

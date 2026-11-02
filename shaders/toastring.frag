@@ -1,24 +1,19 @@
 #version 440
 
-// The arrival, outside the card: a ring of light that leaves the toast's own outline, travels out to a resting distance and lingers there for the
-// toast's life, undulating, and a halo that hugs the outline. When the toast leaves, the ring collapses back onto the card.
+// The arrival, outside the card: a ring of light, an oval round the card, that grows out of the card's centre, eases into a resting size and lingers there for
+// the toast's life, undulating, and a halo that hugs the card's outline. When the toast leaves, the ring shrinks back onto the card.
 //
-// Drawn in one layer under the toast column (so each card hides the middle of its own light), top right, for up to three arrivals
-// at once. This replaces the theme's old arrival ring (theme repo, shaders/arrival.frag), whose source was a fixed box near
-// the corner because the theme could not know where the card was. The fork does: every arrival carries its card's real rectangle,
-// so the ring and the halo have the card's own shape and corner radius.
+// Drawn in one layer under the toast column (so each card hides the middle of its own light), for up to three arrivals at once. This replaces the theme's
+// old arrival ring (theme repo, shaders/arrival.frag), whose source was a fixed box near the corner because the theme could not know where the card was.
 //
-// One wave leaves the card's centre (`src`: its x, y, the radius at which the front has crossed the whole card, the front's radius now).
-// Inside the card it is the front that reveals the card (cardreveal.frag) and flares its edge (toastflare.frag); here it carries
-// on outside. A pixel outside the card is reached by the front at `F = d + |src - q|`, where d is its distance from the outline
-// and q the nearest point of the outline: the wave crosses the outline at q, then travels d further. Near the card that makes the
-// ring hug the outline, bulging where the centre is closest and lagging at the far end; far away F tends to the plain distance from the
-// icon, so it rounds off into a circle. The halo is a function of d alone (a lamp-glow in the card's shape) and rises behind the front.
+// The ring is an ellipse centred on the card (an earlier version hugged the card's outline, which read as a rounded rectangle, and stopped at its resting distance
+// with a hard clamp, which read as a wall). Its size `src.z` runs 0 to 1 (the layer eases it, with no stop: ArrivalLogic.ringScale) and scales the semi-axes from nothing to
+// half the card plus 0.55 (across) and 0.8 (up and down) of `reach`: wider than tall, as the card is, but an oval, not a copy of its shape. A pixel's distance from the ring is the ellipse's own
+// (the usual first-order distance), so the ring is as wide at the ends as on top. The halo is a function of the card's outline distance d (a lamp-glow in the card's shape,
+// which is what a card's glow is) and rises behind the front, `src.w`, the radius the wave has reached (the same wave that reveals the card: cardreveal.frag, toastflare.frag).
 //
-// The ring does not travel on for ever: it comes to rest at `0.6 * reach` from the outline (the arrival's largest extent on screen is about `reach`), the same
-// all round, and stays (progress 1 means "arrived", the held state; the layer keeps it until the toast leaves). Held, it undulates: its distance from the outline
-// ripples slowly round the card (two plane waves along the outline, travelling in `time`), it breathes, and the halo with it. On the way out the layer retreats the
-// front (src.w) from where the ring rests to nothing, so the ring is pulled in onto the outline and the card with it.
+// Progress 1 means "arrived", the held state; the layer keeps it until the toast leaves. Held, the ring undulates: its distance from the ellipse ripples slowly
+// (two plane waves, travelling in `time`), it breathes, and the halo with it. On the way out the layer retreats the front and the size together.
 //
 // Colours are the theme's: normal teal to blue, critical amber to pink, low moss to teal; the arrival's own colour inside the ring
 // and what it drifts to outside. Output is added light (colour above alpha), rolled off with 1 - exp(-x).
@@ -39,7 +34,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 rect0;       // each arrival's card in the layer: x, y, width, height; width <= 0 for none
     vec4 rect1;
     vec4 rect2;
-    vec4 src0;        // the wave's origin x, y (the card's centre), the front's radius when it has crossed the card, the front's radius now
+    vec4 src0;        // the wave's origin x, y (the card's centre), the ring's size 0..1, the front's radius now
     vec4 src1;
     vec4 src2;
     vec4 ev0;         // progress 0..1 (1 is arrived: the held state; outside 0..1, off), urgency (0 low, 1 normal, 2 critical), amplitude, salt
@@ -81,28 +76,31 @@ vec3 arrival(vec2 px, vec4 rect, vec4 src, vec4 ev) {
     // How settled it is: the undulation grows in as the ring comes to rest.
     float held = smoothstep(0.5, 1.0, p);
     float t = ubuf.time;
-    // plane waves in the outline's position (not in its angle round the card, which is squeezed to a kink across the middle of a wide card's top and bottom)
-    float ripple = 0.10 * sin(0.045 * q.x + 0.030 * q.y - 0.9 * t + ev.w) + 0.06 * sin(0.070 * q.x - 0.050 * q.y + 0.55 * t + 2.0 * ev.w) + 0.04 * sin(0.7 * t + ev.w);
-    float rest = 0.6 * ubuf.reach * (1.0 + ripple * held);
+    // plane waves in the layer's position, so the ripple is even all round the oval
+    float ripple = 0.10 * sin(0.045 * px.x + 0.030 * px.y - 0.9 * t + ev.w) + 0.06 * sin(0.070 * px.x - 0.050 * px.y + 0.55 * t + 2.0 * ev.w) + 0.04 * sin(0.7 * t + ev.w);
 
-    // A few per cent of bend, smooth in position, so the ring is not a perfect contour.
+    // A few per cent of bend, smooth in position, so the ring is not a perfect ellipse.
     vec2 b = (px - centre) / (4.0 * ubuf.reach);
-    float bend = 1.0 + 0.06 * sin(b.x * 2.3 + ubuf.seed * 3.1 + ev.w) * sin(b.y * 2.9 + ubuf.seed * 1.7 + 2.0 * ev.w);
-    // The front reaches the outline at q when it has gone tEdge, then travels on out; the ring stops at its resting distance.
-    float dRing = min(src.w / bend - tEdge, rest);
+    float bend = 1.0 + 0.05 * sin(b.x * 2.3 + ubuf.seed * 3.1 + ev.w) * sin(b.y * 2.9 + ubuf.seed * 1.7 + 2.0 * ev.w);
+    // The ellipse and the pixel's distance from it (first order: k0 * (k0 - 1) / k1), plus the ripple.
+    vec2 ab = max(vec2(0.5 * rect.z + 0.55 * ubuf.reach, 0.5 * rect.w + 0.8 * ubuf.reach) * clamp(src.z, 0.0, 1.0) * bend, vec2(1.0));
+    vec2 e = px - centre;
+    float k0 = length(e / ab), k1 = length(e / (ab * ab));
+    float dEll = k1 > 1e-6 ? k0 * (k0 - 1.0) / k1 : -min(ab.x, ab.y);
+    dEll += 0.6 * ubuf.reach * ripple * held;
 
     float travel = 1.0 - pow(1.0 - p, 3.0);
     float w = ubuf.reach * (0.06 + 0.09 * travel);
-    float s = (d - dRing) / w;
+    float s = dEll / w;
     float ring = exp(-0.5 * s * s) * (1.0 - smoothstep(3.2, 4.2, abs(s)));
-    float ringLife = smoothstep(0.0, 0.07, p) * mix(0.55, 1.0, (1.0 - p) * (1.0 - p)) * (1.0 + 0.18 * held * sin(0.030 * q.x + 0.050 * q.y + 0.8 * t + 1.7 * ev.w));
+    float ringLife = smoothstep(0.0, 0.07, p) * mix(0.55, 1.0, (1.0 - p) * (1.0 - p)) * (1.0 + 0.18 * held * sin(0.030 * px.x + 0.050 * px.y + 0.8 * t + 1.7 * ev.w));
     vec3 ringCol = mix(inner, outer, smoothstep(-1.2, 1.6, s));
 
     // The halo: a lamp-glow round the outline, slower to rise, which stays (a little dimmer) while the ring rests, and only behind the front.
     float sigma = ubuf.reach * 0.3;
     float h = d / sigma;
     float halo = exp(-0.5 * h * h) * (1.0 - smoothstep(2.4, 3.4, h));
-    float haloLife = smoothstep(0.0, 0.14, p) * mix(0.6, 1.0, pow(1.0 - p, 1.5)) * (1.0 + 0.15 * held * sin(0.9 * t + ev.w + 0.020 * q.x));
+    float haloLife = smoothstep(0.0, 0.14, p) * mix(0.6, 1.0, pow(1.0 - p, 1.5)) * (1.0 + 0.15 * held * sin(0.9 * t + ev.w + 0.020 * px.x));
     float behind = 1.0 - smoothstep(src.w - 30.0, src.w + 40.0, tEdge);
     vec3 haloCol = mix(inner, vec3(1.0, 0.95, 0.88), 0.10);
 

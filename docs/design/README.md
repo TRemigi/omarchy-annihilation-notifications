@@ -181,16 +181,26 @@ shut once the dissolve is 80% done so the stack closes up behind it (1.1 s in al
 15% beyond the card (`ArrivalLogic.exitStart`, derived from the geometry so it holds on any screen) back to 0, at 1 s instead of 4.2 s, minus up to 30 px so nothing of the card
 is left round the icon. Left-click and the IPC dismissals are still instant (as stock); `arrival=0` keeps the old 300 ms fold.
 
-### The ring lingers (2026-11-02, "try"; branch `p2/arrival-linger`)
-The arrival's ring no longer fades out after its few seconds and then reappears at the exit. It travels out as before (the front's timing is unchanged, so the card is revealed at
-the same pace), but **stops at a resting distance from the outline** (0.6 of `ArrivalLogic.holdReachFor`: 7% of the screen's height, 48 to 84 px, so 45 px or so at 1080p; the
-arrival used to reach about 300 px) and **stays there for the toast's whole life** with the halo, a little dimmer than the passing ring, **undulating**: two plane waves travel along
-the outline (the distance from the card varies by about plus or minus 20%, wavelengths 90 to 140 px, periods 7 to 11 s), the ring's brightness breathes by 18% and the halo's by 15%. The
-first version made the ripple a function of the angle round the card's centre, which pinched it into a sharp kink across the middle of a wide card's top and bottom (seen in the preview): plane waves
-in the outline's position are even. On expiry the ring is pulled in onto the card from where it rests (`ArrivalLogic.exitFrom`, `exitFront`: slow at first, quicker as it falls in, brightening
-up to 1.7 times) while the card dissolves into the light; a toast that leaves mid-arrival starts from the front's place then. A click or IPC dismissal removes the ring at once. Held rings are updated at
-30 Hz (frame by frame only while something moves fast). At most three rings at a time (the shader has three slots): a fourth toast takes the oldest ring's place.
-Open for the user to judge: the resting distance (`holdReachFor`), the ripple's size and speed, whether a critical toast's ring should rest for ever, whether more than three rings are wanted.
+### The ring lingers (2026-11-02, "try"; branch `p2/arrival-linger`; `arrival/ring-linger.png`: the arrival at progress 0.03 to 1, the held ring at two moments, the exit at q 0.2 to 0.8, rendered with the shipped shader)
+The arrival's ring no longer fades out after its few seconds and then reappears at the exit. The card is revealed at the same pace as before (the front's timing is unchanged), but
+the ring now **comes to rest round the card and stays there for the toast's whole life** with the halo, a little dimmer than the passing ring, **undulating**: two plane waves travel
+through it (its distance from its resting oval varies by about plus or minus 20% of 0.6 of the hold reach, wavelengths 90 to 140 px, periods 7 to 11 s), and its brightness breathes by 18%
+and the halo's by 15%. The first ripple was a function of the angle round the card's centre, which pinched into a sharp kink across the middle of a wide card's top and bottom (seen in a
+preview): plane waves in position are even.
+
+**The shape, after the first live look (2026-11-02, from a recording).** The first version made the ring an offset of the card's outline, stopped by a clamp at a resting distance. Live that read
+as two faults: "too card shaped" (a rounded rectangle, an octagon while the wave was still travelling, since the distance field of a rectangle's outline is not round) and "hitting an invisible
+wall" (the clamp stopped the ring dead, all round at once). Now **the ring is an ellipse centred on the card**, semi-axes half the card plus 0.55 (across) and 0.8 (up and down) of the hold reach
+(7% of the screen's height, 48 to 84 px; about 60 px above and 41 px beyond the ends at 1080p): wider than tall as a card is, but an oval, and as thick at the ends as on top (the first-order
+ellipse distance). Its size is `ArrivalLogic.ringScale(front) = 1 - exp(-front / 110)`: it grows with the wave and **eases into its size with no stop** (63% at one ease length, 95% at three, which is
+about 1.2 s into a 4.2 s arrival at normal speed). The halo is still the card's lamp-glow in the card's own shape (a card's glow is the card's shape). Lesson: a limit of a quantity that is
+shown moving has to be approached, not clamped; and a shape meant to look natural should not be derived from the card's geometry unless it is meant to look like the card.
+
+On expiry the ring shrinks from the size it has (`ringScaleExit`: the same curve normalised to start at that size) as the front retreats (`ArrivalLogic.exitFrom`, `exitFront`: slow at first,
+quicker as it falls in, brightening up to 1.7 times), so it and the card dissolve together; a toast that leaves mid-arrival starts from where the front is then. A click or IPC dismissal removes the ring
+at once. Held rings are updated at 30 Hz (frame by frame only while something moves fast). At most three rings at a time (the shader has three slots): a fourth toast takes the oldest ring's place.
+Open for the user to judge: the oval's proportions (`0.55` and `0.8` in the shader), the ease length (`RING_EASE_PX`), the ripple, whether a critical toast's ring should rest for ever, whether more than three
+rings are wanted. Note that at the top right of the screen the oval is cut by the screen's top and right edges (it is centred on the card).
 
 ### The arrival leaves the card's centre; the column can be centred on the screen (2026-11-02, "try")
 The user asked to try the toasts at the **top centre of the screen** (they are at the top right, as in Omarchy) and the arrival **centred on the toast**: with the wave leaving the icon, which sits at the

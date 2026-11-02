@@ -26,8 +26,9 @@ Item {
   readonly property real ringReach: ArrivalLogic.ringReachFor(screenHeight)
   readonly property real holdReach: ArrivalLogic.holdReachFor(screenHeight)
 
+  // The ring is an oval, as big as ArrivalLogic.ringScale of the front says (a fraction of the resting size: semi-axes half the card plus 0.55 (across) / 0.8 (up and down) of `holdReach`).
   // { item (the card), x, y, w, h (the card in this layer's px), ix, iy (the wave's origin, the card's centre, in the card's px), cardReach, urgency, amp, salt, start, dur,
-  //   hold (stays after dur until it is replaced or ended), exit (leaving; with p0, the arrival's progress then, and from, the front's radius then) }, oldest first
+  //   hold (stays after dur until it is replaced or ended), exit (leaving; with p0 and s0, the arrival's progress and the ring's size then, and from, the front's radius then) }, oldest first
   property var events: []
   property real nowMs: 0
   // seconds, wrapped, for the shader's undulation
@@ -81,6 +82,7 @@ Item {
     list.push({
       item: item, x: held.x, y: held.y, w: held.w, h: held.h, ix: held.ix, iy: held.iy, cardReach: held.cardReach, exit: true, from: from,
       p0: ArrivalLogic.progressOf(held.start, now, held.dur),
+      s0: ArrivalLogic.ringScale(ArrivalLogic.frontAt(ArrivalLogic.progressOf(held.start, now, held.dur), held.cardReach, ringReach)),
       urgency: held.urgency, amp: held.amp, salt: held.salt, start: start, dur: dur
     })
     events = list.slice(-maxEvents)
@@ -122,7 +124,8 @@ Item {
   function srcAt(i, now) {
     if (i >= events.length || now < 0) return Qt.vector4d(0, 0, 0, 0)
     var e = events[i]
-    return Qt.vector4d(e.x + e.ix, e.y + e.iy, e.cardReach, frontOf(i, now))
+    var f = frontOf(i, now)
+    return Qt.vector4d(e.x + e.ix, e.y + e.iy, e.exit ? ArrivalLogic.ringScaleExit(f, e.from, e.s0) : ArrivalLogic.ringScale(f), f)
   }
   function evAt(i, now) {
     if (i >= events.length || now < 0) return Qt.vector4d(0, 1, 0, 0)

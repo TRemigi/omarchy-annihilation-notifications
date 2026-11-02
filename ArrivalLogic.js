@@ -48,6 +48,21 @@ function frontAt(p, cardReach, ringReach) {
   return (cardReach + ringReach) * travel(p)
 }
 
+// The ring's size, 0 to 1, for a front at this radius: it grows with the wave and eases into its full size without ever stopping short (an exponential approach: it is
+// 63% grown when the front is RING_EASE_PX out and 95% at three times that), so there is no wall where it reaches its resting size. The earlier version clamped the ring at a
+// resting distance, which showed as a hard stop.
+var RING_EASE_PX = 110
+
+function ringScale(front) {
+  return 1 - Math.exp(-Math.max(0, front) / RING_EASE_PX)
+}
+
+// The size on the way out, as the front retreats from `from`: the same curve, normalised so that it starts at the size the ring had (`s0`, 1 when it was resting).
+function ringScaleExit(front, from, s0) {
+  var k = ringScale(from)
+  return k > 0 ? Math.min(1, s0 * ringScale(front) / k) : 0
+}
+
 function progressOf(startMs, nowMs, durMs) {
   return durMs > 0 ? clamp01((nowMs - startMs) / durMs) : 1
 }
@@ -72,7 +87,7 @@ var EXIT_FOLD_AT = 0.8
 
 function exitDurationMs() { return 1000 }
 
-// Where the exit's front starts: the arrival's front now if it is still on the way, else just far enough out that the ring (at most `holdReach` from the outline) has not moved yet.
+// Where the exit's front starts: the arrival's front now if it is still on the way, else just beyond the card by the hold reach (the ring's size then is `ringScaleExit`'s start).
 function exitFrom(frontNow, cardReach, holdReach) {
   return Math.min(frontNow, cardReach + holdReach)
 }

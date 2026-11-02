@@ -242,7 +242,7 @@ The arrival's ring no longer fades away: it travels out, **comes to rest a short
 undulating slowly (a ripple travelling round it, a breath in its brightness and the halo's). On expiry it is pulled in onto the card as the card dissolves into the light
 (no more reappearing ring). Critical toasts keep theirs until dismissed. Up to three rings are drawn at once (the oldest of a crowd loses its ring).
 Restart the shell after syncing (`omarchy restart shell`); a slow `motion_slowdown=3` makes it easiest to judge.
-- [ ] the ring forms as before but stops close to the card instead of crossing the screen, and stays
+- [ ] the ring is an **oval** round the card (not a copy of its outline), grows out of the card's centre and **eases into its size** (no point where it seems to hit a wall), and stays
 - [ ] the ripple is slow and subtle (not distracting, not a pulse); the halo breathes with it
 - [ ] on expiry the ring contracts onto the card, brightening, and the card dissolves into it; nothing lingers afterwards
 - [ ] a click dismisses the toast and its ring at once
