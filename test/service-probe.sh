@@ -37,7 +37,7 @@ for pat in [r'^\s*screen: modelData\n', r'^\s*WlrLayershell\.[a-zA-Z.]+: .*\n', 
 open(d + "Service.qml", "w").write(s)
 m = open(d + "components/SlotMotion.qml").read()
 m = m.replace("  property var pendingDone: null",
-  "  property var pendingDone: null\n  onPresenceChanged: console.log('PROBE presence=' + presence.toFixed(3))\n"
+  "  property var pendingDone: null\n  onPresenceChanged: console.log('PROBE presence=' + presence.toFixed(3))\n  Connections { target: root; function onDissolveChanged() { console.log('PROBE dissolve=' + root.dissolve.toFixed(3)) } }\n"
   "  Component.onCompleted: console.log('PROBE motion created fx=' + fx + ' slowdown=' + slowdown + ' enterMs=' + enterMs)", 1)
 open(d + "components/SlotMotion.qml", "w").write(m)
 r = open(d + "components/ToastRim.qml").read()
@@ -51,10 +51,14 @@ for ms, tag in ((150, "early"), (2300, "late")):
     a = a.replace("  readonly property real margin: 40\n", "  readonly property real margin: 40\n  Timer { interval: " + str(ms) + "; running: true; onTriggered: console.log('PROBE arrival " + tag + " ' + root.target.summary + ' armed=' + root.armed"
         " + ' revealing=' + root.revealing + ' p=' + root.p.toFixed(2) + ' front=' + root.front.toFixed(0) + ' gate=' + root.rimGate.toFixed(2) + ' opacity=' + root.target.opacity.toFixed(2)"
         " + ' scale=' + root.target.scale.toFixed(2) + ' layer=' + root.target.layer.enabled + ' reach=' + root.cardReach.toFixed(0) + ' visible=' + root.visible) }\n", 1)
+a = a.replace("  readonly property real margin: 40\n", "  readonly property real margin: 40\n  Timer { interval: 100; running: root.exiting; repeat: true; onTriggered: console.log('PROBE exitstate q=' + root.q.toFixed(2) + ' front=' + root.front.toFixed(0) + ' gate=' + root.rimGate.toFixed(2)"
+    " + ' revealing=' + root.revealing + ' layer=' + root.target.layer.enabled + ' visible=' + root.visible + ' fade=' + root.fade.toFixed(2) + ' reach=' + root.cardReach.toFixed(0) + ' opacity=' + root.target.opacity.toFixed(2)) }\n", 1)
 open(d + "components/ArrivalFlare.qml", "w").write(a)
 al = open(d + "components/ArrivalLayer.qml").read()
 al = al.replace("  enabled: false                      // click-through\n", "  enabled: false                      // click-through\n  Timer { interval: 1500; running: true; onTriggered: console.log('PROBE layer events=' + root.events.length + ' active=' + root.active + ' strength=' + root.strength"
-    " + ' fills=' + (root.parent !== null && root.width === root.parent.width && root.height === root.parent.height && root.width > 0) + ' amps=' + root.events.map(function(e) { return e.amp.toFixed(2) }).join(',') + ' reach=' + root.ringReach.toFixed(0) + ' first=' + (root.events.length ? root.events[0].w + 'x' + root.events[0].h + '@' + Math.round(root.events[0].x) + ',' + Math.round(root.events[0].y) + ' urg=' + root.events[0].urgency + ' amp=' + root.events[0].amp.toFixed(2) + ' dur=' + root.events[0].dur : 'none')) }\n", 1)
+    " + ' exits=' + root.events.filter(function(e) { return e.exit }).length + ' fills=' + (root.parent !== null && root.width === root.parent.width && root.height === root.parent.height && root.width > 0) + ' amps=' + root.events.map(function(e) { return e.amp.toFixed(2) }).join(',') + ' reach=' + root.ringReach.toFixed(0) + ' first=' + (root.events.length ? root.events[0].w + 'x' + root.events[0].h + '@' + Math.round(root.events[0].x) + ',' + Math.round(root.events[0].y) + ' urg=' + root.events[0].urgency + ' amp=' + root.events[0].amp.toFixed(2) + ' dur=' + root.events[0].dur : 'none')) }\n", 1)
+al = al.replace("  enabled: false                      // click-through\n", "  enabled: false                      // click-through\n  Timer { interval: 3000; running: Quickshell.env('PROBE_SCENARIO') === 'cards'; onTriggered: { root.events = [{ exit: true, p0: 0.4, start: 100, dur: 1000, item: null, x: 0, y: 0, w: 1, h: 1, ix: 0, iy: 0, cardReach: 1, urgency: 1, amp: 1, salt: 0 }]; console.log('PROBE exitp=' + root.progressAt(0, 600).toFixed(3)) } }\n", 1)
+al = al.replace("import QtQuick\n", "import QtQuick\nimport Quickshell\n", 1)
 open(d + "components/ArrivalLayer.qml", "w").write(al)
 c = open(d + "components/NotificationCard.qml").read()
 probe = ("  Timer { interval: 700; running: true; onTriggered: console.log('PROBE card ' + root.summary + ' themed=' + root.themed"
@@ -239,6 +243,7 @@ check "arrival: and the flare is gone" false "$(av "$l" visible)"
 check "arrival: every toast arrives, not only the first" 5 "$(grep -c 'PROBE arrival early from' <<<"$out_arr")"
 ly=$(grep 'PROBE layer ' <<<"$out_arr" | head -n1)
 check "arrival: the ring layer is told (three at once at most)" "3 true" "$(av "$ly" events) $(av "$ly" active)"
+check "exit: the ring's progress for an exit event runs backwards (halfway through the dissolve, from a start of 0.4, it is at 0.2)" "exitp=0.200" "$(grep -m1 'PROBE exitp=' <<<"$out_cards" | sed 's/^PROBE //')"
 check "arrival: at full strength" "strength=1" "strength=$(av "$ly" strength)"
 check "arrival: the ring layer covers the whole window (a layer sized to the card cut the ring off in a straight line)" "true" "$(av "$ly" fills)"
 check "arrival: a burst is thinned and urgency scales it (the last three of five toasts at once: normal 1 x 0.6, critical 1.3 x 0.6, low 0.6 x 0.6)" "amps=0.60,0.78,0.36" "amps=$(av "$ly" amps)"
@@ -306,6 +311,36 @@ check "spores: spore_amount=0 releases none" 0 "$(grep -c 'PROBE burst' <<<"$out
 check "spores: and the toast still goes, and the window with it" yes "$([[ -n $(grep 'PROBE win rows=0 visible=false' <<<"$out") ]] && echo yes || echo no)"
 out=$(run spores annihilation "spore_amount=0.5")
 check "spores: spore_amount=0.5 reaches the layer" yes "$([[ $(grep -m1 'PROBE burst' <<<"$out") == *'amount=0.5'* ]] && echo yes || echo no)"
+
+# -- the exit: the arrival played backwards (the same scenario: toasts last 0.7 s, so one leaves by itself)
+out=$(run spores annihilation)
+dis=$(grep -c 'PROBE dissolve=' <<<"$out"); (( dis > 12 )) && dis=many
+check "exit: the card dissolves over many frames, not one jump" many "$dis"
+check "exit: the dissolve runs from the start to 1" "yes 1.000" "$(awk -v d="$(grep -m1 'PROBE dissolve=' <<<"$out" | sed 's/.*=//')" 'BEGIN{print (d < 0.1) ? "yes" : "no"}') $(grep 'PROBE dissolve=' <<<"$out" | tail -n1 | sed 's/.*=//')"
+check "exit: and only ever rises" yes "$(grep 'PROBE dissolve=' <<<"$out" | sed 's/.*=//' | awk 'NR>1 && $1 < prev {bad=1} {prev=$1} END{print bad ? "no" : "yes"}')"
+# the slot starts to fold (presence falls below 1 after the entry) only once the dissolve is mostly done: the last dissolve value before the first fall
+fold=$(awk '/PROBE dissolve=/ {d=$NF; sub(/.*=/,"",d)} /PROBE presence=/ {v=$NF; sub(/.*=/,"",v); if (d != "" && v < 1) {print d; exit}}' <<<"$out")
+check "exit: the slot folds shut only once the dissolve is mostly done (not before 0.8)" yes "$(awk -v d="$fold" 'BEGIN{print (d != "" && d >= 0.79 && d <= 0.9) ? "yes" : "no"}')"
+check "exit: the toast's row still goes in the end, and the window with it" yes "$([[ -n $(grep 'PROBE win rows=0 visible=false' <<<"$out") ]] && echo yes || echo no)"
+# the spores are released a quarter of the way into the dissolve, when the card starts to come apart
+burstat=$(awk '/PROBE dissolve=/ {d=$NF; sub(/.*=/,"",d)} /PROBE burst/ {print d; exit}' <<<"$out")
+check "exit: the spores are released a quarter of the way into the dissolve, not at the very start" yes "$(awk -v d="$burstat" 'BEGIN{print (d != "" && d >= 0.2 && d <= 0.4) ? "yes" : "no"}')"
+check "exit: the ring is told, to contract onto the card" "exits=1" "exits=$(av "$(grep 'PROBE layer ' <<<"$out" | head -n1)" exits)"
+ex_first=$(grep -m1 'PROBE exitstate' <<<"$out"); ex_last=$(grep 'PROBE exitstate' <<<"$out" | tail -n1)
+check "exit: it starts early in the dissolve, with the settled rim still lit (its gate falling from 1)" yes "$(awk -v q="$(av "$ex_first" q)" -v g="$(av "$ex_first" gate)" 'BEGIN{print (q <= 0.2 && g > 0.3) ? "yes" : "no"}')"
+check "exit: the front retreats (only ever falls)" yes "$(grep 'PROBE exitstate' <<<"$out" | sed 's/.* front=\([-0-9]*\) .*/\1/' | awk 'NR>1 && $1 > prev {bad=1} {prev=$1} END{print bad ? "no" : "yes"}')"
+check "exit: the card is a mask layer while the front crosses it" true "$(grep 'PROBE exitstate' <<<"$out" | grep -c 'layer=true' | awk '{print ($1 > 0) ? "true" : "false"}')"
+check "exit: the settled rim fades out (its gate falls to 0)" "0.00" "$(av "$ex_last" gate)"
+check "exit: and the card is not faded or scaled (the front takes it away)" "1.00" "$(grep 'PROBE exitstate' <<<"$out" | sed -n 's/.* opacity=\([0-9.]*\).*/\1/p' | sort -u | tr '\n' ' ' | sed 's/ $//')"
+out_x0=$(run spores annihilation "arrival=0")
+check "exit: with arrival=0 there is no dissolve (the old fold, 300 ms)" 0 "$(grep -c 'PROBE dissolve=' <<<"$out_x0")"
+check "exit: and the spores are released at once, as before (one burst)" 1 "$(grep -c 'PROBE burst' <<<"$out_x0")"
+out_xc=$(PROBE_CLICK=1 run spores annihilation)
+check "exit: a click is instant, no dissolve" 0 "$(grep -c 'PROBE dissolve=' <<<"$out_xc")"
+out_xo=$(run spores other)
+check "exit: another theme is stock, no dissolve" 0 "$(grep -c 'PROBE dissolve=' <<<"$out_xo")"
+out_xs=$(run spores annihilation "motion_slowdown=2")
+check "exit: motion_slowdown=2 doubles it (the dissolve takes twice as many frames' time: the last frame is as late)" yes "$([[ $(grep -c 'PROBE dissolve=' <<<"$out_xs") -ge $(grep -c 'PROBE dissolve=' <<<"$out") ]] && echo yes || echo no)"
 
 CFGDIR=$cfg     # back to the normal lifetimes for the rest
 

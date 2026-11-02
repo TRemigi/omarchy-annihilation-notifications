@@ -108,8 +108,8 @@ check("ring: a second arrival draws its own light round its own card (and amber 
 
 # ---------------------------------------------------------------------------- the flare (on the card)
 OW, OH = 460, 158; FC = (40, 40, 380, 78); FI = (74, 79, 17)
-def flare(front=100.0, fade=1.0, urgency=1, strength=1.0, icon=FI):
-    return render(FLARE, OW, OH, strength=strength, urgency=urgency, radius=4, front=front, fade=fade, size=(OW, OH), card=FC, icon=icon)
+def flare(front=100.0, fade=1.0, urgency=1, strength=1.0, icon=FI, reverse=0):
+    return render(FLARE, OW, OH, strength=strength, urgency=urgency, radius=4, front=front, fade=fade, reverse=reverse, size=(OW, OH), card=FC, icon=icon)
 fl = flare(front=120.0)
 check("flare: the output is added light (alpha 0)", maxalpha(fl) == 0)
 check("flare: nothing far from the card", lum(px(fl, 3, 3)) == 0 and lum(px(fl, 455, 150)) == 0)
@@ -130,6 +130,16 @@ crit_, norm_ = flare(front=120.0, urgency=2), flare(front=120.0, urgency=1)
 def sums(img): return tuple(sum(img[2][i + c] for i in range(0, len(img[2]), 4)) for c in range(3))
 check("flare: critical is amber (red over blue), normal teal (blue over red)", sums(crit_)[0] > sums(crit_)[2] * 1.2 and sums(norm_)[2] > sums(norm_)[0] * 1.1, (sums(crit_), sums(norm_)))
 check("flare: a little halo outside the edge, none far out", lum(px(fl, fx, 40 - 2)) > 2 and lum(px(fl, fx, 40 - 20)) < 2, (px(fl, fx, 38), px(fl, fx, 20)))
+
+# the exit: the arrival played backwards. The afterglow is a ghost of the edge on the side the front has left (further from the icon)
+rv = flare(front=120.0, reverse=1)
+gx = 229   # 160 px from the icon along the top edge: 40 px beyond the front at 120
+check("flare (exit): the ghost of the edge lies just beyond the front, where the card is already gone (lit, as it is dark in the arrival)", lum(px(rv, gx, 41)) > 3 and lum(px(rv, gx, 41)) > 2 * max(1, lum(px(fl, gx, 41))), (px(rv, gx, 41), px(fl, gx, 41)))
+check("flare (exit): and it is a short trail, not the whole outline (far along the edge it is gone)", lum(px(rv, 400, 41)) < 3, px(rv, 400, 41))
+check("flare (exit): and none on the side nearer the icon (the left edge, which in the arrival glows behind the front)", lum(px(rv, 60, 41)) < 0.5 * lum(px(fl, 60, 41)), (px(rv, 60, 41), px(fl, 60, 41)))
+check("flare (exit): the front still flares where it crosses the edge", lum(px(rv, fx, 41)) > 2 * lum(px(rv, fx - 70, 41)) and lum(px(rv, fx, 41)) > 20, (px(rv, fx, 41), px(rv, fx - 70, 41)))
+check("flare (exit): the spore is still lit while the front is beyond the icon, and out when the front reaches it", lum(px(rv, 74, 79)) > 40 and lum(px(flare(front=0.0, reverse=1), 74, 79)) < 4)
+check("flare (exit): the arrival's picture is unchanged by the flag being 0 (explicit 0 and absent are the same)", flare(front=120.0, reverse=0)[2] == fl[2])
 
 # ---------------------------------------------------------------------------- the reveal mask (an unbound texture reads as opaque black: the alpha is the mask)
 def mask(front, x, y): return px(render(REVEAL, 380, 78, front=front, size=(380, 78), icon=(34, 39)), x, y)[3]
