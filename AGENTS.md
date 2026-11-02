@@ -406,6 +406,21 @@ What it is (`docs/design/arrival/README` section in `docs/design/README.md` has 
   and the QML wiring in the probe are checked): a hard or flickering edge on the card's content, text shifting when the layer goes away, the 300 ms slot opening with the
   front; the ring's alignment with real cards of different heights; cost.
 
+## P2: the ring lingers (**released as 0.8.0 on 2026-11-02**; branch `p2/arrival-linger`, merged)
+
+The arrival's ring no longer fades after its few seconds and reappears at the exit: it **rests round the card for the toast's life** and collapses at expiry. The design, the numbers and
+the two live findings are in `docs/design/README.md` ("The ring lingers"); what to know here:
+- `ArrivalLayer` events are **held** (`hold: true`: they live until replaced or ended, not for `dur`); `heldOf`, `end(item)` (called from `ArrivalFlare`'s destruction, so a click or IPC dismissal
+  takes the ring at once) and `beginExit(item, from, start, dur)` (swaps the held event for an exit event; a toast with no ring has nothing to pull in). Three slots in the shader, so the oldest ring
+  goes when a fourth arrives. Held rings tick at 30 Hz, frame by frame only while something moves fast (`busy`).
+- `toastring.frag`: progress 1 is "arrived" (held), not "over". **The ring is an ellipse centred on the card, sized by `src.z`** (`ArrivalLogic.ringScale(front) = 1 - exp(-front / 110)`; on the way out
+  `ringScaleExit`), semi-axes half the card plus 0.55 / 0.8 of `holdReach` (`ArrivalLogic.holdReachFor`: 7% of the screen's height, 48 to 84 px). `ringReach` is now only the front's *timing* (how fast the
+  card is revealed), not the ring's size. The ripple is two plane waves in position (an angle-based one pinched into a kink across a wide card). **Live findings (from a recording):** an outline-hugging ring read
+  as "card shaped" (an octagon while travelling) and a clamp at the resting distance as "an invisible wall". Lesson: approach a limit, do not clamp to it; do not derive a shape that should look natural from the card's geometry.
+- Test lessons: the recording's screen-edge cut and the exit's slot-folding are unchanged; the probe's injected test timers must fire before the probe shell quits (`shell.qml` quits non-spore scenarios at 4.6 s: a timer after that never
+  runs and its checks fail with empty values); and an undulation test must measure the ring's half-maximum edge, not its brightest pixel (brightness modulation alone moves that).
+- **Not verified:** a critical toast left up for a long time (cost of the 30 Hz tick), the oval at the screen's top edge on other resolutions, more than three toasts.
+
 ## Conventions
 
 - Match the surrounding (Omarchy's) QML style in vendored files: terse comments that explain why, no tutorials.

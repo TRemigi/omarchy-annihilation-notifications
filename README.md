@@ -30,6 +30,11 @@ never lined up with the card, which is why it was moved). Teal and blue normally
 (whichever look is chosen) fades in as the arrival's edge light falls. `arrival` (0 to 2, default 1) in the same file sets its strength, 0
 turns it off. `position=center` in the same file puts the toast column at the top centre of the screen instead of the top right (`right`, the default, is where Omarchy puts toasts). The theme no longer draws an arrival ring; without this fork there is none.
 
+0.8.0 makes the arrival's ring **linger**. It no longer fades away and comes back at the exit: it grows out of the card's centre as an oval, eases into a resting size
+a short way round the card (about 60 px above and 41 px beyond its ends on a 1080p screen, a fraction of what it used to cover) and stays there for as long as the toast is
+up, rippling slowly, with the halo breathing alongside. When the toast expires the oval shrinks back onto the card as the card dissolves into it. Critical toasts keep
+theirs until dismissed; a click removes it at once. Up to three rings are drawn at once.
+
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and
 > know the [fallback](#falling-back-to-stock) before you need it.
