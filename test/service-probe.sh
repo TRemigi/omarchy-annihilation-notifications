@@ -41,7 +41,7 @@ m = m.replace("  property var pendingDone: null",
   "  Component.onCompleted: console.log('PROBE motion created fx=' + fx + ' slowdown=' + slowdown + ' enterMs=' + enterMs)", 1)
 open(d + "components/SlotMotion.qml", "w").write(m)
 r = open(d + "components/ToastRim.qml").read()
-r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores + ' look=' + root.look + ' visible=' + root.visible + ' gate=' + root.gate.toFixed(2) + ' calm=' + root.calm + ' opacity=' + root.opacity.toFixed(2)) }\n", 1)
+r = r.replace("  property real energy: 1\n", "  property real energy: 1\n  Timer { interval: 900; running: true; onTriggered: console.log('PROBE rim ' + root.target.summary + ' remaining=' + root.remaining.toFixed(3) + ' urgency=' + root.urgency + ' spores=' + root.spores + ' look=' + root.look + ' visible=' + root.visible + ' gate=' + root.gate.toFixed(2) + ' calm=' + root.calm + ' opacity=' + root.opacity.toFixed(2)) }\n  Timer { interval: 100; running: true; repeat: true; onTriggered: if (root.layer.enabled) console.log('PROBE rimmask ' + root.target.summary) }\n", 1)
 open(d + "components/ToastRim.qml", "w").write(r)
 sp = open(d + "components/SporeLayer.qml").read()
 sp = sp.replace("    if (!(amount > 0)) return\n", "    if (!(amount > 0)) return\n    console.log('PROBE burst urgency=' + urgency + ' size=' + Math.round(w) + 'x' + Math.round(h) + ' amount=' + amount)\n", 1)
@@ -80,7 +80,7 @@ if [[ -n $ref ]]; then
 import re, sys
 p = sys.argv[1]; s = open(p).read()
 s = re.sub(r'^\s*themed: service\.themed\n', '', s, flags=re.M)
-s = re.sub(r'^\s*ToastRim \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
+s = re.sub(r'^\s*ToastRim \{\n.*?^\s*Component\.onCompleted: ignite\(\)\n\s*\}\n', '', s, flags=re.M | re.S)
 s = re.sub(r'^\s*ArrivalFlare \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
 s = re.sub(r'^\s*ArrivalLayer \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
 s = re.sub(r'^\s*layer\.enabled: arrival\.revealing\n\s*layer\.effect: ShaderEffect \{\n.*?^\s*\}\n', '', s, flags=re.M | re.S)
@@ -354,9 +354,11 @@ ex_first=$(grep -m1 'PROBE exitstate' <<<"$out"); ex_last=$(grep 'PROBE exitstat
 check "exit: it starts early in the dissolve, with the settled rim still lit (its gate falling from 1)" yes "$(awk -v q="$(av "$ex_first" q)" -v g="$(av "$ex_first" gate)" 'BEGIN{print (q <= 0.2 && g > 0.3) ? "yes" : "no"}')"
 check "exit: the front retreats (only ever falls)" yes "$(grep 'PROBE exitstate' <<<"$out" | sed 's/.* front=\([-0-9]*\) .*/\1/' | awk 'NR>1 && $1 > prev {bad=1} {prev=$1} END{print bad ? "no" : "yes"}')"
 check "exit: the card is a mask layer while the front crosses it" true "$(grep 'PROBE exitstate' <<<"$out" | grep -c 'layer=true' | awk '{print ($1 > 0) ? "true" : "false"}')"
-check "exit: the settled rim fades out (its gate falls to 0)" "0.00" "$(av "$ex_last" gate)"
+check "exit: the settled rim is not faded (its gate stays 1) but taken away by the same front as the card, so the border goes as the card collapses" "1.00" "$(grep 'PROBE exitstate' <<<"$out" | sed -n 's/.* gate=\([0-9.]*\).*/\1/p' | sort -u | tr '\n' ' ' | sed 's/ $//')"
+check "exit: and the rim is a mask layer while the front crosses (it is masked, not just shown)" yes "$([[ $(grep -c 'PROBE rimmask' <<<"$out") -gt 0 ]] && echo yes || echo no)"
 check "exit: and the card is not faded or scaled (the front takes it away)" "1.00" "$(grep 'PROBE exitstate' <<<"$out" | sed -n 's/.* opacity=\([0-9.]*\).*/\1/p' | sort -u | tr '\n' ' ' | sed 's/ $//')"
 out_x0=$(run spores annihilation "arrival=0")
+check "exit: with arrival=0 the rim is not masked" 0 "$(grep -c 'PROBE rimmask' <<<"$out_x0")"
 check "exit: with arrival=0 there is no dissolve (the old fold, 300 ms)" 0 "$(grep -c 'PROBE dissolve=' <<<"$out_x0")"
 check "exit: and the spores are released at once, as before (one burst)" 1 "$(grep -c 'PROBE burst' <<<"$out_x0")"
 out_xc=$(PROBE_CLICK=1 run spores annihilation)

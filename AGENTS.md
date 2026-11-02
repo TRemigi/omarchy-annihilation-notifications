@@ -385,6 +385,10 @@ What it is (`docs/design/arrival/README` section in `docs/design/README.md` has 
   now starts at the card's centre, not the icon (`ArrivalFlare.origin`, `toastflare.frag`'s `origin` uniform with a spark there and the icon's ring lit as the front reaches it, `cardreveal.frag`'s
   `origin`, the ring's `src`); the card reach is from the centre. Verified: arrival-test (54), probe (168: position parsing, the column and spore layer centred or right, another theme stock, the
   origin and reach); 6 of 7 wiring breaks caught (the survivor is the reveal mask's own origin binding, which only a live look can see, like the mask itself).
+- **Found live (2026-11-02):** on expiry the toast's border faded out more slowly than the arrival collapsed. Cause: the settled rim was faded by its own gate (`settle(front)`, over the front's 110% to 70% of the
+  card's reach) while the card kept dissolving until the front reached the centre, so the border lingered round the edges. Now on the way out the gate stays 1 and the ToastRim is a mask layer with the same
+  front as the card (`cardreveal.frag` again, in the delegate), so border, halo and the blend's countdown line go exactly as the card does. The probe checks the gate stays 1 and the rim is masked; the rim
+  mask's own origin binding is live-only, like the card's.
 - Setting: `arrival` 0 to 2, default 1, in the fork conf; 0 turns the whole arrival off (back to the plain unfold and the blend's ignition).
 - **Theme side (branch `p2/arrival` there):** `ArrivalGlow.qml`, `arrival.frag`, `notifyGlow`/`notifyGlowStrength` with their popup slider and switch, the layer rule's
   namespace and the interim `glow.json` writer are removed; the feed, the sound and the missed marks stay. The theme alone has no arrival light now (the user's decision).

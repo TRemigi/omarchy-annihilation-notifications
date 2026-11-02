@@ -1175,9 +1175,18 @@ Item {
 
             // annihilation: the light on the card, over it. Invisible (so nothing is drawn) while the theme is off.
             ToastRim {
+              id: rim
               target: card
               visible: service.themed
               gate: arrival.rimGate // annihilation: the rim fades in as the arrival's edge light falls
+              // and on the way out it is taken away by the same front as the card, so the border goes exactly as the card collapses
+              layer.enabled: arrival.exiting && arrival.revealing
+              layer.effect: ShaderEffect {
+                property real front: arrival.front
+                property size size: Qt.size(rim.width, rim.height)
+                property vector2d origin: Qt.vector2d(rim.margin + arrival.origin.x, rim.margin + arrival.origin.y)
+                fragmentShader: Qt.resolvedUrl("shaders/cardreveal.frag.qsb")
+              }
               calm: arrival.armed   // and does not also ignite
               urgency: cardSlot.urgency
               slowdown: service.motionSlowdown

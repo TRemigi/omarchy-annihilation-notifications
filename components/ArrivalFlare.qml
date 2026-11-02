@@ -43,7 +43,9 @@ Item {
   readonly property real settled: exiting || armed ? ArrivalLogic.settle(front, cardReach) : 1
   // the card is masked, and the flare drawn, while the front is crossing it (and the settled rim fades in over the end of that, or out over the start of the exit)
   readonly property bool revealing: (exiting || armed) && front < cardReach + 30
-  readonly property real rimGate: settled
+  // the settled rim fades in over the end of the arrival; on the way out it is not faded at all: the delegate masks it with the same front as the card, so it goes
+  // exactly as the card does (a separate fade left the border lingering round the edges after the card had collapsed from them)
+  readonly property real rimGate: exiting ? 1 : settled
   readonly property real fade: exiting ? ArrivalLogic.exitFade(front, cardReach) : 1 - settled
 
   // The exit begins: the arrival is over (if it was still running), and the ring is told to contract onto the card.

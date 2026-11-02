@@ -164,8 +164,11 @@ def props(path, marker):
 for shader, qml, marker in (("toastring", "components/ArrivalLayer.qml", "  ShaderEffect {"), ("toastflare", "components/ArrivalFlare.qml", "  ShaderEffect {")):
     a, b = uniforms(f"{SHADERS}/{shader}.frag"), props(f"{ROOT}/{qml}", marker)
     check(f"{qml}'s ShaderEffect feeds exactly {shader}.frag's uniforms", a == b, a ^ b)
-svc = open(ROOT + "/Service.qml").read(); blk = svc[svc.index("layer.effect: ShaderEffect {"):][:400]
-check("the card's layer effect feeds exactly cardreveal.frag's uniforms", uniforms(f"{SHADERS}/cardreveal.frag") == set(re.findall(r"^\s*property (?:real|size|vector2d) (\w+):", blk, re.M)))
+svc = open(ROOT + "/Service.qml").read()
+effects = [svc[m.start():][:400] for m in re.finditer(r"layer\.effect: ShaderEffect \{", svc)]
+check("there are two reveal masks (the card, and the rim on the way out)", len(effects) == 2, len(effects))
+for n, blk in enumerate(effects):
+    check(f"reveal mask {n + 1}'s layer effect feeds exactly cardreveal.frag's uniforms", uniforms(f"{SHADERS}/cardreveal.frag") == set(re.findall(r"^\s*property (?:real|size|vector2d) (\w+):", blk, re.M)))
 check("the committed .qsb files are the sources compiled", all(
     subprocess.run([QSB, "--glsl", "100 es,120,150", "--hlsl", "50", "--msl", "12", "-o", f"{tmp}/c.qsb", f"{SHADERS}/{n}.frag"], check=True) is not None and
     subprocess.run(["cmp", "-s", f"{tmp}/c.qsb", f"{SHADERS}/{n}.frag.qsb"]).returncode == 0 for n in ("toastring", "toastflare", "cardreveal")))
