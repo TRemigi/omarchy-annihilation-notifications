@@ -49,6 +49,21 @@ Item {
     nowMs = now
   }
 
+  // A card is leaving: the same wave played backwards (ArrivalLogic.exitProgress), faster, so the ring contracts onto the card and brightens as it gets there.
+  // `start` and `dur` are the dissolve's, which the card's own flare shares.
+  function beginExit(item, ix, iy, cardReach, urgency, app, start, dur) {
+    if (!(strength > 0)) return
+    var now = Date.now()
+    var list = live(now)
+    var p = item.mapToItem(root, 0, 0)
+    list.push({
+      item: item, x: p.x, y: p.y, w: item.width, h: item.height, ix: ix, iy: iy, cardReach: cardReach, exit: true, p0: ArrivalLogic.exitStart(cardReach, ringReach),
+      urgency: urgency, amp: ArrivalLogic.amplitudeFor(app, urgency, 1e9), salt: (list.length + Math.floor(now / 1000)) % 7 * 1.3, start: start, dur: dur
+    })
+    events = list.slice(-maxEvents)
+    nowMs = now
+  }
+
   // Follow the card while it exists: the stack moves as toasts come and go.
   function refresh(e) {
     var it = e.item
@@ -67,7 +82,10 @@ Item {
     nowMs = now
   }
 
-  function progressAt(i, now) { return ArrivalLogic.progressOf(events[i].start, now, events[i].dur) }
+  function progressAt(i, now) {
+    var e = events[i], t = ArrivalLogic.progressOf(e.start, now, e.dur)
+    return e.exit ? ArrivalLogic.exitProgress(t, e.p0) : t
+  }
   function rectAt(i, now) {
     if (i >= events.length || now < 0) return Qt.vector4d(0, 0, 0, 0)
     var e = events[i]

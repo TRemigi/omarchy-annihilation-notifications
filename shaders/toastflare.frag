@@ -6,7 +6,9 @@
 // are toastring.frag's. The settled rim is the look's own (toastrim.frag or toastgrowth.frag), which fades in as `fade` falls.
 //
 // `front` is the radius, in px from the icon, the front has reached; `fade` is 1 while the front is crossing and falls to 0 as it
-// finishes, taking this overlay's light with it as the look's own rim takes over.
+// finishes, taking this overlay's light with it as the look's own rim takes over. `reverse` is 1 for the exit, the arrival played backwards: the
+// front retreats towards the icon, and the afterglow is on the side it has left (further from the icon, where the card is already gone), a ghost
+// of the edge that fades.
 // Colours are the theme's, as in toastring.frag. Rebuild with tools/build-shaders.sh after editing.
 
 layout(location = 0) in vec2 qt_TexCoord0;
@@ -20,6 +22,7 @@ layout(std140, binding = 0) uniform buf {
     float radius;      // the card's corner radius, px
     float front;       // px from the icon
     float fade;        // 0 to 1
+    float reverse;     // 0 for the arrival, 1 for the exit
     vec2 size;         // the overlay's size, px
     vec4 card;         // the card inside it: x, y, width, height, px
     vec3 icon;         // the icon ring: centre x, centre y, radius; radius <= 0 for none
@@ -56,7 +59,10 @@ void main() {
     float spill = exp(-max(-d, 0.0) / 9.0) * inside * 0.17;
     float halo = exp(-max(d, 0.0) / 4.5) * (1.0 - inside) * 0.20;
     float wavefront = exp(-pow((dist - ubuf.front) / 22.0, 2.0));
-    float afterglow = dist < ubuf.front ? exp(-(ubuf.front - dist) / 140.0) * 0.45 : 0.0;
+    float behind = ubuf.reverse > 0.5 ? max(dist - ubuf.front, 0.0) : max(ubuf.front - dist, 0.0);
+    // the arrival's afterglow is a cooling trail behind the front; the exit's ghost is shorter (a ghost rectangle of the whole outline over empty space looked wrong)
+    float trail = ubuf.reverse > 0.5 ? 60.0 : 140.0;
+    float afterglow = behind > 0.0 ? exp(-behind / trail) * 0.45 : 0.0;
     vec3 rgb = col * (rim * 0.95 + spill + halo) * (wavefront * 1.6 + afterglow) * ubuf.fade;
 
     // The icon: the spore where the light is born, and its ring.

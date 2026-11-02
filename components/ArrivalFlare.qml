@@ -3,6 +3,10 @@
 // (shaders/toastflare.frag, the overlay below), and the front goes on out into the screen as ArrivalLayer's ring and halo. When the front
 // has crossed the card the look's own rim takes over: `rimGate` rises 0 to 1 for the ToastRim, as the flare's own light falls.
 //
+// The exit is the same wave played backwards, faster (ArrivalLogic.exitFront): when the toast leaves (`exiting`, `q` the dissolve's 0 to 1 from SlotMotion) the front
+// retreats from beyond the card to the icon, so the card dissolves from its far corner into the light; the ring and halo contract onto it (ArrivalLayer.beginExit);
+// the flare's afterglow is a ghost of the edge on the side the front has left; and the settled rim fades out as the flare comes up (`rimGate` again).
+//
 // This item owns the toast's timeline: `p` runs 0 to 1 over the arrival (ArrivalLogic.durationFor, times `slowdown`), the same
 // clock the layer uses, from `start`. A toast that is not fresh (restored after a shell restart) does not arrive; with `on` false, or a zero strength, nothing
 // is armed and every value below is the settled one, which is stock.
@@ -22,6 +26,9 @@ Item {
   property real urgency: 1
   property string app: ""
   property double timestamp: 0
+  // The toast is leaving, and how far through its dissolve it is (SlotMotion.dissolve).
+  property bool exiting: false
+  property real q: 0
 
   readonly property real durMs: ArrivalLogic.durationFor(urgency) * slowdown
   property bool armed: on && strength > 0 && ArrivalLogic.isFresh(timestamp, Date.now())
@@ -31,12 +38,20 @@ Item {
   // Where the icon is, in the card's pixels (a toast with no icon starts from its left, a little in).
   readonly property vector2d cardIcon: target.iconRing.z > 0 ? Qt.vector2d(target.iconRing.x, target.iconRing.y) : Qt.vector2d(32, target.height / 2)
   readonly property real cardReach: ArrivalLogic.cardReach(cardIcon.x, cardIcon.y, target.width, target.height)
-  readonly property real front: armed ? ArrivalLogic.frontAt(p, cardReach, ring.ringReach) : -1
-  readonly property real settled: armed ? ArrivalLogic.settle(front, cardReach) : 1
-  // the card is masked, and the flare drawn, while the front is crossing it (and the settled rim fades in over the end of that)
-  readonly property bool revealing: armed && front < cardReach + 30
+  readonly property real front: exiting ? ArrivalLogic.exitFront(q, cardReach, ring.ringReach) : (armed ? ArrivalLogic.frontAt(p, cardReach, ring.ringReach) : -1)
+  readonly property real settled: exiting || armed ? ArrivalLogic.settle(front, cardReach) : 1
+  // the card is masked, and the flare drawn, while the front is crossing it (and the settled rim fades in over the end of that, or out over the start of the exit)
+  readonly property bool revealing: (exiting || armed) && front < cardReach + 30
   readonly property real rimGate: settled
-  readonly property real fade: 1 - settled
+  readonly property real fade: exiting ? ArrivalLogic.exitFade(front, cardReach) : 1 - settled
+
+  // The exit begins: the arrival is over (if it was still running), and the ring is told to contract onto the card.
+  onExitingChanged: {
+    if (!exiting) return
+    armed = false
+    clock.stop()
+    if (on && strength > 0) ring.beginExit(target, cardIcon.x, cardIcon.y, cardReach, urgency, app, Date.now(), ArrivalLogic.exitDurationMs() * slowdown)
+  }
 
   // Armed from the moment the toast exists, so its card is hidden (the front is at the icon, 0) from the first frame; the clock starts, and the
   // layer is told, once the first layout has given the card its size and place.
@@ -68,7 +83,7 @@ Item {
   opacity: target.opacity
   transformOrigin: target.transformOrigin
   enabled: false                    // click-through
-  visible: revealing || (armed && fade > 0)
+  visible: revealing || ((armed || exiting) && fade > 0)
 
   ShaderEffect {
     anchors.fill: parent
@@ -78,6 +93,7 @@ Item {
     property real radius: root.target.radius
     property real front: Math.max(0, root.front)
     property real fade: root.fade
+    property real reverse: root.exiting ? 1 : 0
     property size size: Qt.size(width, height)
     property vector4d card: Qt.vector4d(root.margin, root.margin, root.target.width, root.target.height)
     property vector3d icon: root.target.iconRing.z > 0

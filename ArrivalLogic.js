@@ -57,3 +57,34 @@ function settle(front, cardReach) {
 function isFresh(timestampMs, nowMs) {
   return nowMs - Number(timestampMs) < 3000
 }
+
+// ---- The exit: the arrival played backwards, faster. `q` runs 0 to 1 over `exitDurationMs` (times the user's slowdown).
+// The wave is the arrival's from a progress `exitStart` back to 0, chosen so that at q = 0 the front is just beyond the card (15% past its reach), whatever the
+// screen: a ring a little beyond the card contracts onto it, brightening, as the front retreats across the card to the icon, so the card dissolves from its far
+// corner into the light and the spore at the icon goes out last. The slot folds shut once the dissolve is mostly done (EXIT_FOLD_AT), so the stack closes up behind it.
+var EXIT_FOLD_AT = 0.8
+
+function exitDurationMs() { return 1000 }
+
+// The arrival's own progress at which the front is 15% beyond the card (capped, for a ring reach so small that the front would never get there).
+function exitStart(cardReach, ringReach) {
+  var r = Math.min(1.15 * cardReach / (cardReach + ringReach), 0.97)
+  return 1 - Math.pow(1 - r, 1 / 3)
+}
+
+// The arrival's progress that the exit is at (`p0` at the start, 0 at the end).
+function exitProgress(q, p0) {
+  return p0 * (1 - clamp01(q))
+}
+
+// The front's radius from the icon: the arrival's at that progress, less up to 30 px so that at the end nothing is left of the card, not even a
+// soft edge of it round the icon.
+function exitFront(q, cardReach, ringReach) {
+  return frontAt(exitProgress(q, exitStart(cardReach, ringReach)), cardReach, ringReach) - 30 * clamp01(q)
+}
+
+// How much of the flare's light there is: none while the front is still beyond the card (the settled rim is lit then), then up as it crosses
+// the card, and out over the last of it so nothing lingers.
+function exitFade(front, cardReach) {
+  return (1 - settle(front, cardReach)) * clamp01(front / (0.35 * cardReach))
+}

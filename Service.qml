@@ -1193,6 +1193,8 @@ Item {
               urgency: cardSlot.urgency
               app: cardSlot.app
               timestamp: cardSlot.timestamp
+              exiting: motion.leaving && motion.reveal // annihilation: the exit is the arrival played backwards
+              q: motion.dissolve
             }
           }
         }
