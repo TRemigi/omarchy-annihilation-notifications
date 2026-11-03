@@ -164,7 +164,7 @@ SHAPE = (1.12, 1.20, 3.0, 1.0)         # BodyLogic: semi-axes 1.12 and 1.2 of th
 on_, off_ = ring(front=RC + WAVE, p=1.0, shape=SHAPE), ring(front=RC + WAVE, p=1.0)
 check("ring (oval body): nothing is hidden behind the card any more: the (faint) glow is drawn inside the card's rectangle near the oval's edge too; with no oval body it is not", lum(px(on_, 490, 108)) > lum(px(off_, 490, 108)), (px(on_, 490, 108), px(off_, 490, 108)))
 halo_on, halo_off = ring(front=RC + WAVE, p=1.0, scale=0.0, shape=SHAPE), ring(front=RC + WAVE, p=1.0, scale=0.0)       # the ring shrunk to nothing: the halo alone
-check("ring (oval body): the lamp-glow hugging the toast is nearly gone (it made a bright band against the soft body, which read as a hard edge): at the oval's top (y = 92) it is under a third of what it is at a card's top edge", lum(px(halo_on, 490, 92)) < 0.34 * max(lum(px(halo_off, 490, 92)), 3), (px(halo_on, 490, 92), px(halo_off, 490, 92)))
+check("ring (oval body): the lamp-glow hugging the toast is nearly gone (it made a bright band against the soft body, which read as a hard edge): 22 px above the oval's top (y = 70, where the ring's own tail is negligible) it is under half of what it is at 30 px above a card's top edge", lum(px(halo_on, 490, 70)) < 0.5 * max(lum(px(halo_off, 490, 70)), 3), (px(halo_on, 490, 70), px(halo_off, 490, 70)))
 check("ring (oval body): but it is there, faintly, past the oval's end (the tip is 23 px beyond the card's edge)", lum(px(halo_on, 720, 139)) > 0, px(halo_on, 720, 139))
 # the ring is the toast's shape, a fixed gap outside it: the distance from the body's outline to the ring's peak is the same all round
 def body_sd(x, y):
@@ -180,7 +180,7 @@ def ring_gap(dx, dy):
 # the directions: top, bottom, both ends, and through the body's corners (where an ellipse and the squarer body differ most: 79% along both axes)
 CORNER = (212.8 * 0.794, -46.8 * 0.794)
 gaps = [ring_gap(*d) for d in ((0, -1), (0, 1), (1, 0), (-1, 0), CORNER, (-CORNER[0], -CORNER[1]), (CORNER[0], -CORNER[1]), (-CORNER[0], CORNER[1]))]
-check("ring (oval body): the ring is the toast's shape a fixed gap outside it: its distance from the body's outline (top, bottom, both ends, two diagonals) is the same all round (the ring is the body's outline offset by 0.75 * reach = 56 px, so within the ring's 2.5% bend and the sampling; offsetting the axes instead left 35 at the corners against 55 at the top)", max(gaps) - min(gaps) < 14 and 45 < sum(gaps) / len(gaps) < 68, gaps)
+check("ring (oval body): the ring is the toast's shape a fixed gap outside it: its distance from the body's outline (top, bottom, both ends, two diagonals) is the same all round (the ring is the body's outline offset by 0.6 * reach = 45 px, so within the ring's 2.5% bend and the sampling; offsetting the axes instead left 35 at the corners against 55 at the top)", max(gaps) - min(gaps) < 14 and 36 < sum(gaps) / len(gaps) < 58, gaps)
 check("ring (oval body): the light is still only added light (alpha 0)", maxalpha(on_) == 0)
 # the halo is revealed by the oval front: 8 px above the top edge, over the middle, an oval front of aspect 4.55 (212.8 / 46.8) has not got there at front 100 (it is 177 away), a circular one has (39 away)
 h_oval, h_circ = ring(front=100.0, p=0.05, scale=0.0, shape=SHAPE), ring(front=100.0, p=0.05, scale=0.0)
