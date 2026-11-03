@@ -75,7 +75,10 @@ void main() {
     // the arrival's afterglow is a cooling trail behind the front; the exit's is a short smear right behind the front (a longer ghost left a faint outline of the whole rectangle lingering after the card had collapsed from it: seen live)
     float trail = ubuf.reverse > 0.5 ? 18.0 : 140.0;
     float afterglow = behind > 0.0 ? exp(-behind / trail) * 0.45 : 0.0;
-    vec3 rgb = col * (rim * 0.95 + spill + halo) * (wavefront * 1.6 + afterglow) * ubuf.fade;
+    // With an oval body there is no edge to flare: the toast has a soft edge, not a line, and a bright outline that lit up as the front crossed it and then died away read as a border
+    // that should not be there (seen in a recording). Only the icon's spore and the spark at the centre are lit then.
+    float edgeOn = ubuf.shape.w > 0.5 ? 0.0 : 1.0;
+    vec3 rgb = col * (rim * 0.95 + spill + halo) * (wavefront * 1.6 + afterglow) * ubuf.fade * edgeOn;
 
     // The icon: a spore and its ring, lit as the front reaches it.
     if (ubuf.icon.z > 0.0) {

@@ -229,12 +229,15 @@ check("flare (exit): the front still flares where it crosses the edge", lum(px(r
 check("flare (exit): the icon is still lit while the front is beyond it, and out when the front has retreated past it", lum(px(flare(front=200.0, reverse=1), 74, 79)) > 40 and lum(px(rv, 74, 79)) < 4)
 check("flare (exit): the arrival's picture is unchanged by the flag being 0 (explicit 0 and absent are the same)", flare(front=120.0, reverse=0)[2] == fl[2])
 
-# the oval body: the edge that flares is the oval's, not the card's rectangle
-def flare_shape(front, shape, aspect=1.0): return render(FLARE, OW, OH, strength=1.0, urgency=1, radius=4, front=front, fade=1.0, reverse=0, aspect=aspect, size=(OW, OH), card=FC, icon=(0, 0, 0), origin=FO, shape=shape)
-def edge_row(img, x, y0, y1): return max(range(y0, y1), key=lambda y: lum(px(img, x, y)))
-fr, fo = flare_shape(400.0, (0, 0, 0, 0)), flare_shape(400.0, (1.12, 1.20, 3.0, 1.0))
-check("flare (oval body): with none the edge that flares above the middle is the card's top (y = 40); with an oval body it is the oval's top, about 8 px higher (y = 32)", abs(edge_row(fr, 230, 20, 60) - 40) <= 2 and abs(edge_row(fo, 230, 20, 60) - 32) <= 3, (edge_row(fr, 230, 20, 60), edge_row(fo, 230, 20, 60)))
-check("flare (oval body): and at the right end it is the oval's tip, 23 px beyond the card's edge (x = 443), not the card's (x = 420)", abs(max(range(380, 460), key=lambda x: lum(px(fo, x, 79))) - 443) <= 4 and abs(max(range(380, 460), key=lambda x: lum(px(fr, x, 79))) - 420) <= 3, (max(range(380, 460), key=lambda x: lum(px(fo, x, 79))), max(range(380, 460), key=lambda x: lum(px(fr, x, 79)))))
+# the oval body: no edge flare at all (a bright outline that lit up as the front crossed and then died read as a border that should not be there)
+def flare_shape(front, shape, aspect=1.0, icon=(0, 0, 0)): return render(FLARE, OW, OH, strength=1.0, urgency=1, radius=4, front=front, fade=1.0, reverse=0, aspect=aspect, size=(OW, OH), card=FC, icon=icon, origin=FO, shape=shape)
+fr, fo = flare_shape(400.0, (0, 0, 0, 0)), flare_shape(120.0, (1.12, 1.20, 3.0, 1.0))
+fcard = flare_shape(120.0, (0, 0, 0, 0))
+def ring_of_light(img): return max(lum(px(img, x, y)) for x in range(60, 400, 5) for y in (32, 33, 40, 41, 117, 118, 125, 126))     # along where the card's and the oval's top and bottom edges are
+check("flare (oval body): no edge is lit as the front crosses: along where the card's and the oval's top and bottom edges are, nothing (a card's edge is lit there at the same front)", ring_of_light(fo) < 2 and ring_of_light(fcard) > 20, (ring_of_light(fo), ring_of_light(fcard)))
+check("flare (oval body): and no halo outside it: the whole picture, apart from the spark at the centre (a 40 px box round the origin), is dark", max(lum(px(fo, x, y)) for x in range(0, OW, 4) for y in range(0, OH, 4) if abs(x - FO[0]) > 40 or abs(y - FO[1]) > 40) < 2)
+check("flare (oval body): the spark at the card's centre is still there where the wave starts (front 12)", lum(px(flare_shape(12.0, (1.12, 1.20, 3.0, 1.0)), 230, 79)) > 40)
+check("flare (oval body): and the icon's spore and ring are still lit once the front has reached the icon", lum(px(flare_shape(200.0, (1.12, 1.20, 3.0, 1.0), icon=FI), 74, 79)) > 40)
 check("flare (oval body): added light still (alpha 0), and with shape off the picture is the old one", maxalpha(fo) == 0 and fr[2] == flare(front=400.0, icon=(0, 0, 0))[2])
 
 # ---------------------------------------------------------------------------- the reveal mask (an unbound texture reads as opaque black: the alpha is the mask)

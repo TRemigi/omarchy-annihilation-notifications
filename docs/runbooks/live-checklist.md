@@ -255,7 +255,7 @@ The toast is a soft-edged oval under the text, not a card. Restart the shell aft
 - [ ] (needs the theme's `fix/notification-blur`, then `hyprctl reload`: without it the compositor frosts the backdrop out to a hard edge round the toast) there is no rectangle, border or crisp rim: the toast reads as an oval that **dissolves into the glow** over a wide soft edge (about 44 px), with no bright outline round it
 - [ ] the ring is **the toast's shape** a steady gap outside it (about 56 px), a soft halo of its own: on a **near-black window**, a **light one** and **over a page of text** behind the toast, the body fades into what is behind it with no outline (the fade is about 80 px, mostly outside the oval), and the ring is clearly separate from it
 - [ ] the text has comfortable room from the oval's edge, **including the caption and the "now" at the top corners** and the last line of a three-line body; nothing is cut or sits on the faint edge
-- [ ] the arrival: the toast appears as an **oval front** growing from its centre (not a circle cutting it open), the edge flare follows the oval; the exit takes it away with the card's dissolve
+- [ ] the arrival: the toast appears as an **oval front** growing from its centre (not a circle cutting it open) and **no bright outline flashes along its edge** (nor at the start of the exit); the exit takes it away with the card's dissolve
 - [ ] with several toasts the ovals overlap only in their soft edges, and a toast still reads clearly over a busy wallpaper
 - [ ] the icon's ring is still round the icon, and a critical toast's colours (amber to pink) show on the oval's edge
 - [ ] the countdown line is gone (known: it belongs to the card's rectangle); say if you want it back, along the oval
