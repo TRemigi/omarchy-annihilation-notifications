@@ -65,9 +65,9 @@ All return a string; keep the names and the argument lists.
   a card and **linger for as long as the toast is up** (at most 3 at a time; they are drawn in the same window, so the window is up anyway), and a ring goes with its
   card (collapsed in the exit, or at once on a click or an IPC dismissal), so it no longer outlasts the toast. It never covers or
   intercepts anything: its input region is the toast column, which is empty by then. The layer namespace is unchanged.
-- **With the annihilation theme and the blend look (the default), a toast is a soft-edged oval, not a card** (`components/ToastBody.qml`, `BodyLogic.js`; `body=card` in the fork's conf file, or `look=growth`, keeps the
+- **With the annihilation theme and the blend look (the default), a toast is a soft-edged body (a rounded rectangle; it was an oval for a while), not a card** (`components/ToastBody.qml`, `BodyLogic.js`; `body=card` in the fork's conf file, or `look=growth`, keeps the
   rectangle). The card item grows by 12 px on each side and 6 above and below (design px; the column is 24 px wider, 404 instead of 380, and a toast 12 px taller) so the text sits well inside the oval; it draws no fill or
-  border of its own; the oval reaches about 25 px past the card's sides and 10 past its top and bottom, so neighbouring toasts' soft edges overlap by a few px. The input region is still the toast column: nothing new is clickable.
+  border of its own; the body reaches about 8 px past the card's sides and 4 past its top and bottom, and its soft edge fades out over about 60 px beyond that, so neighbouring toasts' soft edges overlap. The input region is still the toast column: nothing new is clickable.
   With any other theme, or `look=growth`, or `body=card`, the card is Omarchy's own size.
 - **Where the toasts are:** top right, as in Omarchy, unless the annihilation theme is active and `position=center` is set in the fork's conf file (read live): then the column is centred
   horizontally at the top of the screen (same top margin, so below the bar). The window, the layer namespace and the input region are unchanged.

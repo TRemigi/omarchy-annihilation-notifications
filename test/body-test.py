@@ -46,6 +46,15 @@ for y in range(4, H - 4, 3):
         want = 0.95 * feather(oval_sd(x + 0.5 - CX, y + 0.5 - CY, A, B))
         worst = max(worst, abs(alpha(img, x, y) - want))
 check("body: the alpha is the superellipse and the feather exactly (every 3rd pixel against the mirror of BodyLogic.js, within 0.02)", worst < 0.02, worst)
+# the rectangle the body is now (shape z below 2: a rounded rectangle, radius z times the smaller semi-axis): the alpha against the exact distance
+def rect_sd(x, y, a, b, n):
+    r = n * min(a, b); qx, qy = abs(x) - (a - r), abs(y) - (b - r)
+    return math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - r
+RA, RB = CARD[2] / 2 * 1.04, CARD[3] / 2 * 1.08
+rimg = render(shape=(1.04, 1.08, 0.35, 0.0))
+rworst = max(abs(alpha(rimg, x, y) - 0.95 * feather(rect_sd(x + 0.5 - CX, y + 0.5 - CY, RA, RB, 0.35))) for y in range(4, H - 4, 3) for x in range(4, W - 4, 3))
+check("body (rectangle): the alpha is the rounded rectangle and the feather exactly (every 3rd pixel against the exact distance, within 0.02)", rworst < 0.02, rworst)
+check("body (rectangle): straight sides: the same alpha at the top edge's middle and a third of the way to the corner (an oval's falls away there), and rounded corners (the card's own corner is fainter than the middle of the edge)", abs(alpha(rimg, CX, CY - RB) - alpha(rimg, CX + 120, CY - RB)) < 0.03 and alpha(rimg, CX + RA - 1, CY - RB + 1) < alpha(rimg, CX, CY - RB) - 0.05, (alpha(rimg, CX, CY - RB), alpha(rimg, CX + 120, CY - RB), alpha(rimg, CX + RA - 1, CY - RB + 1)))
 # soft edge: no step
 steps = max(abs(alpha(img, x + 1, CY) - alpha(img, x, CY)) for x in range(int(CX), W - 2))
 stepv = max(abs(alpha(img, CX, y + 1) - alpha(img, CX, y)) for y in range(int(CY), H - 2))

@@ -18,6 +18,14 @@ ok("shape: exponent 3 is fuller in the corners than an ellipse", ctx.ovalDistanc
   ok("shape: symmetric about both axes", sym) }
 ok("distance: finite at the centre", isFinite(ctx.ovalDistance(0, 0, 100, 50, 3)))
 
+// the rounded rectangle (n below 2): the exact distance
+near("rounded rect: on the outline along x it is 0", 0, ctx.ovalDistance(100, 0, 100, 50, 0.35), 1e-9)
+near("rounded rect: 20 px beyond the end is exactly 20", 20, ctx.ovalDistance(120, 0, 100, 50, 0.35), 1e-9)
+near("rounded rect: 30 px above the top is exactly 30", 30, ctx.ovalDistance(10, 80, 100, 50, 0.35), 1e-9)
+{ const r = 0.35 * 50, cx = 100 - r, cy = 50 - r   // the corner is an arc of radius r: a point 10 px out along the diagonal from the arc's centre is 10 px beyond it
+  near("rounded rect: round the corner it is the distance to the arc's centre less the radius", 10, ctx.ovalDistance(cx + (r + 10) * Math.SQRT1_2, cy + (r + 10) * Math.SQRT1_2, 100, 50, 0.35), 1e-9) }
+ok("rounded rect: inside is negative, at the centre it is minus the smaller semi-axis", ctx.ovalDistance(0, 0, 100, 50, 0.35) === -50 && ctx.ovalDistance(60, 20, 100, 50, 0.35) < 0)
+ok("rounded rect: the card's own corner lies on the body's rounded corner, to a pixel (a body 4% wider and 8% taller, radius 0.35 of its half-height)", Math.abs(ctx.ovalDistance(202, 46, 202 * 1.04, 46 * 1.08, 0.35)) < 1.5, ctx.ovalDistance(202, 46, 202 * 1.04, 46 * 1.08, 0.35))
 // the feather
 near("feather: solid 22 px inside the outline", 1, ctx.feather(-22), 1e-9)
 near("feather: and deeper", 1, ctx.feather(-60), 1e-9)
@@ -31,9 +39,9 @@ ok("feather: no step: a pixel's change is small (under 0.04: the steepest of an 
 // the padding: the text's corners sit in the solid zone (a card of 380 x 80 design px and 404 x 92 once padded)
 const before = ctx.textClearance(380, 80, 14, 12)
 const after = ctx.textClearance(380 + 2 * ctx.PAD_X, 80 + 2 * ctx.PAD_Y, 14 + ctx.PAD_X, 12 + ctx.PAD_Y)
-ok("padding: without it the text's corners are in the feather (about 6 px short of the solid zone)", before < -3 && before > -12, before)
-ok("padding: with it they are inside the solid zone (98% opaque), by a couple of px", after > 1, after)
-ok("padding: and it is a real change, over 10 px of room gained", after - before > 10, after - before)
+ok("padding: without it the text's corners are only just inside the solid zone (under 6 px: the rectangle is fuller in the corners than the oval was, which had them 6 px short)", before > -3 && before < 6, before)
+ok("padding: with it they are inside the solid zone (98% opaque), by 3 px or more", after > 3, after)
+ok("padding: and it is a real change, over 5 px of room gained", after - before > 5, after - before)
 ok("padding: a toast with one line (a card as low as 56 design px) is still clear of the feather", ctx.textClearance(404, 56 + 2 * ctx.PAD_Y, 14 + ctx.PAD_X, 9 + ctx.PAD_Y) > 0, ctx.textClearance(404, 56 + 2 * ctx.PAD_Y, 14 + ctx.PAD_X, 9 + ctx.PAD_Y))
 ok("padding: and a tall one (three lines of body, 130 px): at most 4 px short of the 98% zone, so still 95% opaque at the corners", ctx.textClearance(404, 130 + 2 * ctx.PAD_Y, 14 + ctx.PAD_X, 12 + ctx.PAD_Y) > -4, ctx.textClearance(404, 142, 26, 18))
 { // the oval does not stick out far: at most about 25 px past the card's side and 10 past its top and bottom
@@ -41,7 +49,7 @@ ok("padding: and a tall one (three lines of body, 130 px): at most 4 px short of
   ok("size: it reaches no more than 26 px past the card's ends and 11 past its top and bottom", a - w / 2 <= 26 && b - h / 2 <= 11, [a - w / 2, b - h / 2]) }
 // the solid depth, and the oval front
 near("solid depth: the body is 98% opaque about 15 px in", 15.4, ctx.solidDepth(), 0.4)
-near("aspect: the front's vertical stretch is the body's half-width over half-height (404 x 92: 1.12 x 1.2)", (404 * 1.12) / (92 * 1.2), ctx.ovalAspect(404, 92), 1e-9)
+near("aspect: the front's vertical stretch is the body's half-width over half-height (404 x 92 times the body's proportions)", (404 * ctx.OVAL_KX) / (92 * ctx.OVAL_KY), ctx.ovalAspect(404, 92), 1e-9)
 { const w = 404, h = 92, reach = ctx.ovalFrontReach(w, h), a = w / 2 * 1.12
   ok("front reach: well past the body's end in the stretched distance (its outline reaches 1.12 times the half-width at the corners), since the soft edge and the top and bottom feather have to be crossed too (400 to 700 for a standard card)", reach > a * 1.12 + 60 && reach < 700, reach)
   const soft0 = ctx.REVEAL_SOFT; ctx.REVEAL_SOFT = soft0 * 2; const wider = ctx.ovalFrontReach(w, h); ctx.REVEAL_SOFT = soft0

@@ -2,14 +2,16 @@
 
 // annihilation: the oval body of a toast (components/ToastBody.qml, shaders/toastbody.frag), tested by test/body-logic-test.js.
 //
-// The toast is not a card with a border any more: it is a soft-edged oval (a superellipse, exponent 3: clearly oval, with fuller ends than an ellipse so the
-// text in the corners stays on it) concentric with the arrival's ring. Its size is the card's layout rectangle times (OVAL_KX, OVAL_KY); the card grows by
+// The toast is not a card with a border any more: it is a soft-edged body, a superellipse, concentric with the arrival's ring. It was an oval (exponent 3, 1.12 x 1.20 of the card: chosen
+// from mock-ups on 2026-11-02) and is a rectangle with soft rounded corners now (1.04 x 1.08, corner radius 0.35 of the half-height), at the user's request once the soft edge, the ring and the reveal
+// were right. OVAL_N below 2 means "rounded rectangle, corner radius OVAL_N times the smaller semi-axis" (exact distance; a superellipse of exponent 8 was tried first and its first-order distance pinched the
+// ring into a bow-tie at the corners). The names say "oval" for history. Its size is the card's layout rectangle times (OVAL_KX, OVAL_KY); the card grows by
 // PAD_X on each side and PAD_Y above and below (design px, times Style.space(1)) so the text sits well inside it. The edge is a feather, FEATHER_IN px inside the
 // outline to FEATHER_OUT px outside it, not a line (26 px wide at first, then 44; live, over a near-black window, the toast was a lighter oval with an obvious silhouette, so the fade is long and mostly outside the outline: 22 solid, then 58 out, 80 px wide). Chosen from mock-ups on 2026-11-02
 // (docs/design/blend/). The arrival's front is an oval of the toast's proportions while the toast has an oval body (`ovalAspect`, `ovalFrontReach`).
-var OVAL_KX = 1.12
-var OVAL_KY = 1.20
-var OVAL_N = 3
+var OVAL_KX = 1.04
+var OVAL_KY = 1.08
+var OVAL_N = 0.35
 var PAD_X = 12
 var PAD_Y = 6
 var FEATHER_IN = 22
@@ -17,6 +19,11 @@ var FEATHER_OUT = 58
 
 // The distance, to first order, from the point (x, y) (from the centre) to the superellipse with semi-axes a and b and exponent n: negative inside.
 function ovalDistance(x, y, a, b, n) {
+  if (n < 2) {      // a rounded rectangle: the exact distance
+    var r = Math.max(0, Math.min(1, n)) * Math.min(a, b)
+    var qx = Math.abs(x) - (a - r), qy = Math.abs(y) - (b - r)
+    return Math.sqrt(Math.max(qx, 0) * Math.max(qx, 0) + Math.max(qy, 0) * Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r
+  }
   var ux = Math.max(Math.abs(x) / a, 1e-4), uy = Math.max(Math.abs(y) / b, 1e-4)
   var g = Math.pow(Math.pow(ux, n) + Math.pow(uy, n), 1 / n)
   var gx = Math.pow(g, 1 - n) * Math.pow(ux, n - 1) / a, gy = Math.pow(g, 1 - n) * Math.pow(uy, n - 1) / b
@@ -61,10 +68,12 @@ var FEATHER_VISIBLE = 40
 function ovalFrontReach(w, h) {
   var a = w / 2 * OVAL_KX, b = h / 2 * OVAL_KY, k = a / b, worst = 0
   for (var i = 0; i < 360; i++) {
-    var t = i * Math.PI / 180, c = Math.cos(t), s = Math.sin(t)
-    var x = a * (c < 0 ? -1 : 1) * Math.pow(Math.abs(c), 2 / OVAL_N), y = b * (s < 0 ? -1 : 1) * Math.pow(Math.abs(s), 2 / OVAL_N)
-    // the outline's normal, from the gradient of (|x/a|^n + |y/b|^n)
-    var nx = Math.pow(Math.abs(x) / a, OVAL_N - 1) / a * (x < 0 ? -1 : 1), ny = Math.pow(Math.abs(y) / b, OVAL_N - 1) / b * (y < 0 ? -1 : 1)
+    var t = i * Math.PI / 180, dx = Math.cos(t), dy = Math.sin(t)
+    // the outline along this ray from the centre (bisection on the distance), and its normal (a numerical gradient)
+    var lo = 0, hi = 2 * (a + b)
+    for (var j = 0; j < 40; j++) { var mid = (lo + hi) / 2; if (ovalDistance(dx * mid, dy * mid, a, b, OVAL_N) < 0) lo = mid; else hi = mid }
+    var x = dx * lo, y = dy * lo, e = 0.01
+    var nx = ovalDistance(x + e, y, a, b, OVAL_N) - ovalDistance(x - e, y, a, b, OVAL_N), ny = ovalDistance(x, y + e, a, b, OVAL_N) - ovalDistance(x, y - e, a, b, OVAL_N)
     var nl = Math.sqrt(nx * nx + ny * ny) || 1
     var px = x + nx / nl * FEATHER_VISIBLE, py = y + ny / nl * FEATHER_VISIBLE
     var m = Math.sqrt(px * px + py * py * k * k)

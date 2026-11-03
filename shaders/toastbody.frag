@@ -24,6 +24,13 @@ layout(std140, binding = 0) uniform buf {
 } ubuf;
 
 float ovalSd(vec2 p, vec2 ab, float n) {
+    // n below 2 means a rounded rectangle with corner radius n times the smaller semi-axis: the exact distance, so an offset of it (the ring) stays parallel with rounded corners
+    // (the first-order superellipse distance below is badly wrong in the corners of a high exponent, which pinched the ring into a bow-tie)
+    if (n < 2.0) {
+        float r = clamp(n, 0.0, 1.0) * min(ab.x, ab.y);
+        vec2 q = abs(p) - (ab - vec2(r));
+        return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+    }
     vec2 u = max(abs(p) / ab, vec2(1e-4));
     float g = pow(pow(u.x, n) + pow(u.y, n), 1.0 / n);
     vec2 gr = pow(g, 1.0 - n) * pow(u, vec2(n - 1.0)) / ab;

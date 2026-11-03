@@ -181,6 +181,20 @@ def ring_gap(dx, dy):
 CORNER = (212.8 * 0.794, -46.8 * 0.794)
 gaps = [ring_gap(*d) for d in ((0, -1), (0, 1), (1, 0), (-1, 0), CORNER, (-CORNER[0], -CORNER[1]), (CORNER[0], -CORNER[1]), (-CORNER[0], CORNER[1]))]
 check("ring (oval body): the ring is the toast's shape a fixed gap outside it: its distance from the body's outline (top, bottom, both ends, two diagonals) is the same all round (the ring is the body's outline offset by 0.6 * reach = 45 px, so within the ring's 2.5% bend and the sampling; offsetting the axes instead left 35 at the corners against 55 at the top)", max(gaps) - min(gaps) < 14 and 36 < sum(gaps) / len(gaps) < 58, gaps)
+# the same for the rectangle the body is now (rounded corners, exact distance): the ring is the body's outline offset, so its gap is even all round, corners too (a first-order superellipse of exponent 8 pinched it into a bow-tie)
+def rect_gaps(shape):
+    kx, ky, n, _ = shape; a_, b_ = 190 * kx, 39 * ky; r_ = n * min(a_, b_)
+    def bsd(x, y):
+        qx, qy = abs(x - 490) - (a_ - r_), abs(y - 139) - (b_ - r_)
+        return math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - r_
+    img = ring(front=RC + WAVE, p=0.45, time=0.0, shape=shape, strength=1.0)
+    def gap(dx, dy):
+        n_ = math.hypot(dx, dy); dx, dy = dx / n_, dy / n_
+        best = max(((lum(px(img, 490 + dx * t, 139 + dy * t)), t) for t in [i * 0.5 for i in range(40, 800)] if 0 <= 490 + dx * t < LW and 0 <= 139 + dy * t < LH and bsd(490 + dx * t, 139 + dy * t) > 8), default=(0, 0))
+        return bsd(490 + dx * best[1], 139 + dy * best[1])
+    return [gap(*d) for d in ((0, -1), (0, 1), (1, 0), (-1, 0), (a_, -b_), (-a_, -b_), (a_, b_), (-a_, b_))]
+rg = rect_gaps((1.04, 1.08, 0.35, 1.0))
+check("ring (rectangular body): the ring is an even gap from the body all round: top, bottom, ends and the four corners within 14 px of each other (the exact distance: only the ring's 2.5% bend, which moves its ends by about 5 px each way, and the sampling vary it; the first-order superellipse it replaced was 25 apart), about 0.6 * reach (45 px)", max(rg) - min(rg) < 14 and 36 < sum(rg) / len(rg) < 54, rg)
 check("ring (oval body): the light is still only added light (alpha 0)", maxalpha(on_) == 0)
 # the halo is revealed by the oval front: 8 px above the top edge, over the middle, an oval front of aspect 4.55 (212.8 / 46.8) has not got there at front 100 (it is 177 away), a circular one has (39 away)
 h_oval, h_circ = ring(front=100.0, p=0.05, scale=0.0, shape=SHAPE), ring(front=100.0, p=0.05, scale=0.0)

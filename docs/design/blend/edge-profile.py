@@ -15,7 +15,7 @@ def build(name, subs=()):
     subprocess.run([QSB, "-x", "glsl,100 es", "-o", f"{tmp}/{name}.glsl", f"{tmp}/{name}.qsb"], check=True); return f"{tmp}/{name}.glsl"
 RING, BODY = build("toastring", SUBS), build("toastbody", BSUBS)
 subprocess.run(["gcc", "-O2", f"{ROOT}/test/shader-harness.c", "-o", f"{tmp}/h", "-lEGL", "-lGLESv2"], check=True)
-W, H = 700, 420; UI = 1.155; CW, CH = 404 * UI, 92 * UI; CARD = (W / 2 - CW / 2, 120, CW, CH)
+W, H = 960, 420; UI = 1.155; CW, CH = 404 * UI, 92 * UI; CARD = (W / 2 - CW / 2, 120, CW, CH)
 def run(g, u):
     env = dict(os.environ, EGL_PLATFORM="surfaceless", LIBGL_ALWAYS_SOFTWARE="1")
     for k, v in u.items(): env["U_" + k] = ",".join(str(x) for x in v) if isinstance(v, (tuple, list)) else str(v)
@@ -26,8 +26,8 @@ def sc(f): return 1 - math.exp(-max(0, f) / 110)
 REACH = 84.0; RC = 300; FULL = RC + 309
 def frame(bg_rgb, t=2.0, bgarr=None):
     ring = run(RING, dict(seed=5, strength=1.0, reach=REACH, radius=4, time=t, resolution=(W, H), rect0=CARD, rect1=(0,0,0,0), rect2=(0,0,0,0),
-        src0=(CARD[0] + CW / 2, CARD[1] + CH / 2, sc(FULL), FULL), src1=(0,0,0,0), src2=(0,0,0,0), ev0=(1.0, 1, 1.0, 0.0), ev1=(0,1,0,0), ev2=(0,1,0,0), shape=(1.12, 1.20, 3.0, 1.0)))[:, :, :3]
-    body = run(BODY, dict(urgency=1, vividness=0.75, ui=UI, size=(W, H), card=CARD, shape=(1.12, 1.20, 3.0, 0.0), fill=(38/255, 34/255, 23/255, 0.95)))
+        src0=(CARD[0] + CW / 2, CARD[1] + CH / 2, sc(FULL), FULL), src1=(0,0,0,0), src2=(0,0,0,0), ev0=(1.0, 1, 1.0, 0.0), ev1=(0,1,0,0), ev2=(0,1,0,0), shape=(1.04, 1.08, 0.35, 1.0)))[:, :, :3]
+    body = run(BODY, dict(urgency=1, vividness=0.75, ui=UI, size=(W, H), card=CARD, shape=(1.04, 1.08, 0.35, 0.0), fill=(38/255, 34/255, 23/255, 0.95)))
     bg = (bgarr / 255.0) if bgarr is not None else np.ones((H, W, 3)) * np.array(bg_rgb) / 255.0
     img = bg + ring
     img = img * (1 - body[:, :, 3:4]) + body[:, :, :3]
