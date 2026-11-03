@@ -249,10 +249,10 @@ Restart the shell after updating (`omarchy restart shell`); a slow `motion_slowd
 - [ ] with several toasts the rings do not overlap into a mess, and the stack still reads; a toast that arrives fourth takes the oldest ring's place
 - [ ] it does not feel heavy while a ring rests (30 Hz updates; the layer renders at half resolution), including a critical toast left up for minutes
 
-## I. The oval toast (P2, branch `p2/oval-body`; annihilation theme, blend look)
+## I. The soft-edged toast (P2, released as 0.9.0; annihilation theme, blend look; it was an oval until the last round)
 
 The toast is a soft-edged oval under the text, not a card. Restart the shell after syncing; `motion_slowdown=3` makes the arrival easy to watch. `body=card` in the fork's conf file turns it off.
-- [ ] (needs the theme's `fix/notification-blur`, then `hyprctl reload`: without it the compositor frosts the backdrop out to a hard edge round the toast) the toast is a **soft-edged rectangle with rounded corners** (an oval before; `shape` in `BodyLogic.js` sets it) with no border or crisp rim: the toast reads as an oval that **dissolves into the glow** over a wide soft edge (about 44 px), with no bright outline round it
+- [ ] (needs the theme's blur change, on its `main`, then `hyprctl reload`: without it the compositor frosts the backdrop out to a hard edge round the toast) the toast is a **soft-edged rectangle with rounded corners** (an oval before; `shape` in `BodyLogic.js` sets it) with no border or crisp rim: the toast reads as an oval that **dissolves into the glow** over a wide soft edge (about 44 px), with no bright outline round it
 - [ ] the ring is **the toast's shape** a steady gap outside it (about 56 px), a soft halo of its own: on a **near-black window**, a **light one** and **over a page of text** behind the toast, the body fades into what is behind it with no outline (the fade is about 80 px, mostly outside the oval), and the ring is clearly separate from it
 - [ ] the text has comfortable room from the oval's edge, **including the caption and the "now" at the top corners** and the last line of a three-line body; nothing is cut or sits on the faint edge
 - [ ] the arrival: the toast appears as an **oval front** growing from its centre (not a circle cutting it open), **its leading edge soft all round** (no crisp oval line along the top and bottom as it grows) and **no bright outline flashes along its edge** (nor at the start of the exit); the exit takes it away with the card's dissolve

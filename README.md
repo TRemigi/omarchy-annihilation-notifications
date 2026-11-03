@@ -35,9 +35,9 @@ a short way round the card (about 60 px above and 41 px beyond its ends on a 108
 up, rippling slowly, with the halo breathing alongside. When the toast expires the oval shrinks back onto the card as the card dissolves into it. Critical toasts keep
 theirs until dismissed; a click removes it at once. Up to three rings are drawn at once.
 
-(Unreleased, branch `p2/oval-body`.) With the default blend look the **toast has no border and no hard edge**: the card's rectangle, its fill and its border are gone, and the toast is a soft-edged rectangle with rounded corners (it fades out over
+0.9.0: with the default blend look the **toast has no border and no hard edge**: the card's rectangle, its fill and its border are gone, and the toast is a soft-edged rectangle with rounded corners (it fades out over
 about 80 px, mostly outside its outline, so it dissolves into what is behind it; it was an oval for a while), with the arrival's ring a steady distance outside it as a soft glow, and more room between the text and its edge. The rim, the halo and the countdown line of the card are off with it (the icon's ring and the faint spores stay).
-`body=card` in the same file brings the card back; `look=growth` is always a card (its roots grow from a rectangle).
+**This needs the theme's change that turns the compositor's blur off for toasts** (its `main`; then `hyprctl reload`): Hyprland's blur mask is a hard threshold on alpha, so a blurred soft-edged toast gets a hard edge. `body=card` in the same file brings the card back; `look=growth` is always a card (its roots grow from a rectangle).
 
 > ⚠️ Plugins run as unsandboxed code inside `omarchy-shell`, and this one *is* your notification
 > daemon. While it is enabled, a bug in it means no notifications. Read the code before enabling it, and
