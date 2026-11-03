@@ -243,7 +243,7 @@ undulating slowly (a ripple travelling round it, a breath in its brightness and 
 (no more reappearing ring). Critical toasts keep theirs until dismissed. Up to three rings are drawn at once (the oldest of a crowd loses its ring).
 Restart the shell after updating (`omarchy restart shell`); a slow `motion_slowdown=3` makes it easiest to judge.
 - [ ] the ring is an **oval** round the card (not a copy of its outline), grows out of the card's centre and **eases into its size** (no point where it seems to hit a wall), and stays
-- [ ] the ripple is slow and subtle (not distracting, not a pulse); the halo breathes with it
+- [ ] the ripple is slow and subtle (not distracting, not a pulse); the halo breathes with it; **it starts as soon as the ring has finished growing** (no pause)
 - [ ] on expiry the ring contracts onto the card, brightening, and the card dissolves into it; nothing lingers afterwards
 - [ ] a click dismisses the toast and its ring at once
 - [ ] with several toasts the rings do not overlap into a mess, and the stack still reads; a toast that arrives fourth takes the oldest ring's place

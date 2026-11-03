@@ -94,8 +94,9 @@ vec3 arrival(vec2 px, vec4 rect, vec4 src, vec4 ev) {
     // the front is an oval of the toast's proportions when it has an oval body (as in cardreveal.frag)
     float tEdge = length((q - src.xy) * (oval ? vec2(1.0, (ubuf.shape.x * rect.z) / (ubuf.shape.y * rect.w)) : vec2(1.0)));
 
-    // How settled it is: the undulation grows in as the ring comes to rest.
-    float held = smoothstep(0.5, 1.0, p);
+    // How settled it is: the undulation grows in as the ring reaches its size (`src.z`: 0.55 to 0.95 of it), not with the arrival's own clock (which ran 4 s and kept the ripple off for
+    // seconds after the ring was fully out, seen in a recording).
+    float held = smoothstep(0.55, 0.95, clamp(src.z, 0.0, 1.0));
     float t = ubuf.time;
     // plane waves in the layer's position, so the ripple is even all round the oval
     float ripple = 0.10 * sin(0.045 * px.x + 0.030 * px.y - 0.9 * t + ev.w) + 0.06 * sin(0.070 * px.x - 0.050 * px.y + 0.55 * t + 2.0 * ev.w) + 0.04 * sin(0.7 * t + ev.w);

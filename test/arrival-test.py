@@ -124,7 +124,10 @@ above = [above_sum(held(t)) for t in (0, 1.5, 3.0, 4.5, 6.0)]
 check("held: the halo stays beside the outline after the arrival is over (it used to fall to nothing with the ring)", lum(px(h0, 480, 100 - 8)) > 8 and lum(px(h0, 480, 178 + 8)) > 8, (px(h0, 480, 92), px(h0, 480, 186)))
 check("held: it breathes in brightness: the light above the card (the ring, far from the halo) varies by 5 to 60% over time", 0.05 < (max(above) - min(above)) / min(above) < 0.6, above)
 arr_a, arr_b = ring(front=tfront(0.12), p=0.12, time=0.0), ring(front=tfront(0.12), p=0.12, time=3.0)
-check("held: while the arrival is still under way (progress 0.12) it does not undulate: the picture is the same at two times", total(arr_a) > 0 and abs(total(arr_a) - total(arr_b)) < 0.002 * total(arr_a), (total(arr_a), total(arr_b)))
+arr_a, arr_b = ring(front=tfront(0.12), p=0.12, time=0.0, scale=0.3), ring(front=tfront(0.12), p=0.12, time=3.0, scale=0.3)
+check("held: while the ring is still small (a third of its size) it does not undulate: the picture is the same at two times", total(arr_a) > 0 and abs(total(arr_a) - total(arr_b)) < 0.002 * total(arr_a), (total(arr_a), total(arr_b)))
+early = [above_sum(ring(front=RC + WAVE, p=0.2, time=t)) for t in (0.0, 1.5, 3.0)]
+check("held: but it undulates as soon as the ring has reached its size, however early the arrival's own clock is (progress 0.2: it used to wait until about 0.5 to start and 1.0 to be full): the light above the card varies by over 3% with time", (max(early) - min(early)) / min(early) > 0.03, early)
 def peak_lum(img): return max(lum(px(img, 490, 100 - k)) for k in range(1, 90))
 check("held: the ring is dimmer than the arrival's passing one (so a ring that stays is not in the way)", peak_lum(h0) < 0.8 * peak_lum(arr_a), (peak_lum(h0), peak_lum(arr_a)))
 peak_arr = ring(front=tfront(0.12), p=0.12)
@@ -171,12 +174,15 @@ def body_sd(x, y):
     a, b, n = 190 * 1.12, 39 * 1.20, 3.0
     ux, uy = max(abs(x - 490) / a, 1e-4), max(abs(y - 139) / b, 1e-4); g = (ux ** n + uy ** n) ** (1 / n)
     return (g - 1) / math.hypot(g ** (1 - n) * ux ** (n - 1) / a, g ** (1 - n) * uy ** (n - 1) / b)
-ringfull = ring(front=RC + WAVE, p=0.45, time=0.0, shape=SHAPE, strength=1.0)       # before the ripple begins (it grows in from p = 0.5), so only the shape is measured
+TIMES = (0.0, 1.7, 3.4, 5.1, 6.8, 8.5)      # the ripple is on once the ring is out, so the gap is averaged over several moments: it goes both ways, and what is left is the shape
+ringfulls = [ring(front=RC + WAVE, p=0.45, time=t, shape=SHAPE, strength=1.0) for t in TIMES]
 def ring_gap(dx, dy):
-    n_ = math.hypot(dx, dy); dx, dy = dx / n_, dy / n_
-    # along the ray from the centre (dx, dy), the signed distance to the body of the brightest pixel beyond the outline
-    best = max(((lum(px(ringfull, 490 + dx * t, 139 + dy * t)), t) for t in [i * 0.5 for i in range(40, 800)] if 0 <= 490 + dx * t < LW and 0 <= 139 + dy * t < LH and body_sd(490 + dx * t, 139 + dy * t) > 8), default=(0, 0))
-    return body_sd(490 + dx * best[1], 139 + dy * best[1])
+    n_ = math.hypot(dx, dy); dx, dy = dx / n_, dy / n_; out = []
+    # along the ray from the centre (dx, dy), the signed distance to the body of the brightest pixel beyond the outline, averaged over the moments
+    for img in ringfulls:
+        best = max(((lum(px(img, 490 + dx * t, 139 + dy * t)), t) for t in [i * 0.5 for i in range(40, 800)] if 0 <= 490 + dx * t < LW and 0 <= 139 + dy * t < LH and body_sd(490 + dx * t, 139 + dy * t) > 8), default=(0, 0))
+        out.append(body_sd(490 + dx * best[1], 139 + dy * best[1]))
+    return sum(out) / len(out)
 # the directions: top, bottom, both ends, and through the body's corners (where an ellipse and the squarer body differ most: 79% along both axes)
 CORNER = (212.8 * 0.794, -46.8 * 0.794)
 gaps = [ring_gap(*d) for d in ((0, -1), (0, 1), (1, 0), (-1, 0), CORNER, (-CORNER[0], -CORNER[1]), (CORNER[0], -CORNER[1]), (-CORNER[0], CORNER[1]))]
@@ -187,11 +193,13 @@ def rect_gaps(shape):
     def bsd(x, y):
         qx, qy = abs(x - 490) - (a_ - r_), abs(y - 139) - (b_ - r_)
         return math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - r_
-    img = ring(front=RC + WAVE, p=0.45, time=0.0, shape=shape, strength=1.0)
+    imgs = [ring(front=RC + WAVE, p=0.45, time=t, shape=shape, strength=1.0) for t in TIMES]
     def gap(dx, dy):
-        n_ = math.hypot(dx, dy); dx, dy = dx / n_, dy / n_
-        best = max(((lum(px(img, 490 + dx * t, 139 + dy * t)), t) for t in [i * 0.5 for i in range(40, 800)] if 0 <= 490 + dx * t < LW and 0 <= 139 + dy * t < LH and bsd(490 + dx * t, 139 + dy * t) > 8), default=(0, 0))
-        return bsd(490 + dx * best[1], 139 + dy * best[1])
+        n_ = math.hypot(dx, dy); dx, dy = dx / n_, dy / n_; out = []
+        for img in imgs:
+            best = max(((lum(px(img, 490 + dx * t, 139 + dy * t)), t) for t in [i * 0.5 for i in range(40, 800)] if 0 <= 490 + dx * t < LW and 0 <= 139 + dy * t < LH and bsd(490 + dx * t, 139 + dy * t) > 8), default=(0, 0))
+            out.append(bsd(490 + dx * best[1], 139 + dy * best[1]))
+        return sum(out) / len(out)
     return [gap(*d) for d in ((0, -1), (0, 1), (1, 0), (-1, 0), (a_, -b_), (-a_, -b_), (a_, b_), (-a_, b_))]
 rg = rect_gaps((1.04, 1.08, 0.35, 1.0))
 check("ring (rectangular body): the ring is an even gap from the body all round: top, bottom, ends and the four corners within 14 px of each other (the exact distance: only the ring's 2.5% bend, which moves its ends by about 5 px each way, and the sampling vary it; the first-order superellipse it replaced was 25 apart), about 0.6 * reach (45 px)", max(rg) - min(rg) < 14 and 36 < sum(rg) / len(rg) < 54, rg)
