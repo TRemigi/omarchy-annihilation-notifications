@@ -43,6 +43,8 @@ Item {
   readonly property vector2d origin: Qt.vector2d(target.width / 2, target.height / 2)
   // With an oval body the front is an oval of the toast's proportions (`aspect` stretches the distance vertically; 1 is the circle it was), and has to go as far as the body does.
   readonly property real aspect: target.oval ? BodyLogic.ovalAspect(target.width, target.height) : 1
+  // how wide the reveal's soft edge is in px: a card's 26, or the oval body's (about as soft as its own feather)
+  readonly property real soft: target.oval ? BodyLogic.REVEAL_SOFT : 26
   readonly property real cardReach: target.oval ? BodyLogic.ovalFrontReach(target.width, target.height) : ArrivalLogic.cardReach(origin.x, origin.y, target.width, target.height)
   // where the exit's front starts (set when the exit begins)
   property real exitFromPx: 0

@@ -49,13 +49,27 @@ function ovalAspect(w, h) {
   return (w * OVAL_KX) / (h * OVAL_KY)
 }
 
-// The radius (in that stretched distance, px from the centre) at which the front has crossed the whole body, its feather and a little more.
+// How wide the arrival's reveal edge is, px (a card's is 26), and the most the stretched front's gradient is allowed to thin it vertically (REVEAL_GRADIENT_CAP, as in cardreveal.frag).
+// A sharper edge showed as a hard oval, above all along the top and bottom, as the toast expanded.
+var REVEAL_SOFT = 70
+var REVEAL_GRADIENT_CAP = 3
+// How far out the body's feather counts as visible (where it is under about 15% opaque it does not need revealing).
+var FEATHER_VISIBLE = 40
+
+// The radius (in that stretched distance, px from the centre) at which the front has crossed the visible body, for a `w` x `h` card: the furthest point of the body's outline pushed out
+// FEATHER_VISIBLE px along the normal, in the stretched distance, plus the part of the soft edge that lies behind the front there (0.62 of it, stretched by the capped gradient).
 function ovalFrontReach(w, h) {
   var a = w / 2 * OVAL_KX, b = h / 2 * OVAL_KY, k = a / b, worst = 0
   for (var i = 0; i < 360; i++) {
     var t = i * Math.PI / 180, c = Math.cos(t), s = Math.sin(t)
     var x = a * (c < 0 ? -1 : 1) * Math.pow(Math.abs(c), 2 / OVAL_N), y = b * (s < 0 ? -1 : 1) * Math.pow(Math.abs(s), 2 / OVAL_N)
-    worst = Math.max(worst, Math.sqrt(x * x + y * y * k * k))
+    // the outline's normal, from the gradient of (|x/a|^n + |y/b|^n)
+    var nx = Math.pow(Math.abs(x) / a, OVAL_N - 1) / a * (x < 0 ? -1 : 1), ny = Math.pow(Math.abs(y) / b, OVAL_N - 1) / b * (y < 0 ? -1 : 1)
+    var nl = Math.sqrt(nx * nx + ny * ny) || 1
+    var px = x + nx / nl * FEATHER_VISIBLE, py = y + ny / nl * FEATHER_VISIBLE
+    var m = Math.sqrt(px * px + py * py * k * k)
+    var g = Math.min(Math.max(Math.sqrt(px * px + py * py * k * k * k * k) / Math.max(m, 1e-3), 1), REVEAL_GRADIENT_CAP)
+    worst = Math.max(worst, m + 0.6154 * REVEAL_SOFT * g)
   }
-  return worst + FEATHER_OUT + 18
+  return worst + 10
 }

@@ -241,7 +241,7 @@ check("flare (oval body): and the icon's spore and ring are still lit once the f
 check("flare (oval body): added light still (alpha 0), and with shape off the picture is the old one", maxalpha(fo) == 0 and fr[2] == flare(front=400.0, icon=(0, 0, 0))[2])
 
 # ---------------------------------------------------------------------------- the reveal mask (an unbound texture reads as opaque black: the alpha is the mask)
-def mask(front, x, y, aspect=1.0): return px(render(REVEAL, 380, 78, front=front, aspect=aspect, size=(380, 78), origin=(190, 39)), x, y)[3]
+def mask(front, x, y, aspect=1.0, soft=26.0): return px(render(REVEAL, 380, 78, front=front, aspect=aspect, soft=soft, size=(380, 78), origin=(190, 39)), x, y)[3]
 check("reveal: the middle of the card is solid once the front has left it", mask(40, 190, 39) == 255)
 check("reveal: far beyond the front is nothing yet, on both sides", mask(40, 360, 39) == 0 and mask(40, 20, 39) == 0)
 check("reveal: far behind the front is solid", mask(400, 360, 39) == 255)
@@ -249,8 +249,17 @@ check("reveal: the edge of the front is soft", 0 < mask(100, 290, 39) < 255, mas
 check("reveal: it is round, centred on the card's middle (60 px across and 60 px diagonally are the same; and the same each side)", abs(mask(60, 250, 39) - mask(60, 236, 77)) < 20 and abs(mask(60, 250, 39) - mask(60, 130, 39)) < 20, (mask(60, 250, 39), mask(60, 236, 77), mask(60, 130, 39)))
 
 # the oval front: with an aspect the front is an oval (the distance is stretched vertically), not a circle
-check("reveal (oval front): with aspect 4, 30 px above the centre is as far as 120 px to the side: both are shown at front 160 and neither at 100", mask(100, 190, 39 - 30, 4.0) == 0 and mask(100, 190 + 120, 39, 4.0) == 0 and mask(160, 190, 39 - 30, 4.0) == 255 and mask(160, 190 + 120, 39, 4.0) == 255, [mask(100, 190, 9, 4.0), mask(100, 310, 39, 4.0), mask(160, 190, 9, 4.0), mask(160, 310, 39, 4.0)])
-check("reveal (oval front): and with aspect 1 it is the circle it was (30 px above is shown at front 100)", mask(100, 190, 9, 1.0) == 255)
+check("reveal (oval front): with aspect 4, 30 px above the centre is as far as 120 px to the side, up to the edge's width: both are shown at front 200 and neither at 60", mask(60, 190, 39 - 30, 4.0) < 12 and mask(60, 190 + 120, 39, 4.0) < 12 and mask(200, 190, 39 - 30, 4.0) > 240 and mask(200, 190 + 120, 39, 4.0) > 240, [mask(60, 190, 9, 4.0), mask(60, 310, 39, 4.0), mask(200, 190, 9, 4.0), mask(200, 310, 39, 4.0)])
+check("reveal (oval front): and with aspect 1 and soft 26 it is the circle it was (30 px above is shown at front 100)", mask(100, 190, 9, 1.0, 26.0) == 255)
+# the edge's width in real pixels, along the top of an oval: it must be a soft edge there too (it was 26 / aspect, about 6 px, thick: a hard edge as the toast expanded)
+def ramp_px(aspect, soft, front, vertical):
+    w, h = (60, 400) if vertical else (700, 60)
+    img = render(REVEAL, w, h, front=front, aspect=aspect, soft=soft, size=(w, h), origin=(w / 2, h / 2) if vertical else (80, h / 2))
+    col = [px(img, w // 2, y)[3] / 255.0 for y in range(h // 2, h)] if vertical else [px(img, x, h // 2)[3] / 255.0 for x in range(80, w)]
+    lo = next(i for i, v in enumerate(col) if v < 0.9); hi = next((i for i, v in enumerate(col) if v < 0.1), len(col) - 1); return hi - lo
+v_old, v_new, h_new = ramp_px(4.1, 26.0, 600.0, True), ramp_px(4.1, 70.0, 600.0, True), ramp_px(4.1, 70.0, 300.0, False)
+check("reveal (oval front): the edge is soft above and below an oval: 80% of the way from solid to nothing takes at least 25 px with soft 70 (the old 26 gave 12), and at least 35 px along its length", v_new >= 25 and h_new >= 35 and v_new > 2 * v_old, (v_old, v_new, h_new))
+check("reveal (oval front): the aspect only stretches the front, the edge is as wide along it as for a circle (within 20%): soft 70, aspect 1 against 4.1 at the ends", abs(ramp_px(1.0, 70.0, 300.0, False) - h_new) < 0.2 * h_new, (ramp_px(1.0, 70.0, 300.0, False), h_new))
 a4, a1 = flare(front=156.0, aspect=4.0), flare(front=156.0, aspect=1.0)
 check("flare (oval front): with aspect 4 the wavefront is on the top edge above the middle at front 156 (39 px up, stretched 4 times), much brighter there than with a circular front, for which that edge is long since passed", lum(px(a4, 230, 41)) > 3 * lum(px(a1, 230, 41)), (px(a4, 230, 41), px(a1, 230, 41)))
 

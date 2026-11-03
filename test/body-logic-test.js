@@ -42,9 +42,10 @@ ok("padding: and a tall one (three lines of body, 130 px): at most 4 px short of
 // the solid depth, and the oval front
 near("solid depth: the body is 98% opaque about 15 px in", 15.4, ctx.solidDepth(), 0.4)
 near("aspect: the front's vertical stretch is the body's half-width over half-height (404 x 92: 1.12 x 1.2)", (404 * 1.12) / (92 * 1.2), ctx.ovalAspect(404, 92), 1e-9)
-{ const w = 404, h = 92, reach = ctx.ovalFrontReach(w, h), a = w / 2 * 1.12, k = ctx.ovalAspect(w, h)
-  ok("front reach: more than the body's half-width (the corners of the oval are further than its ends: a superellipse of exponent 3 reaches 1.12 times its half-width), plus the feather", reach > a * 1.12 + ctx.FEATHER_OUT && reach < a * 1.12 + ctx.FEATHER_OUT + 25, [reach, a])
-  // every point of the body's outline and feather is inside the front at that reach
-  let inside = true; for (let i = 0; i < 720; i++) { const t = i * Math.PI / 360, c = Math.cos(t), s = Math.sin(t), x = a * Math.sign(c) * Math.pow(Math.abs(c), 2 / 3), y = h / 2 * 1.2 * Math.sign(s) * Math.pow(Math.abs(s), 2 / 3); if (Math.hypot(x, y * k) > reach - ctx.FEATHER_OUT) inside = false }
-  ok("front reach: the whole outline is inside the front, with the feather's width to spare", inside) }
+{ const w = 404, h = 92, reach = ctx.ovalFrontReach(w, h), a = w / 2 * 1.12
+  ok("front reach: well past the body's end in the stretched distance (its outline reaches 1.12 times the half-width at the corners), since the soft edge and the top and bottom feather have to be crossed too (400 to 700 for a standard card)", reach > a * 1.12 + 60 && reach < 700, reach)
+  const soft0 = ctx.REVEAL_SOFT; ctx.REVEAL_SOFT = soft0 * 2; const wider = ctx.ovalFrontReach(w, h); ctx.REVEAL_SOFT = soft0
+  ok("front reach: a softer reveal edge needs the front to go further", wider > reach + 20, [reach, wider])
+  ok("front reach: and a taller toast (less stretched) needs less of it, a lower one more", ctx.ovalFrontReach(404, 130) < reach && ctx.ovalFrontReach(404, 60) > reach, [ctx.ovalFrontReach(404, 130), reach, ctx.ovalFrontReach(404, 60)])
+  ok("reveal edge: 70 px, with the front's gradient capped at 3", ctx.REVEAL_SOFT === 70 && ctx.REVEAL_GRADIENT_CAP === 3) }
 console.log(pass + " passed, " + fail + " failed"); process.exit(fail ? 1 : 0)
